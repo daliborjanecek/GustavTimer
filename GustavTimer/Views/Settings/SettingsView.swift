@@ -7,7 +7,7 @@
 
 import SwiftUI
 import SwiftData
-import GustavUI
+import GustavUICore
 import TelemetryDeck
 
 struct SettingsView: View {

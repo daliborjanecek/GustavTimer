@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import GustavUI
+import GustavUICore
 
 struct SettingsSection<Content: View>: View {
     var label: LocalizedStringKey? = nil

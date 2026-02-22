@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -19,7 +19,6 @@
 		CF107C5A2EDE295A00A172E8 /* bell.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CF107C592EDE295A00A172E8 /* bell.mp3 */; };
 		CF107C5C2EDE29BE00A172E8 /* bubble.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CF107C5B2EDE29BE00A172E8 /* bubble.mp3 */; };
 		CF10D0562E73371F00F84454 /* RoundsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF10D0552E73371800F84454 /* RoundsSettingsView.swift */; };
-		CF17ADD82F083A6B00A92841 /* GustavUI in Frameworks */ = {isa = PBXBuildFile; productRef = CF17ADD72F083A6B00A92841 /* GustavUI */; };
 		CF21843429F052590060706C /* GustavTimerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21843329F052590060706C /* GustavTimerApp.swift */; };
 		CF21843629F052590060706C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21843529F052590060706C /* ContentView.swift */; };
 		CF21843829F0525E0060706C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CF21843729F0525E0060706C /* Assets.xcassets */; };
@@ -43,6 +42,13 @@
 		CF8438982F12BF3E0033EE39 /* ob_favourites.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = CF8438962F12BF3E0033EE39 /* ob_favourites.mp4 */; };
 		CF8438992F12BF3E0033EE39 /* ob_timer.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = CF8438972F12BF3E0033EE39 /* ob_timer.mp4 */; };
 		CF8E14672D17404900155BE8 /* VideoPlayerFullscreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8E14662D17403900155BE8 /* VideoPlayerFullscreen.swift */; };
+		CF91BC192F49F229007AEE44 /* Gustav Timer Watch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = CF91BC0F2F49F218007AEE44 /* Gustav Timer Watch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CF91BC232F49F381007AEE44 /* TimeDisplayFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9472F3DEE2C00A20D76 /* TimeDisplayFormat.swift */; };
+		CF91BC242F49F381007AEE44 /* SoundModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9462F3DEE2C00A20D76 /* SoundModel.swift */; };
+		CF91BC252F49F381007AEE44 /* IntervalData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9452F3DEE2C00A20D76 /* IntervalData.swift */; };
+		CF91BC262F49F381007AEE44 /* TimerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9482F3DEE2C00A20D76 /* TimerEngine.swift */; };
+		CF91BC2A2F49FAB0007AEE44 /* GustavUI in Frameworks */ = {isa = PBXBuildFile; productRef = CF91BC292F49FAB0007AEE44 /* GustavUI */; };
+		CF91BC2C2F49FC1A007AEE44 /* GustavUICore in Frameworks */ = {isa = PBXBuildFile; productRef = CF91BC2B2F49FC1A007AEE44 /* GustavUICore */; };
 		CF93EB012C5E679700A98ABD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CF93EB002C5E679700A98ABD /* PrivacyInfo.xcprivacy */; };
 		CF9922AD2C8F84C9004186DF /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF9922AC2C8F84C9004186DF /* AppConfig.swift */; };
 		CF9922AF2C920C51004186DF /* Image+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF9922AE2C920C51004186DF /* Image+Extension.swift */; };
@@ -66,6 +72,30 @@
 		CFFAF94D2F3DEE2C00A20D76 /* TimerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9482F3DEE2C00A20D76 /* TimerEngine.swift */; };
 		CFFAF94F2F3DEE3C00A20D76 /* SoundModel+Title.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF94E2F3DEE3C00A20D76 /* SoundModel+Title.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		CF91BC172F49F229007AEE44 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CF21842829F052590060706C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CF91BC0E2F49F218007AEE44;
+			remoteInfo = "Gustav Timer Watch Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CF91BC1A2F49F229007AEE44 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				CF91BC192F49F229007AEE44 /* Gustav Timer Watch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		CF01945B2C8A20D700CAC1BD /* SoundSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundSettingsView.swift; sourceTree = "<group>"; };
@@ -105,6 +135,7 @@
 		CF8438962F12BF3E0033EE39 /* ob_favourites.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ob_favourites.mp4; sourceTree = "<group>"; };
 		CF8438972F12BF3E0033EE39 /* ob_timer.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ob_timer.mp4; sourceTree = "<group>"; };
 		CF8E14662D17403900155BE8 /* VideoPlayerFullscreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerFullscreen.swift; sourceTree = "<group>"; };
+		CF91BC0F2F49F218007AEE44 /* Gustav Timer Watch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Gustav Timer Watch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CF93EB002C5E679700A98ABD /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		CF9922AC2C8F84C9004186DF /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		CF9922AE2C920C51004186DF /* Image+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Image+Extension.swift"; sourceTree = "<group>"; };
@@ -128,13 +159,25 @@
 		CFFAF94E2F3DEE3C00A20D76 /* SoundModel+Title.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SoundModel+Title.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		CF91BC102F49F218007AEE44 /* Gustav Timer Watch Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "Gustav Timer Watch Watch App"; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		CF21842D29F052590060706C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CF17ADD82F083A6B00A92841 /* GustavUI in Frameworks */,
+				CF91BC2A2F49FAB0007AEE44 /* GustavUI in Frameworks */,
 				CFDE17AE2F48A646006BEF5D /* TelemetryDeck in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CF91BC0C2F49F218007AEE44 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CF91BC2C2F49FC1A007AEE44 /* GustavUICore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -153,6 +196,7 @@
 			children = (
 				CFFAF9492F3DEE2C00A20D76 /* Shared */,
 				CF21843229F052590060706C /* GustavTimer */,
+				CF91BC102F49F218007AEE44 /* Gustav Timer Watch Watch App */,
 				CF17ADD62F083A6100A92841 /* Frameworks */,
 				CF21843129F052590060706C /* Products */,
 			);
@@ -162,6 +206,7 @@
 			isa = PBXGroup;
 			children = (
 				CF21843029F052590060706C /* GustavTimer.app */,
+				CF91BC0F2F49F218007AEE44 /* Gustav Timer Watch Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -359,14 +404,39 @@
 				CF21842C29F052590060706C /* Sources */,
 				CF21842D29F052590060706C /* Frameworks */,
 				CF21842E29F052590060706C /* Resources */,
+				CF91BC1A2F49F229007AEE44 /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CF91BC182F49F229007AEE44 /* PBXTargetDependency */,
+			);
+			name = GustavTimer;
+			productName = GustavTimer;
+			productReference = CF21843029F052590060706C /* GustavTimer.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CF91BC0E2F49F218007AEE44 /* Gustav Timer Watch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CF91BC1D2F49F229007AEE44 /* Build configuration list for PBXNativeTarget "Gustav Timer Watch Watch App" */;
+			buildPhases = (
+				CF91BC0B2F49F218007AEE44 /* Sources */,
+				CF91BC0C2F49F218007AEE44 /* Frameworks */,
+				CF91BC0D2F49F218007AEE44 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = GustavTimer;
-			productName = GustavTimer;
-			productReference = CF21843029F052590060706C /* GustavTimer.app */;
+			fileSystemSynchronizedGroups = (
+				CF91BC102F49F218007AEE44 /* Gustav Timer Watch Watch App */,
+			);
+			name = "Gustav Timer Watch Watch App";
+			packageProductDependencies = (
+				CF91BC2B2F49FC1A007AEE44 /* GustavUICore */,
+			);
+			productName = "Gustav Timer Watch Watch App";
+			productReference = CF91BC0F2F49F218007AEE44 /* Gustav Timer Watch Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -376,11 +446,14 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1430;
+				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					CF21842F29F052590060706C = {
 						CreatedOnToolsVersion = 14.3;
+					};
+					CF91BC0E2F49F218007AEE44 = {
+						CreatedOnToolsVersion = 26.2;
 					};
 				};
 			};
@@ -403,6 +476,7 @@
 			projectRoot = "";
 			targets = (
 				CF21842F29F052590060706C /* GustavTimer */,
+				CF91BC0E2F49F218007AEE44 /* Gustav Timer Watch Watch App */,
 			);
 		};
 /* End PBXProject section */
@@ -429,6 +503,13 @@
 				CF107C4C2EDE211700A172E8 /* hey.mp3 in Resources */,
 				CF107C4E2EDE225E00A172E8 /* game.mp3 in Resources */,
 				CF107C502EDE24A700A172E8 /* retro.mp3 in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CF91BC0D2F49F218007AEE44 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -481,7 +562,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CF91BC0B2F49F218007AEE44 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CF91BC232F49F381007AEE44 /* TimeDisplayFormat.swift in Sources */,
+				CF91BC242F49F381007AEE44 /* SoundModel.swift in Sources */,
+				CF91BC252F49F381007AEE44 /* IntervalData.swift in Sources */,
+				CF91BC262F49F381007AEE44 /* TimerEngine.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CF91BC182F49F229007AEE44 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CF91BC0E2F49F218007AEE44 /* Gustav Timer Watch Watch App */;
+			targetProxy = CF91BC172F49F229007AEE44 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		CF21843C29F0525E0060706C /* Debug */ = {
@@ -684,6 +784,83 @@
 			};
 			name = Release;
 		};
+		CF91BC1B2F49F229007AEE44 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Gustav Timer Watch Watch App/Gustav Timer Watch Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Gustav Timer Watch";
+				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "Pro udržení displeje aktivního během timeru.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pro udržení displeje aktivního během timeru.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pro záznam tréninkových relací.";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = cz.daliborjanecek.GustavTimer;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.daliborjanecek.GustavTimer.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		CF91BC1C2F49F229007AEE44 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Gustav Timer Watch Watch App/Gustav Timer Watch Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Gustav Timer Watch";
+				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "Pro udržení displeje aktivního během timeru.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pro udržení displeje aktivního během timeru.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pro záznam tréninkových relací.";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = cz.daliborjanecek.GustavTimer;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.daliborjanecek.GustavTimer.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -701,6 +878,15 @@
 			buildConfigurations = (
 				CF21843F29F0525E0060706C /* Debug */,
 				CF21844029F0525E0060706C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CF91BC1D2F49F229007AEE44 /* Build configuration list for PBXNativeTarget "Gustav Timer Watch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CF91BC1B2F49F229007AEE44 /* Debug */,
+				CF91BC1C2F49F229007AEE44 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -727,9 +913,13 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		CF17ADD72F083A6B00A92841 /* GustavUI */ = {
+		CF91BC292F49FAB0007AEE44 /* GustavUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = GustavUI;
+		};
+		CF91BC2B2F49FC1A007AEE44 /* GustavUICore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GustavUICore;
 		};
 		CFDE17AD2F48A646006BEF5D /* TelemetryDeck */ = {
 			isa = XCSwiftPackageProductDependency;

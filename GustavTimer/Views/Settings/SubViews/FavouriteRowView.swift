@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import GustavUI
+import GustavUICore
 
 struct FavouriteRowView: View {
     let timer: TimerData
