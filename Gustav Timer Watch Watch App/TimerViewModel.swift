@@ -28,6 +28,8 @@ class TimerViewModel: ObservableObject {
     var count: Int { engine.count }
     var progress: Double { engine.progress }
     var isTimerFull: Bool { engine.isTimerFull }
+    var activeIntervalName: String { timers[activeTimerIndex].name }
+    var activeIntervalValue: Int { timers[activeTimerIndex].value }
     
     private var cancellables = Set<AnyCancellable>()
 
@@ -69,6 +71,22 @@ class TimerViewModel: ObservableObject {
     func resetTimer() {
         engine.reset()
     }
+    
+    func skipInterval() {
+        engine.skipCurrentInterval()
+    }
+    
+    func formattedCurrentTime(timeDisplayFormat: TimeDisplayFormat) -> String {
+        engine.formattedCurrentTime(format: timeDisplayFormat)
+    }
+    
+    func loadTimer(intervals: [IntervalData]) {
+        engine.loadIntervals(intervals)
+    }
+    
+    func loadSimpleTimer(_ first: Int, _ second: Int) {
+        engine.loadIntervals([IntervalData(duration: .seconds(first), name: "Work"), IntervalData(duration: .seconds(second), name: "Rest")])
+    }
 
     /// Nastaví platform-specific callbacky na engine
     private func setupEngineCallbacks() {
@@ -77,6 +95,7 @@ class TimerViewModel: ObservableObject {
             switch feedback {
             case .intervalTransition:
                 print("DEBUG: intervalTransition")
+                WKInterfaceDevice.current().play(.directionUp)
 //                self.vibrate()
 //                self.playSound()
 //                self.appearanceIconAnimation = .playing(
@@ -84,6 +103,8 @@ class TimerViewModel: ObservableObject {
 //                )
             case .roundComplete:
                 print("DEBUG: roundComplete")
+                WKInterfaceDevice.current().play(.success)
+
 //                self.vibrateRound()
 //                self.playSound()
 //                self.loopIconAnimation = .playing(
