@@ -497,6 +497,10 @@ class TimerEngine: ObservableObject {
     ///     // Minuty:sekundy.setiny (landscape, přesné měření)
     ///     engine.formattedCurrentTime(format: .minutesSecondsHundredths)
     ///     // → "0:45.32"  nebo  "2:00.05"
+    ///
+    ///     // Sekundy.setiny bez minut
+    ///     engine.formattedCurrentTime(format: .secondsHundredths)
+    ///     // → "45.32"  nebo  "120.05"
     func formattedCurrentTime(format: TimeDisplayFormat) -> String {
         switch format {
         case .seconds:
@@ -512,6 +516,11 @@ class TimerEngine: ObservableObject {
             } else {
                 return String(format: "%d.%02d", seconds, tenths)
             }
+        case .secondsHundredths:
+            let components = remainingTime.components
+            let totalSeconds = Int(components.seconds)
+            let hundredths = Int(components.attoseconds / 10_000_000_000_000_000)
+            return String(format: "%d.%02d", totalSeconds, hundredths)
         }
     }
 

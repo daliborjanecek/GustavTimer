@@ -16,35 +16,36 @@ struct EditView: View {
     @State private var firstInterval: Double = 60
     @State private var secondInterval: Double = 30
     @State private var editingFirst = true
+    @State private var fontSize: CGFloat = 32
 
     var body: some View {
         VStack {
             // Zobrazení hodnot
-            HStack(alignment: .bottom, spacing: 0) {
-                let fontSize: CGFloat = 32
+            HStack(alignment: .bottom, spacing: 4) {
+                VStack {
+                    Text("Work")
+                        .font(.gustavBody)
                     Text("\(Int(firstInterval))")
                         .font(Font.custom("MartianMono-Bold", size: fontSize))
-                        .foregroundColor(editingFirst ? .gustavVolt : .gustavNeutral)
+                        
+                }
+                .foregroundColor(editingFirst ? .gustavVolt : .gustavNeutral)
                 .onTapGesture { editingFirst = true }
 
                 Text("/")
                     .font(Font.custom("MartianMono-Bold", size: fontSize))
-                    .foregroundStyle(Color.gustavNeutral)
+                    .foregroundColor(.gustavNeutral)
                 
+                VStack {
+                    Text("Rest")
+                        .font(.gustavBody)
                     Text("\(Int(secondInterval))")
                         .font(Font.custom("MartianMono-Bold", size: fontSize))
-                        .foregroundColor(!editingFirst ? .gustavVolt : .gustavNeutral)
+                        
+                }
+                .foregroundColor(!editingFirst ? .gustavVolt : .gustavNeutral)
                 .onTapGesture { editingFirst = false }
-            }
-            .padding()
 
-            Spacer()
-
-            Button {
-                viewModel.loadSimpleTimer(Int(firstInterval), Int(secondInterval))
-                onDone()
-            } label: {
-                Text("Save")
             }
         }
         .onAppear {
@@ -53,6 +54,7 @@ struct EditView: View {
                 firstInterval = Double(viewModel.timers[0].value)
                 secondInterval = Double(viewModel.timers[1].value)
             }
+            adjustFontSize()
         }
         .focusable(true)
         .digitalCrownRotation(
@@ -64,18 +66,36 @@ struct EditView: View {
             isContinuous: false,
             isHapticFeedbackEnabled: true
         )
+        .onChange(of: firstInterval) { oldValue, newValue in
+            adjustFontSize()
+        }
+        .onChange(of: secondInterval) {
+            adjustFontSize()
+        }
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Text("Edit")
-                    .font(.gustavBody)
-            }
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(placement: .bottomBar) {
                 Button {
                     viewModel.loadSimpleTimer(Int(firstInterval), Int(secondInterval))
                     onDone()
                 } label: {
-                    Text("Save")
+                    GustavIcon(.done, color: .gustavVolt)
                 }
+                .clipShape(Circle())
+                .buttonStyle(.glass)
+                .tint(.gustavVolt)
+
+            }
+        }
+    }
+    
+    func adjustFontSize() {
+        if firstInterval > 99 || secondInterval > 99 {
+            withAnimation {
+                fontSize = 32
+            }
+        } else {
+            withAnimation {
+                fontSize = 40
             }
         }
     }

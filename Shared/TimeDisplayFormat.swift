@@ -42,6 +42,10 @@ enum TimeDisplayFormat: String, CaseIterable, Codable {
     /// Vhodné pro přesné měření a landscape režim.
     case minutesSecondsHundredths = "minutesSecondsHundredths"
 
+    /// Zobrazí pouze sekundy.setiny: "45.32", "120.05".
+    /// Vhodné pro přesné zobrazení bez minut.
+    case secondsHundredths = "secondsHundredths"
+
     /// Lidsky čitelný název formátu (pro UI settingů).
     var displayName: String {
         switch self {
@@ -49,6 +53,8 @@ enum TimeDisplayFormat: String, CaseIterable, Codable {
             return "Seconds"
         case .minutesSecondsHundredths:
             return "Minutes:Seconds.Hundredths"
+        case .secondsHundredths:
+            return "Seconds.Hundredths"
         }
     }
 }

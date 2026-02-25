@@ -13,25 +13,29 @@ struct ControlsView: View {
     @Environment(\.isLuminanceReduced) private var isLuminanceReduced
     
     var body: some View {
-        VStack {
-            Text(viewModel.formattedCurrentTime(timeDisplayFormat: isLuminanceReduced ? .seconds : .minutesSecondsHundredths))
-                .font(Font.custom("MartianMono-Bold", size: 30))
+        VStack(alignment: .leading) {
+            Text(viewModel.formattedCurrentTime(timeDisplayFormat: isLuminanceReduced ? .seconds : .secondsHundredths))
+                .font(Font.custom("MartianMono-Bold", size: 300))
+                .minimumScaleFactor(0.01)
                 .foregroundStyle(Color.gustavVolt)
                 .onTapGesture {
                     viewModel.startStopTimer()
                 }
-            Spacer()
-            HStack {
+            Text(viewModel.activeIntervalName)
+                .font(.gustavBody)
+                .foregroundStyle(Color.gustavVolt)
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .bottomBar) {
                 Button {
                     viewModel.startStopTimer()
                 } label: {
-                    GustavIcon(viewModel.isTimerRunning ? .pause : .play, size: 42, color: viewModel.isTimerRunning ? .gustavPink : .gustavVolt)
+                    GustavIcon(viewModel.isTimerRunning ? .pause : .play, color: viewModel.isTimerRunning ? .gustavPink : .gustavVolt)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .clipShape(Circle())
-                .buttonStyle(.bordered)
+                .buttonStyle(.glass)
                 .tint(viewModel.isTimerRunning ? .gustavPink : .gustavVolt)
-                
                 
                 Button {
                     if viewModel.isTimerRunning {
@@ -40,15 +44,14 @@ struct ControlsView: View {
                         viewModel.resetTimer()
                     }
                 } label: {
-                    GustavIcon(viewModel.isTimerRunning ? .skip : .reset, size: 42)
+                    GustavIcon(viewModel.isTimerRunning ? .skip : .reset)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .clipShape(Circle())
-                .buttonStyle(.bordered)
+                .buttonStyle(.glass)
                 .tint(.white)
             }
         }
-        .ignoresSafeArea(edges: .bottom)
     }
 }
 
