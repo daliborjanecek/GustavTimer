@@ -45,9 +45,16 @@ struct AppConfig {
     
     static let bannerName: LocalizedStringKey = "CHALLENGE"
     static let bannerImages: [BannerImageModel] = [
+        // v 2.0.0
         BannerImageModel(imageResource: .duckwalk, urlString: "https://youtu.be/C21zLk6bwyI"),
         BannerImageModel(imageResource: .wallsit, urlString: "https://youtu.be/zg7vFGYauh8"),
-        BannerImageModel(imageResource: .mountainclimbers, urlString: "https://youtu.be/-LzQuHB1Bjs")
+        BannerImageModel(imageResource: .mountainclimbers, urlString: "https://youtu.be/-LzQuHB1Bjs"),
+        
+        // update 2.2.0
+        BannerImageModel(imageResource: .legraises, urlString: "https://youtu.be/4T9a8pFtgEk"),
+        BannerImageModel(imageResource: .plank, urlString: "https://youtu.be/9ZVFN9BxauA"),
+        BannerImageModel(imageResource: .jumplunges, urlString: "https://youtu.be/HK3M9p7xAk0")
+        
     ]
     
     // Default timer
@@ -69,7 +76,7 @@ struct AppConfig {
         ]),
         // EMOM Timer
         TimerData(order: -3, name: String(localized: "PT_EMOM_10MIN"), rounds: 10, selectedSound: .whistle, isVibrating: true, intervals: [
-            IntervalData(value: 40, name: String(localized: "LAP_WORK"))
+            IntervalData(value: 60, name: String(localized: "LAP_WORK"))
         ]),
         // HIIT trénink
         TimerData(order: -4, name: String(localized: "PT_HIIT"), rounds: 10, selectedSound: .whistle, isVibrating: true, intervals: [
@@ -81,4 +88,6 @@ struct AppConfig {
             IntervalData(value: 60, name: String(localized: "LAP_MAX"))
         ])
     ]
+    
+    
 }

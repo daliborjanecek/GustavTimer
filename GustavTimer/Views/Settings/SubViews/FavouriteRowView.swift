@@ -12,58 +12,73 @@ struct FavouriteRowView: View {
     let timer: TimerData
     let selected: Bool
     var isMinimized: Bool = false
+    var tip: String? = nil
         
     var isMainTimer: Bool {
         timer.order == AppConfig.defaultTimer.order
     }
     
     var body: some View {
-        GustavSelectableListRow(selected: selected) {
-                VStack(alignment: .leading, spacing: isMinimized ? 4 : 36) {
-                    if !isMinimized {
-                        GeometryReader { geometry in
-                            HStack(alignment: .top, spacing: 5) {
-                                ForEach(timer.intervals) { interval in
-                                    VStack(alignment: .leading) {
-                                        Capsule()
-                                            .fill(progressBarColor)
-                                            .frame(height: isMinimized ? 4 : 5)
-                                        Text(interval.name)
-                                            .font(.savedRowIntervalName)
-                                            .lineLimit(1)
-                                            .padding(.trailing)
-                                            .foregroundStyle(Color.gustavLight)
+        VStack(spacing: 0) {
+            GustavSelectableListRow(selected: selected) {
+                    VStack(alignment: .leading, spacing: isMinimized ? 4 : 36) {
+                        if !isMinimized {
+                            GeometryReader { geometry in
+                                HStack(alignment: .top, spacing: 5) {
+                                    ForEach(timer.intervals) { interval in
+                                        VStack(alignment: .leading) {
+                                            Capsule()
+                                                .fill(progressBarColor)
+                                                .frame(height: isMinimized ? 4 : 5)
+                                            Text(interval.name)
+                                                .font(.savedRowIntervalName)
+                                                .lineLimit(1)
+                                                .padding(.trailing)
+                                                .foregroundStyle(Color.gustavLight)
+                                        }
+                                        .frame(width: getIntervalWidth(interval: interval, viewWidth: geometry.size.width))
                                     }
-                                    .frame(width: getIntervalWidth(interval: interval, viewWidth: geometry.size.width))
                                 }
                             }
                         }
-                    }
-                    HStack {
-                        Text(intervalName)
-                            .font(isMinimized ? .savedRowTimerNameMinimized : .savedRowTimerName)
-                            .opacity(isMainTimer ? 0.4 : 1)
-                            .lineLimit(1)
-                            .padding(.trailing, 4)
-                        
-                        if !isMinimized {
-                            if timer.rounds == -1 {
-                                GustavIcon(.loop, size: 22, color: Color.gustavLight)
+                        HStack {
+                            Text(intervalName)
+                                .font(isMinimized ? .savedRowTimerNameMinimized : .savedRowTimerName)
+                                .opacity(isMainTimer ? 0.4 : 1)
+                                .lineLimit(1)
+                                .padding(.trailing, 4)
+                            
+                            if !isMinimized {
+                                if timer.rounds == -1 {
+                                    GustavIcon(.loop, size: 22, color: Color.gustavLight)
+                                }
+                                
+                                if timer.selectedSound != nil {
+                                    GustavIcon(.sound, size: 22, color: Color.gustavLight)
+                                }
+                                
+                                if timer.isVibrating {
+                                    GustavIcon(.vibration, size: 22, color: Color.gustavLight)
+                                }
                             }
                             
-                            if timer.selectedSound != nil {
-                                GustavIcon(.sound, size: 22, color: Color.gustavLight)
-                            }
-                            
-                            if timer.isVibrating {
-                                GustavIcon(.vibration, size: 22, color: Color.gustavLight)
-                            }
+                            Spacer()
                         }
-                        
-                        Spacer()
                     }
+
                 }
+            if let tip, !isMinimized {
+                Text(tip)
+                    .multilineTextAlignment(.leading)
+                    .font(.settingsCaption)
+                    .foregroundStyle(Color.gustavNeutral)
+                    .padding()
+                    .padding(.top, -8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
+        }
+        .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
+//        .padding()
     }
     
     var intervalName: LocalizedStringKey {
@@ -113,7 +128,7 @@ struct FavouriteRowView: View {
                     IntervalData(value: 15, name: "Rest")
                 ]
                 return timer
-            }(), selected: false)
+            }(), selected: true, tip: "Box breathing, soustřeď se výhradně na dech (4-4-4-4: nádech, zadržení, výdech, zadržení). Kdykoli myšlenky odjedou jinam, jednoduše je vrátíš zpět k dechu.")
         }
         Section {
             FavouriteRowView(timer: {
