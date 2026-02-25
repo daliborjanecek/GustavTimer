@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import GustavUI
+import GustavUICore
 
 struct RoundsSettingsView: View {
     @Binding var rounds: Int

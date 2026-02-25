@@ -9,7 +9,8 @@ import SwiftUI
 import SwiftData
 import UIKit
 import Lottie
-import GustavUI
+import GustavUICore
+import GustavUIAnimations
 
 struct TimerView: View {
     @Binding var showSettings: Bool

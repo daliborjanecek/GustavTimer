@@ -7,7 +7,8 @@
 
 import SwiftUI
 import Lottie
-import GustavUI
+import GustavUICore
+import GustavUIAnimations
 
 struct ControlButton: View {
     let action: () -> ()

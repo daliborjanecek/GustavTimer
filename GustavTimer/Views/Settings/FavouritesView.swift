@@ -7,7 +7,7 @@
 
 import SwiftUI
 import SwiftData
-import GustavUI
+import GustavUICore
 import TelemetryDeck
 
 struct FavouritesView: View {
@@ -23,6 +23,7 @@ struct FavouritesView: View {
     @State var timerToDelete: TimerData?
     @State var showAlreadySavedAlert: Bool = false
     @State private var editMode: EditMode = .inactive
+    @State private var selectedTip: Int = Int.random(in: 0...2)
     
     var body: some View {
         List {
@@ -66,14 +67,14 @@ struct FavouritesView: View {
     @ViewBuilder
     private var preloadedTimers: some View {
         Section {
-            let preloadedTimers = AppConfig.predefinedTimers
-                ForEach(preloadedTimers) { timer in
-                    FavouriteRowView(timer: timer, selected: isTimerSelected(timer: timer))
-                        .onTapGesture {
-                            analyticsPreloadedAction(timer: timer)
-                            selectTimer(timer: timer)
-                        }
-                }
+            let preloadedTimers = PredefinedTimer.allCases
+            ForEach(preloadedTimers) { timer in
+                FavouriteRowView(timer: timer.timer, selected: isTimerSelected(timer: timer.timer), tip: timer.description[selectedTip])
+                    .onTapGesture {
+                        analyticsPreloadedAction(timer: timer.timer)
+                        selectTimer(timer: timer.timer)
+                    }
+            }
         } header: {
             Text("PRELOADED_TIMERS").font(.sectionHeader)
         }
