@@ -9,56 +9,75 @@ import SwiftUI
 import GustavUICore
 
 struct EditView: View {
-    
+
     @ObservedObject var viewModel: TimerViewModel
     let onDone: () -> Void
-    
-    @State private var firstInterval: Int = 60
-    @State private var secondInterval: Int = 30
-    
-    @FocusState private var focusedPicker: Int?
-    
+
+    @State private var firstInterval: Double = 60
+    @State private var secondInterval: Double = 30
+    @State private var editingFirst = true
+
     var body: some View {
         VStack {
-            HStack(spacing: 16) {
-                Picker(selection: $firstInterval) {
-                    ForEach(1...300, id: \.self) {
-                        Text("\($0)")
-                            .font(Font.custom("MartianMono-Bold", size: 30))
-                    }
-                } label: {
-                    Text("Work")
-                        .font(.gustavBody)
-                }
-                .tint(.gustavVolt)
-                .tag(4)
-                .focused($focusedPicker, equals: 4)
+            // Zobrazení hodnot
+            HStack(alignment: .bottom, spacing: 0) {
+                let fontSize: CGFloat = 32
+                    Text("\(Int(firstInterval))")
+                        .font(Font.custom("MartianMono-Bold", size: fontSize))
+                        .foregroundColor(editingFirst ? .gustavVolt : .gustavNeutral)
+                .onTapGesture { editingFirst = true }
+
+                Text("/")
+                    .font(Font.custom("MartianMono-Bold", size: fontSize))
+                    .foregroundStyle(Color.gustavNeutral)
                 
-                Picker(selection: $secondInterval) {
-                    ForEach(1...300, id: \.self) {
-                        Text("\($0)")
-                            .font(Font.custom("MartianMono-Bold", size: 30))
-                    }
-                } label: {
-                    Text("Rest")
-                        .font(.gustavBody)
-                }
-                .tint(.gustavVolt)
-                .tag(5)
-                .focused($focusedPicker, equals: 5)
+                    Text("\(Int(secondInterval))")
+                        .font(Font.custom("MartianMono-Bold", size: fontSize))
+                        .foregroundColor(!editingFirst ? .gustavVolt : .gustavNeutral)
+                .onTapGesture { editingFirst = false }
             }
             .padding()
-            
-            Spacer ()
+
+            Spacer()
+
             Button {
-                viewModel.loadSimpleTimer(firstInterval, secondInterval)
+                viewModel.loadSimpleTimer(Int(firstInterval), Int(secondInterval))
                 onDone()
             } label: {
                 Text("Save")
             }
-
         }
-        
+        .onAppear {
+            // Načti uložené hodnoty při prvním zobrazení
+            if viewModel.timers.count >= 2 {
+                firstInterval = Double(viewModel.timers[0].value)
+                secondInterval = Double(viewModel.timers[1].value)
+            }
+        }
+        .focusable(true)
+        .digitalCrownRotation(
+            editingFirst ? $firstInterval : $secondInterval,
+            from: 1,
+            through: 300,
+            by: 1,
+            sensitivity: .medium,
+            isContinuous: false,
+            isHapticFeedbackEnabled: true
+        )
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Text("Edit")
+                    .font(.gustavBody)
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    viewModel.loadSimpleTimer(Int(firstInterval), Int(secondInterval))
+                    onDone()
+                } label: {
+                    Text("Save")
+                }
+            }
+        }
     }
 }
 

@@ -9,7 +9,11 @@ import SwiftUI
 import Combine
 
 class TimerViewModel: ObservableObject {
-    
+
+    // MARK: - Persistence
+    @AppStorage("workInterval") private var workInterval: Int = 60
+    @AppStorage("restInterval") private var restInterval: Int = 30
+
     let engine = TimerEngine(
         maxTimers: 5,
         maxCountdownValue: 300
@@ -85,7 +89,15 @@ class TimerViewModel: ObservableObject {
     }
     
     func loadSimpleTimer(_ first: Int, _ second: Int) {
-        engine.loadIntervals([IntervalData(duration: .seconds(first), name: "Work"), IntervalData(duration: .seconds(second), name: "Rest")])
+        // Ulož do AppStorage
+        workInterval = first
+        restInterval = second
+
+        // Načti do engine
+        engine.loadIntervals([
+            IntervalData(duration: .seconds(first), name: "Work"),
+            IntervalData(duration: .seconds(second), name: "Rest")
+        ])
     }
 
     /// Nastaví platform-specific callbacky na engine
@@ -128,8 +140,8 @@ class TimerViewModel: ObservableObject {
     
     private func createDefaultTimers() {
         engine.loadIntervals([
-            IntervalData(value: 60, name: "Work"),
-            IntervalData(value: 30, name: "Rest")
+            IntervalData(value: workInterval, name: "Work"),
+            IntervalData(value: restInterval, name: "Rest")
         ])
     }
 }
