@@ -244,6 +244,14 @@ class TimerEngine: ObservableObject {
     /// Cancel se provede při stop() nebo novém start().
     private var timerTask: Task<Void, Never>?
 
+    /// Absolutní čas, kdy aktuální interval začal (nebo byl resumed po pauze).
+    /// Slouží pro výpočet zbývajícího času z wall clocku v AOD režimu,
+    /// kdy je tick Task suspendovaný.
+    private var intervalStartedAt: Date = Date()
+
+    /// Zbývající čas v momentě, kdy interval začal/resumed.
+    private var remainingAtStart: Duration = .seconds(0)
+
     // MARK: - Vypočítané vlastnosti
 
     /// Zbývající čas v celých sekundách, omezený délkou aktuálního intervalu.
@@ -348,6 +356,8 @@ class TimerEngine: ObservableObject {
         }
 
         isRunning = true
+        intervalStartedAt = Date()
+        remainingAtStart = remainingTime
         onStart?()
 
         timerTask?.cancel()
@@ -356,19 +366,18 @@ class TimerEngine: ObservableObject {
 
             let tickInterval: Duration = .milliseconds(10)
             let clock = ContinuousClock()
+            var lastTickTime = clock.now
 
             while !Task.isCancelled && self.isRunning {
-                let start = clock.now
+                let now = clock.now
+                let actualElapsed = now - lastTickTime
+                lastTickTime = now
 
                 await MainActor.run {
-                    self.tick(tickInterval)
+                    self.tick(actualElapsed)
                 }
 
-                let elapsed = clock.now - start
-                let sleepTime = tickInterval - elapsed
-                if sleepTime > .zero {
-                    try? await Task.sleep(for: sleepTime)
-                }
+                try? await Task.sleep(for: tickInterval)
             }
         }
     }
@@ -381,6 +390,10 @@ class TimerEngine: ObservableObject {
     ///     // engine.remainingTime zůstává na poslední hodnotě
     ///     // engine.activeTimerIndex zůstává
     func stop() {
+        if isRunning {
+            let elapsed = Duration.seconds(Date().timeIntervalSince(intervalStartedAt))
+            remainingTime = max(.zero, remainingAtStart - elapsed)
+        }
         isRunning = false
         timerTask?.cancel()
         timerTask = nil
@@ -524,6 +537,61 @@ class TimerEngine: ObservableObject {
         }
     }
 
+    // MARK: - Wall-clock data (pro AOD / Text(timerInterval:))
+
+    /// Absolutní Date, kdy aktuální interval skončí.
+    /// Používá se pro `Text(timerInterval: Date()...intervalEndDate, countsDown: true)`,
+    /// což systém aktualizuje automaticky i v AOD.
+    var intervalEndDate: Date {
+        let seconds = Double(remainingAtStart.components.seconds) +
+                      Double(remainingAtStart.components.attoseconds) / 1e18
+        return intervalStartedAt.addingTimeInterval(seconds)
+    }
+
+    // MARK: - Wall-clock výpočty (pro AOD)
+
+    /// Vypočítá zbývající čas z wall clocku – nezávisle na tick loopu.
+    /// Když timer neběží, vrací uloženou hodnotu remainingTime.
+    func remainingDuration(at date: Date) -> Duration {
+        guard isRunning else { return remainingTime }
+        let elapsed = Duration.seconds(date.timeIntervalSince(intervalStartedAt))
+        return max(.zero, remainingAtStart - elapsed)
+    }
+
+    /// Celé sekundy zbývajícího času vypočítané z wall clocku.
+    func count(at date: Date) -> Int {
+        guard activeTimerIndex < intervals.count else { return 0 }
+        let remaining = remainingDuration(at: date)
+        return min(
+            Int(remaining.components.seconds),
+            Int(intervals[activeTimerIndex].duration.components.seconds)
+        )
+    }
+
+    /// Formátuje zbývající čas vypočítaný z wall clocku.
+    func formattedCurrentTime(format: TimeDisplayFormat, at date: Date) -> String {
+        let remaining = remainingDuration(at: date)
+        switch format {
+        case .seconds:
+            return "\(count(at: date))"
+        case .minutesSecondsHundredths:
+            let components = remaining.components
+            let minutes = Int(components.seconds) / 60
+            let seconds = Int(components.seconds) % 60
+            let tenths = Int(components.attoseconds / 10_000_000_000_000_000)
+            if minutes > 0 {
+                return String(format: "%d:%02d.%02d", minutes, seconds, tenths)
+            } else {
+                return String(format: "%d.%02d", seconds, tenths)
+            }
+        case .secondsHundredths:
+            let components = remaining.components
+            let totalSeconds = Int(components.seconds)
+            let hundredths = Int(components.attoseconds / 10_000_000_000_000_000)
+            return String(format: "%d.%02d", totalSeconds, hundredths)
+        }
+    }
+
     // MARK: - Výpočet poměrů pro progress bary
 
     /// Poměr délky intervalu vůči celkové délce jednoho kola (0.0 – 1.0).
@@ -574,6 +642,8 @@ class TimerEngine: ObservableObject {
         } else {
             onFeedback?(.intervalTransition)
             remainingTime = intervals[activeTimerIndex].duration
+            intervalStartedAt = Date()
+            remainingAtStart = remainingTime
 
             // Přeskočit nulové intervaly
             if intervals[activeTimerIndex].duration <= .zero {
@@ -595,6 +665,8 @@ class TimerEngine: ObservableObject {
             onFeedback?(.roundComplete)
             finishedRounds += 1
             remainingTime = intervals[0].duration
+            intervalStartedAt = Date()
+            remainingAtStart = remainingTime
         } else {
             onFeedback?(.timerEnd)
             reset()

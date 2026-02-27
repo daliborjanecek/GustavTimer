@@ -13,17 +13,24 @@ struct ControlsView: View {
     @Environment(\.isLuminanceReduced) private var isLuminanceReduced
     
     var body: some View {
-        VStack(alignment: .leading) {
-            Text(viewModel.formattedCurrentTime(timeDisplayFormat: isLuminanceReduced ? .seconds : .secondsHundredths))
-                .font(Font.custom("MartianMono-Bold", size: 300))
+        TimelineView(TimerTimelineSchedule(from: .now, isPaused: !viewModel.isTimerRunning)) { context in
+            let showSubseconds = context.cadence == .live
+            VStack(alignment: .leading) {
+                Text(viewModel.formattedCurrentTime(
+                    timeDisplayFormat: showSubseconds ? .secondsHundredths : .seconds,
+                    at: context.date
+                ))
+                .font(Font.custom("MartianMono-Bold", size: 60))
                 .minimumScaleFactor(0.01)
                 .foregroundStyle(Color.gustavVolt)
                 .onTapGesture {
                     viewModel.startStopTimer()
                 }
-            Text(viewModel.activeIntervalName)
-                .font(.gustavBody)
-                .foregroundStyle(Color.gustavVolt)
+                .frame(maxWidth: .infinity)
+                Text(viewModel.activeIntervalName)
+                    .font(.gustavBody)
+                    .foregroundStyle(Color.gustavVolt)
+            }
         }
         .toolbar {
             ToolbarItemGroup(placement: .bottomBar) {

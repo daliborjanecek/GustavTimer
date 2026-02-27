@@ -83,6 +83,16 @@ class TimerViewModel: ObservableObject {
     func formattedCurrentTime(timeDisplayFormat: TimeDisplayFormat) -> String {
         engine.formattedCurrentTime(format: timeDisplayFormat)
     }
+
+    func formattedCurrentTime(timeDisplayFormat: TimeDisplayFormat, at date: Date) -> String {
+        engine.formattedCurrentTime(format: timeDisplayFormat, at: date)
+    }
+
+    func count(at date: Date) -> Int {
+        engine.count(at: date)
+    }
+
+    var intervalEndDate: Date { engine.intervalEndDate }
     
     func loadTimer(intervals: [IntervalData]) {
         engine.loadIntervals(intervals)
