@@ -170,6 +170,16 @@ struct SettingsView: View {
         SettingsSection(label: "FEEDBACK", footer: "FEEDBACK_DESCRIPTION") {
             Toggle("HAPTICS", isOn: $appSettings.isVibrating)
                 .tint(Color.gustavVolt)
+
+            Toggle("COUNTDOWN", isOn: .init(
+                get: { currentTimerData.hasCountdown },
+                set: { newValue in
+                    let timer = currentTimerData
+                    timer.hasCountdown = newValue
+                    try? context.save()
+                }
+            ))
+            .tint(Color.gustavVolt)
             
             NavigationLink {
                 SoundSettingsView(selectedSound: .init(get: {

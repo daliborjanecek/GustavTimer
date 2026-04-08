@@ -113,6 +113,14 @@ enum TimerFeedback {
     /// Konec celého timeru (poslední kolo dokončeno).
     /// Typicky silná vibrace + zvuk, engine se automaticky resetuje.
     case timerEnd
+
+    /// Jeden tik odpočtu před startem (3, 2, 1).
+    /// Typicky lehká vibrace.
+    case countdownTick
+
+    /// Odpočet skončil, timer právě startuje.
+    /// Typicky výraznější vibrace.
+    case countdownEnd
 }
 
 // MARK: - TimerEngine
@@ -144,6 +152,9 @@ class TimerEngine: ObservableObject {
     /// pro UI (slider/stepper limit).
     let maxCountdownValue: Int
 
+    /// Počet sekund odpočtu před startem prvního kola (výchozí 3).
+    let countdownDuration: Int
+
     /// Kontrola, zda je dosaženo maximálního počtu intervalů.
     ///
     ///     if !engine.isTimerFull {
@@ -160,6 +171,15 @@ class TimerEngine: ObservableObject {
     ///
     ///     Text(engine.isRunning ? "STOP" : "START")
     @Published private(set) var isRunning = false
+
+    /// Zda právě probíhá odpočet před startem prvního kola (3-2-1).
+    @Published private(set) var isCountingDown: Bool = false
+
+    /// Aktuální hodnota odpočtu (3, 2, 1).
+    @Published private(set) var countdownValue: Int = 3
+
+    /// Zda se má před startem prvního kola zobrazit odpočet 3-2-1.
+    var hasCountdown: Bool = false
 
     /// Index aktuálně běžícího intervalu v poli `intervals`.
     ///
@@ -303,9 +323,11 @@ class TimerEngine: ObservableObject {
     ///
     /// Po vytvoření engine obsahuje výchozí intervaly [Work 60s, Rest 30s].
     init(maxTimers: Int = 10,
-         maxCountdownValue: Int = 600) {
+         maxCountdownValue: Int = 600,
+         countdownDuration: Int = 3) {
         self.maxTimers = maxTimers
         self.maxCountdownValue = maxCountdownValue
+        self.countdownDuration = countdownDuration
         setupDefaultIntervals()
     }
 
@@ -340,6 +362,7 @@ class TimerEngine: ObservableObject {
     ///     // engine.isRunning == true
     ///     // engine.finishedRounds == 1 (první kolo)
     func start() {
+        let isFirstStart = (finishedRounds == 0)
         if finishedRounds == 0 { finishedRounds = 1 }
 
         if remainingTime <= .zero {
@@ -353,6 +376,28 @@ class TimerEngine: ObservableObject {
         timerTask = Task { [weak self] in
             guard let self else { return }
 
+            // --- Odpočet před prvním kolem ---
+            if self.hasCountdown && isFirstStart {
+                await MainActor.run {
+                    self.isCountingDown = true
+                    self.countdownValue = self.countdownDuration
+                }
+                for value in stride(from: self.countdownDuration, through: 1, by: -1) {
+                    guard !Task.isCancelled && self.isRunning else { return }
+                    await MainActor.run {
+                        self.countdownValue = value
+                        self.onFeedback?(.countdownTick)
+                    }
+                    try? await Task.sleep(for: .seconds(1))
+                }
+                guard !Task.isCancelled && self.isRunning else { return }
+                await MainActor.run {
+                    self.isCountingDown = false
+                    self.onFeedback?(.countdownEnd)
+                }
+            }
+
+            // --- Standardní tick smyčka ---
             let tickInterval: Duration = .milliseconds(10)
             let clock = ContinuousClock()
 
@@ -381,6 +426,7 @@ class TimerEngine: ObservableObject {
     ///     // engine.activeTimerIndex zůstává
     func stop() {
         isRunning = false
+        isCountingDown = false
         timerTask?.cancel()
         timerTask = nil
         onStop?()

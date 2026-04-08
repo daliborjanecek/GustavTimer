@@ -22,6 +22,7 @@ class TimerData: Equatable {
     var usedCount: Int = 0
     var lastUsed: Date? = nil
     
+    var hasCountdown: Bool = true
     var intervals: [IntervalData] = [
         IntervalData(value: 30, name: "Work"),
         IntervalData(value: 15, name: "Rest")

@@ -20,7 +20,8 @@ class TimerViewModel: ObservableObject {
     // MARK: - Sdílený engine
     let engine = TimerEngine(
         maxTimers: AppConfig.maxTimerCount,
-        maxCountdownValue: AppConfig.maxTimerValue
+        maxCountdownValue: AppConfig.maxTimerValue,
+        countdownDuration: AppConfig.countdownDuration
     )
 
     // MARK: - iOS-specific publikované vlastnosti
@@ -55,6 +56,9 @@ class TimerViewModel: ObservableObject {
     }
 
     var isTimerRunning: Bool { engine.isRunning }
+    var isCountingDown: Bool { engine.isCountingDown }
+    var countdownValue: Int { engine.countdownValue }
+    var hasCountdown: Bool { engine.hasCountdown }
     var activeTimerIndex: Int { engine.activeTimerIndex }
     var finishedRounds: Int { engine.finishedRounds }
     var count: Int { engine.count }
@@ -111,6 +115,10 @@ class TimerViewModel: ObservableObject {
             case .timerEnd:
                 self.vibrateEnd()
                 self.playSound()
+            case .countdownTick:
+                self.vibrate()
+            case .countdownEnd:
+                self.vibrateRound()
             }
         }
 
@@ -312,6 +320,7 @@ extension TimerViewModel {
 
             if let timerData = timerDataArray.first {
                 engine.loadIntervals(timerData.intervals, resetState: resetCurrentState)
+                engine.hasCountdown = timerData.hasCountdown
             } else {
                 createAndSaveDefaultTimers()
             }

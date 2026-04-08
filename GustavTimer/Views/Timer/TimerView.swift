@@ -141,10 +141,19 @@ private extension TimerView {
     }
     
     func counterDisplay(timeDisplayFormat: TimeDisplayFormat) -> some View {
-        Text(viewModel.formattedCurrentTime(timeDisplayFormat: timeDisplayFormat))
-            .font(.timerCounter)
-            .minimumScaleFactor(0.01)
-            .foregroundColor(Color.gustavVolt)
+        Group {
+            if viewModel.isCountingDown {
+                Text("\(viewModel.countdownValue)")
+                    .font(.timerCountdown)
+                    .foregroundColor(Color.gustavVolt)
+
+            } else {
+                Text(viewModel.formattedCurrentTime(timeDisplayFormat: timeDisplayFormat))
+                    .font(.timerCounter)
+                    .foregroundColor(Color.gustavVolt)
+            }
+        }
+        .minimumScaleFactor(0.01)
     }
     
     var horizontalControlButtons: some View {
@@ -170,9 +179,10 @@ private extension TimerView {
     }
     
     var startStopButton: some View {
-        ControlButton(
+        let isBeforeFirstStart = !viewModel.isTimerRunning && viewModel.finishedRounds == 0
+        return ControlButton(
             action: viewModel.startStopTimer,
-            label: viewModel.isTimerRunning ? "STOP" : "START",
+            label: viewModel.isTimerRunning ? "STOP" : (isBeforeFirstStart && viewModel.hasCountdown ? "COUNTDOWN" : "START"),
             description: orientation.isLandscape ? nil : startButtonDescription.map { LocalizedStringKey($0) },
             color: viewModel.isTimerRunning ? .gustavPink : .gustavVolt,
             buttonType: .constant(.text)
@@ -243,6 +253,7 @@ private extension TimerView {
     
     var startButtonDescription: String? {
         guard !viewModel.isTimerRunning, let currentTimer = currentTimer else { return nil }
+        guard !viewModel.hasCountdown || viewModel.finishedRounds > 0 else { return nil }
         return currentTimer.name
     }
 }
