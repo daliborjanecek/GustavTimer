@@ -545,7 +545,11 @@ class TimerEngine: ObservableObject {
     func formattedCurrentTime(format: TimeDisplayFormat) -> String {
         switch format {
         case .seconds:
-            return "\(count)"
+            guard activeTimerIndex < intervals.count else { return "0" }
+            let components = remainingTime.components
+            let ceilSeconds = components.attoseconds > 0 ? components.seconds + 1 : components.seconds
+            let maxSeconds = intervals[activeTimerIndex].duration.components.seconds
+            return "\(min(Int(ceilSeconds), Int(maxSeconds)))"
         case .minutesSecondsHundredths:
             let components = remainingTime.components
             let minutes = Int(components.seconds) / 60
