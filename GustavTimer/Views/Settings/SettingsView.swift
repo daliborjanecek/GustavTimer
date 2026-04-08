@@ -171,7 +171,7 @@ struct SettingsView: View {
             Toggle("HAPTICS", isOn: $appSettings.isVibrating)
                 .tint(Color.gustavVolt)
 
-            Toggle("COUNTDOWN", isOn: .init(
+            Toggle("SET_COUNTDOWN", isOn: .init(
                 get: { currentTimerData.hasCountdown },
                 set: { newValue in
                     let timer = currentTimerData

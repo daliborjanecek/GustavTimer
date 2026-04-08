@@ -37,6 +37,10 @@ class TimerViewModel: ObservableObject {
     // MARK: - Nastavení (AppStorage)
     @AppStorage("rounds") var rounds: Int = -1
     @AppStorage("stopCounter") var stopCounter: Int = 0
+    @AppStorage("completedTimerCount") var completedTimerCount: Int = 0
+
+    // MARK: - Review prompt
+    var onReviewRequested: (() -> Void)?
     @AppStorage("whatsNewVersion") var whatsNewVersion: Int = 0
     @AppStorage("isSoundEnabled") var isSoundEnabled: Bool = true
     @AppStorage("isVibrating") var isVibrating: Bool = false
@@ -115,6 +119,12 @@ class TimerViewModel: ObservableObject {
             case .timerEnd:
                 self.vibrateEnd()
                 self.playSound()
+                self.completedTimerCount += 1
+                if self.completedTimerCount % AppConfig.reviewPromptInterval == 0 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                        self?.onReviewRequested?()
+                    }
+                }
             case .countdownTick:
                 self.vibrate()
             case .countdownEnd:

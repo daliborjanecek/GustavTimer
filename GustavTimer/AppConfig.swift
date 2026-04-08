@@ -15,6 +15,7 @@ struct AppConfig {
     static let maxTimerValue: Int = 600
     static let maxTimerCount: Int = 10
     static let countdownDuration: Int = 3
+    static let reviewPromptInterval: Int = 5
     
     // Odkazy
     static let reviewURL: String = "https://apps.apple.com/app/id6478176431?action=write-review"

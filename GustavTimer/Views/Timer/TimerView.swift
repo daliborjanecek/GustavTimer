@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import StoreKit
 import UIKit
 import Lottie
 import GustavUICore
@@ -15,6 +16,7 @@ import GustavUIAnimations
 struct TimerView: View {
     @Binding var showSettings: Bool
     @Environment(\.modelContext) var context
+    @Environment(\.requestReview) var requestReview
     @Query(sort: \TimerData.id, order: .reverse) private var timerData: [TimerData]
     @StateObject var viewModel = TimerViewModel()
     @State private var orientation = UIDeviceOrientation.unknown
@@ -265,6 +267,9 @@ private extension TimerView {
         viewModel.setModelContext(context)
         viewModel.showWhatsNew()
         viewModel.setSound(sound: timerData.first(where: { $0.order == 0 })?.selectedSound)
+        viewModel.onReviewRequested = {
+            requestReview()
+        }
     }
 }
 
