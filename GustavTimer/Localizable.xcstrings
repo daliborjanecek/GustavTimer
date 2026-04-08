@@ -1590,6 +1590,22 @@
         }
       }
     },
+    "SET_COUNTDOWN" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odpočet před startem"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Countdown before start"
+          }
+        }
+      }
+    },
     "SETTINGS" : {
       "extractionState" : "manual",
       "localizations" : {
