@@ -338,7 +338,7 @@ struct SettingsView: View {
     private func addInterval(to timerData: TimerData) {
         guard timerData.intervals.count < AppConfig.maxTimerCount else { return }
         withAnimation(.easeInOut) {
-            timerData.intervals.append(IntervalData(value: 5, name: "Kolo \(timerData.intervals.count + 1)"))
+            timerData.intervals.append(IntervalData(value: 5, name: NSLocalizedString("ROUND", comment: "") + " \(timerData.intervals.count + 1)"))
         }
     }
     
