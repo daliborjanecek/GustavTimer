@@ -143,19 +143,10 @@ private extension TimerView {
     }
     
     func counterDisplay(timeDisplayFormat: TimeDisplayFormat) -> some View {
-        Group {
-            if viewModel.isCountingDown {
-                Text("\(viewModel.countdownValue)")
-                    .font(.timerCountdown)
-                    .foregroundColor(Color.gustavVolt)
-
-            } else {
-                Text(viewModel.formattedCurrentTime(timeDisplayFormat: timeDisplayFormat))
-                    .font(.timerCounter)
-                    .foregroundColor(Color.gustavVolt)
-            }
-        }
-        .minimumScaleFactor(0.01)
+        Text(viewModel.formattedCurrentTime(timeDisplayFormat: timeDisplayFormat))
+            .font(.timerCounter)
+            .minimumScaleFactor(0.01)
+            .foregroundColor(Color.gustavVolt)
     }
     
     var horizontalControlButtons: some View {
@@ -180,15 +171,24 @@ private extension TimerView {
         .padding()
     }
     
+    @ViewBuilder
     var startStopButton: some View {
-        let isBeforeFirstStart = !viewModel.isTimerRunning && viewModel.finishedRounds == 0
-        return ControlButton(
-            action: viewModel.startStopTimer,
-            label: viewModel.isTimerRunning ? "STOP" : (isBeforeFirstStart && viewModel.hasCountdown ? "COUNTDOWN" : "START"),
-            description: orientation.isLandscape ? nil : startButtonDescription.map { LocalizedStringKey($0) },
-            color: viewModel.isTimerRunning ? .gustavPink : .gustavVolt,
-            buttonType: .constant(.text)
-        )
+        if viewModel.isCountingDown {
+            CountdownStartButton(
+                countdownValue: viewModel.countdownValue,
+                countdownDuration: AppConfig.countdownDuration,
+                action: viewModel.startStopTimer
+            )
+        } else {
+            let isBeforeFirstStart = !viewModel.isTimerRunning && viewModel.finishedRounds == 0
+            ControlButton(
+                action: viewModel.startStopTimer,
+                label: isBeforeFirstStart && viewModel.hasCountdown ? "COUNTDOWN" : (viewModel.isTimerRunning ? "STOP" : "START"),
+                description: orientation.isLandscape ? nil : startButtonDescription.map { LocalizedStringKey($0) },
+                color: viewModel.isTimerRunning ? .gustavPink : .gustavVolt,
+                buttonType: .constant(.text)
+            )
+        }
     }
     
     var secondaryButton: some View {
@@ -269,6 +269,54 @@ private extension TimerView {
         viewModel.setSound(sound: timerData.first(where: { $0.order == 0 })?.selectedSound)
         viewModel.onReviewRequested = {
             requestReview()
+        }
+    }
+}
+
+private struct CountdownStartButton: View {
+    let countdownValue: Int
+    let countdownDuration: Int
+    let action: () -> Void
+
+    @State private var animatedProgress: Double = 0
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Color.gustavVolt
+
+                GeometryReader { geo in
+                    Color.gustavPink
+                        .frame(width: geo.size.width * animatedProgress)
+                        .opacity(min(1.0, animatedProgress + 0.5))
+                        
+                }
+
+                HStack(spacing: 8) {
+//                    Text("COUNTDOWN")
+//                        .font(.buttonLabel)
+                    Text("\(countdownValue)")
+                        .font(.buttonLabel)
+                }
+                .foregroundStyle(animatedProgress > 0.5 ? Color.gustavVolt : Color.gustavNeutral)
+                .frame(maxWidth: .infinity)
+            }
+            .frame(height: GustavLayout.controlHeight)
+            .clipShape(Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onAppear {
+            let target = Double(countdownDuration - countdownValue + 1) / Double(countdownDuration)
+            withAnimation(.linear(duration: 1.01)) {
+                animatedProgress = target
+            }
+        }
+        .onChange(of: countdownValue) { _, newValue in
+            let target = Double(countdownDuration - newValue + 1) / Double(countdownDuration)
+            withAnimation(.linear(duration: 1.0)) {
+                animatedProgress = target
+            }
         }
     }
 }
