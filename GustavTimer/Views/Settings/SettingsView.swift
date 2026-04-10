@@ -215,12 +215,18 @@ struct SettingsView: View {
     @ViewBuilder
     private var more: some View {
         SettingsSection(label: "MORE") {
+            NavigationLink {
+                AchievementsView()
+            } label: {
+                ListButton(name: "ACHIEVEMENTS")
+            }
+
             ButtonLink(label: "RATE", URLString: AppConfig.reviewURL)
-            
+
             ButtonLink(label: "TRY_WEIGHTS", URLString: AppConfig.weightsURL)
-            
+
             ButtonLink(label: "FOLLOW_INSTAGRAM", URLString: AppConfig.instagramURL)
-            
+
             ButtonLink(label: "WATCH_ON_YOUTUBE", URLString: AppConfig.youtubeURL)
         }
     }

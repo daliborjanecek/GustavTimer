@@ -30,7 +30,18 @@ struct TimerView: View {
             } else {
                 portraitTimerView
             }
+
+            // Achievement toast
+            if let achievement = viewModel.achievementsManager.newlyUnlocked {
+                VStack {
+                    Spacer()
+                    AchievementToastView(achievement: achievement)
+                        .padding(.bottom, 120)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: viewModel.achievementsManager.newlyUnlocked?.id)
         .onAppear {
             setupViewModel()
         }

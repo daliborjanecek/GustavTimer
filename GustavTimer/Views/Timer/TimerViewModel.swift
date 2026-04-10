@@ -46,10 +46,14 @@ class TimerViewModel: ObservableObject {
     @AppStorage("isVibrating") var isVibrating: Bool = false
     @AppStorage("timeDisplayFormat") var timeDisplayFormat: TimeDisplayFormat = .seconds
 
+    // MARK: - Achievementy
+    let achievementsManager = AchievementsManager()
+
     // MARK: - Soukromé vlastnosti
     private var sound: SoundModel?
     private var modelContext: ModelContext?
     private var cancellables = Set<AnyCancellable>()
+    private var stopsInCurrentSession: Int = 0
 
     // MARK: - Forwarded properties z engine
 
@@ -120,6 +124,26 @@ class TimerViewModel: ObservableObject {
                 self.vibrateEnd()
                 self.playSound()
                 self.completedTimerCount += 1
+
+                // Achievementy – aktualizace kumulativních čítačů
+                let rounds = self.engine.finishedRounds
+                self.achievementsManager.totalRoundsCompleted += rounds
+
+                if self.stopsInCurrentSession == 0 {
+                    self.achievementsManager.consecutiveTimersWithoutStop += 1
+                } else {
+                    self.achievementsManager.consecutiveTimersWithoutStop = 0
+                }
+
+                let maxUsedCount = self.maxUsedCountFromContext()
+                self.achievementsManager.checkAchievements(
+                    completedTimerCount: self.completedTimerCount,
+                    finishedRounds: rounds,
+                    stopsInSession: self.stopsInCurrentSession,
+                    maxUsedCount: maxUsedCount
+                )
+                self.stopsInCurrentSession = 0
+
                 if self.completedTimerCount % AppConfig.reviewPromptInterval == 0 {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                         self?.onReviewRequested?()
@@ -139,6 +163,7 @@ class TimerViewModel: ObservableObject {
         engine.onStop = { [weak self] in
             UIApplication.shared.isIdleTimerDisabled = false
             self?.stopCounter += 1
+            self?.stopsInCurrentSession += 1
         }
     }
 
@@ -308,6 +333,19 @@ class TimerViewModel: ObservableObject {
         } else {
             timers = originalTimers
         }
+    }
+}
+
+// MARK: - Achievementy helpers
+extension TimerViewModel {
+    /// Vrátí nejvyšší usedCount ze všech uložených timerů (presetů).
+    func maxUsedCountFromContext() -> Int {
+        guard let context = modelContext else { return 0 }
+        let descriptor = FetchDescriptor<TimerData>(
+            predicate: #Predicate<TimerData> { $0.order != 0 }
+        )
+        let timers = (try? context.fetch(descriptor)) ?? []
+        return timers.map { $0.usedCount }.max() ?? 0
     }
 }
 
