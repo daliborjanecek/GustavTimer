@@ -16,13 +16,14 @@ struct SettingsView: View {
     @Query(sort: \TimerData.id, order: .reverse) private var timerData: [TimerData]
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
-    
+
     @State private var editMode: EditMode = .inactive
     @State private var newTimerName = ""
     @State private var showSaveAlert = false
     @State private var showAlreadySavedAlert = false
     @State private var selectedSoundTitle: String? = nil
     @State private var cachedLastSavedTimers: [TimerData] = []
+    @AppStorage("startedFromDeeplink") private var startedFromDeeplink: Bool = false
     
     private var currentTimerData: TimerData {
         getOrCreateTimerData()
@@ -47,6 +48,7 @@ struct SettingsView: View {
             .toolbar { toolbar }
             .font(.gustavBody)
             .onAppear { refreshLastSavedTimers() }
+            .onDisappear { startedFromDeeplink = false }
         }
         .tint(Color.gustavNavigationItemsColor)
     }
@@ -105,27 +107,32 @@ struct SettingsView: View {
                 .font(.sectionHeader)
                 .foregroundStyle(Color.gustavNeutral)
         } footer: {
-            HStack (alignment: .top, spacing: 16) {
-
-                
-                if currentTimerData.intervals.count < AppConfig.maxTimerCount {
-                    Text(summaryText)
-                        .font(.sectionFooter)
-                        .foregroundStyle(Color.gustavNeutral)
-                        .multilineTextAlignment(.leading)
-                    Spacer()
-                    GustavSmallPillButton(label: "ADD_INTERVAL") {
-                        addInterval(to: currentTimerData)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 16) {
+                    if currentTimerData.intervals.count < AppConfig.maxTimerCount {
+                        Text(summaryText)
+                            .font(.sectionFooter)
+                            .foregroundStyle(Color.gustavNeutral)
+                            .multilineTextAlignment(.leading)
+                        Spacer()
+                        GustavSmallPillButton(label: "ADD_INTERVAL") {
+                            addInterval(to: currentTimerData)
+                        }
+                        .padding(.leading, -16)
+                    } else {
+                        Text(summaryText + " " + String(format: NSLocalizedString("MAX_LIMIT_REACHED", comment: ""), AppConfig.maxTimerCount))
+                            .font(.sectionFooter)
+                            .foregroundStyle(Color.gustavNeutral)
+                        Spacer()
                     }
-                    .padding(.leading, -16)
-                    
-                } else {
-                    Text(summaryText + " " + String(format: NSLocalizedString("MAX_LIMIT_REACHED", comment: ""), AppConfig.maxTimerCount))
+                }
+
+                if startedFromDeeplink {
+                    // TODO: Grafická úprava – stylizovat jako banner/toast
+                    Text("DEEPLINK_LOADED")
                         .font(.sectionFooter)
                         .foregroundStyle(Color.gustavNeutral)
-                    Spacer()
                 }
-                
             }
         }
     }

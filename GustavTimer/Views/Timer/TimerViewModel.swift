@@ -180,6 +180,7 @@ class TimerViewModel: ObservableObject {
     func resetTimer() {
         engine.reset()
         startedFromDeeplink = false
+        UserDefaults.standard.set(false, forKey: "startedFromDeeplink")
     }
 
     func skipLap() {
@@ -290,18 +291,45 @@ class TimerViewModel: ObservableObject {
     private func handleTimerDeepLink(components: URLComponents) {
         let originalTimers = timers
         var newTimers: [IntervalData] = []
+        var newRounds: Int? = nil
 
         if let queryItems = components.queryItems {
             for item in queryItems {
-                if let value = item.value, let intValue = Int(value) {
+                // Rezervované klíčové slovo "rounds" – nastavuje počet opakování
+                if item.name.lowercased() == "rounds" {
+                    if let value = item.value, let intValue = Int(value) {
+                        if intValue == -1 {
+                            newRounds = -1
+                        } else {
+                            newRounds = max(1, min(AppConfig.roundsOptions.last ?? 31, intValue))
+                        }
+                    }
+                    continue
+                }
+
+                // Plný formát: name=value → pojmenovaný interval
+                if let value = item.value, let intValue = Int(value),
+                   intValue > 0, intValue <= AppConfig.maxTimerValue {
                     newTimers.append(IntervalData(value: intValue, name: item.name))
                 }
+                // Minimalistický formát: jen číslo bez hodnoty → interval pojmenovaný jako "Kolo N"
+                else if item.value == nil, let intValue = Int(item.name),
+                        intValue > 0, intValue <= AppConfig.maxTimerValue {
+                    let roundName = NSLocalizedString("ROUND", comment: "") + " \(newTimers.count + 1)"
+                    newTimers.append(IntervalData(value: intValue, name: roundName))
+                }
+
+                // Nepřekročit maximální počet intervalů
+                if newTimers.count >= AppConfig.maxTimerCount { break }
             }
         }
 
         if !newTimers.isEmpty {
             timers = newTimers
+            // Pokud rounds není v URL → výchozí hodnota je nekonečno (-1)
+            rounds = newRounds ?? -1
             startedFromDeeplink = true
+            UserDefaults.standard.set(true, forKey: "startedFromDeeplink")
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.showingSheet = true
             }

@@ -307,6 +307,23 @@
         }
       }
     },
+    "DEEPLINK_LOADED" : {
+      "comment" : "Text shown in the intervals footer when the timer was loaded from an external deeplink.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timer načten z externího odkazu"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timer loaded from external link"
+          }
+        }
+      }
+    },
     "DONE" : {
       "comment" : "A button that dismisses a text field when pressed.",
       "extractionState" : "stale",

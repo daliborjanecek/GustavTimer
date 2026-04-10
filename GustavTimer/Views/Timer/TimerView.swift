@@ -64,6 +64,12 @@ struct TimerView: View {
                 name: UIDevice.orientationDidChangeNotification,
                 object: nil)
         }
+        .onChange(of: viewModel.showingSheet) { _, newValue in
+            if newValue {
+                showSettings = true
+                viewModel.showingSheet = false
+            }
+        }
         .onOpenURL { url in
             viewModel.handleDeepLink(url: url)
         }
