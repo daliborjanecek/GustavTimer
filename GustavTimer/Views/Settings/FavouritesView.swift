@@ -47,6 +47,14 @@ struct FavouritesView: View {
                         .onTapGesture {
                             selectTimer(timer: timer)
                         }
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            if let url = deeplinkURL(for: timer) {
+                                ShareLink(item: url) {
+                                    Label("SHARE", systemImage: "square.and.arrow.up")
+                                }
+                                .tint(Color.gustavVolt)
+                            }
+                        }
                 }
                 .onDelete { indexSet in
                     if let index = indexSet.first {
@@ -73,6 +81,14 @@ struct FavouritesView: View {
                     .onTapGesture {
                         analyticsPreloadedAction(timer: timer.timer)
                         selectTimer(timer: timer.timer)
+                    }
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        if let url = deeplinkURL(for: timer.timer) {
+                            ShareLink(item: url) {
+                                Label("SHARE", systemImage: "square.and.arrow.up")
+                            }
+                            .tint(Color.gustavVolt)
+                        }
                     }
             }
         } header: {
@@ -203,6 +219,18 @@ struct FavouritesView: View {
             return mainTimer == timer
         }
         return false
+    }
+
+    private func deeplinkURL(for timer: TimerData) -> URL? {
+        var components = URLComponents()
+        components.scheme = "gustavtimerapp"
+        components.host = "timer"
+        var queryItems: [URLQueryItem] = timer.intervals.map {
+            URLQueryItem(name: $0.name, value: String($0.value))
+        }
+        queryItems.append(URLQueryItem(name: "rounds", value: String(timer.rounds)))
+        components.queryItems = queryItems
+        return components.url
     }
 }
 

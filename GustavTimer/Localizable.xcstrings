@@ -1466,6 +1466,23 @@
         }
       }
     },
+    "SHARE" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sdílet"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share"
+          }
+        }
+      }
+    },
     "SAVE" : {
       "extractionState" : "manual",
       "localizations" : {
