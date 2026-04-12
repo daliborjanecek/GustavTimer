@@ -1,15 +1,6 @@
 {
-  "originHash" : "fb191403e05186e993a0580114617b981752775cf811dc43343a5606a70f3b79",
+  "originHash" : "116b7745fb1af4d296c72d2b70b23a5bc5d6d15236d146d04c0f82cdfbb374d5",
   "pins" : [
-    {
-      "identity" : "lottie-spm",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/airbnb/lottie-spm.git",
-      "state" : {
-        "revision" : "04f2fd18cc9404a0a0917265a449002674f24ec9",
-        "version" : "4.5.2"
-      }
-    },
     {
       "identity" : "rive-ios",
       "kind" : "remoteSourceControl",
@@ -17,6 +8,15 @@
       "state" : {
         "revision" : "c65a34cd2192bc9684c610e1e3d346d1139b9f96",
         "version" : "6.11.1"
+      }
+    },
+    {
+      "identity" : "swiftsdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/TelemetryDeck/SwiftSDK",
+      "state" : {
+        "revision" : "d41d6e86265dc182ba4474f9ef53ecddbbe052b8",
+        "version" : "2.12.0"
       }
     }
   ],

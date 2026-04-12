@@ -43,9 +43,7 @@ struct SettingsView: View {
             }
             .listSectionSpacing(24)
             .scrollDismissesKeyboard(.immediately)
-            .onTapGesture {
-                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-            }
+            .background(DismissKeyboardOnTap())
             .environment(\.editMode, $editMode)
             .saveTimerAlert(isPresented: $showSaveAlert, timerName: $newTimerName, onSave: saveTimer)
             .alreadySavedAlert(isPresented: $showAlreadySavedAlert)
@@ -399,6 +397,57 @@ struct SettingsView: View {
             return String(format: NSLocalizedString("SUM_ROUND_AND_TIMER_DESCRIPTION", comment: ""), roundTime.asTime(), totalTime.asTime())
         } else {
             return String(format: NSLocalizedString("SUM_ROUND_DESCRIPTION", comment: ""), roundTime.asTime())
+        }
+    }
+}
+
+private struct DismissKeyboardOnTap: UIViewRepresentable {
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        guard context.coordinator.tap == nil else { return }
+        DispatchQueue.main.async {
+            guard context.coordinator.tap == nil, let window = uiView.window else { return }
+            let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.dismiss))
+            tap.cancelsTouchesInView = false
+            tap.delegate = context.coordinator
+            window.addGestureRecognizer(tap)
+            context.coordinator.tap = tap
+        }
+    }
+
+    static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
+        if let tap = coordinator.tap {
+            tap.view?.removeGestureRecognizer(tap)
+            coordinator.tap = nil
+        }
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var tap: UITapGestureRecognizer?
+
+        @objc func dismiss() {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            var view = touch.view
+            while let v = view {
+                if v is UITextField { return false }
+                view = v.superview
+            }
+            return true
+        }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+            return true
         }
     }
 }
