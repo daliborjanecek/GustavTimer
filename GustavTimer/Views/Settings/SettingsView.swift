@@ -99,11 +99,9 @@ struct SettingsView: View {
                     }
                 ))
             }
-            .onDelete { indexSet in
-                if currentTimerData.intervals.count > 1 {
-                    deleteInterval(at: indexSet, from: currentTimerData)
-                }
-            }
+            .onDelete(perform: currentTimerData.intervals.count > 1 ? { indexSet in
+                deleteInterval(at: indexSet, from: currentTimerData)
+            } : nil)
             .onMove { moveInterval(from: $0, to: $1, in: currentTimerData) }
         } header: {
             Text("INTERVALS_TAB")
