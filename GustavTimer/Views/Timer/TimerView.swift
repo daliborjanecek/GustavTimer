@@ -73,8 +73,15 @@ struct TimerView: View {
         }
         .onChange(of: viewModel.showingWhatsNew) { _, newValue in
             if newValue {
-                showWhatsNew = true
                 viewModel.showingWhatsNew = false
+                if showSettings {
+                    showSettings = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        showWhatsNew = true
+                    }
+                } else {
+                    showWhatsNew = true
+                }
             }
         }
         .onOpenURL { url in
