@@ -91,8 +91,7 @@ struct SettingsView: View {
                 ), intervalValue: Binding(
                     get: { interval.value },
                     set: { newValue in
-                        let clampedValue = min(max(newValue, 1), AppConfig.maxTimerValue)
-                        updateIntervalValue(clampedValue, for: interval.id, in: currentTimerData)
+                        updateIntervalValue(newValue, for: interval.id, in: currentTimerData)
                     }
                 ))
             }
