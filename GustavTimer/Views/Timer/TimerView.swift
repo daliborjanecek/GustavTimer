@@ -71,9 +71,7 @@ struct TimerView: View {
             }
         }
         .sheet(isPresented: $viewModel.showingWhatsNew) {
-            WhatsNewView(buttonLabel: "CLOSE") {
-                viewModel.showingWhatsNew = false
-            }
+            OnboardingView()
         }
         .onOpenURL { url in
             viewModel.handleDeepLink(url: url)
