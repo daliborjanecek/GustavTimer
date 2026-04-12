@@ -70,6 +70,11 @@ struct TimerView: View {
                 viewModel.showingSheet = false
             }
         }
+        .sheet(isPresented: $viewModel.showingWhatsNew) {
+            WhatsNewView(buttonLabel: "CLOSE") {
+                viewModel.showingWhatsNew = false
+            }
+        }
         .onOpenURL { url in
             viewModel.handleDeepLink(url: url)
         }
