@@ -330,6 +330,8 @@ class TimerViewModel: ObservableObject {
             rounds = newRounds ?? -1
             startedFromDeeplink = true
             UserDefaults.standard.set(true, forKey: "startedFromDeeplink")
+            // Uložit do SwiftData, aby SettingsView četlo aktuální intervaly
+            saveTimers()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.showingSheet = true
             }
