@@ -15,6 +15,7 @@ import GustavUIAnimations
 
 struct TimerView: View {
     @Binding var showSettings: Bool
+    @Binding var showWhatsNew: Bool
     @Environment(\.modelContext) var context
     @Environment(\.requestReview) var requestReview
     @Query(sort: \TimerData.id, order: .reverse) private var timerData: [TimerData]
@@ -70,8 +71,9 @@ struct TimerView: View {
                 viewModel.showingSheet = false
             }
         }
-        .sheet(isPresented: $viewModel.showingWhatsNew) {
-            WhatsNewView(buttonLabel: "CLOSE") {
+        .onChange(of: viewModel.showingWhatsNew) { _, newValue in
+            if newValue {
+                showWhatsNew = true
                 viewModel.showingWhatsNew = false
             }
         }
