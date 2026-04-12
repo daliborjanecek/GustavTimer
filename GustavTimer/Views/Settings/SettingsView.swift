@@ -42,6 +42,10 @@ struct SettingsView: View {
 //                about
             }
             .listSectionSpacing(24)
+            .scrollDismissesKeyboard(.immediately)
+            .simultaneousGesture(TapGesture().onEnded {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            })
             .environment(\.editMode, $editMode)
             .saveTimerAlert(isPresented: $showSaveAlert, timerName: $newTimerName, onSave: saveTimer)
             .alreadySavedAlert(isPresented: $showAlreadySavedAlert)
