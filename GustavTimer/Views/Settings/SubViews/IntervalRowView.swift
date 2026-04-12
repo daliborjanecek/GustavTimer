@@ -42,7 +42,7 @@ struct IntervalRowView: View {
                         .multilineTextAlignment(.trailing)
                         .focused($focusedField, equals: .value)
                         .submitLabel(.done)
-                        .onChange(of: valueText) { newValue in
+                        .onChange(of: valueText) { _, newValue in
                             let filtered = newValue.filter { $0.isNumber }
                             if filtered != newValue {
                                 valueText = filtered
@@ -58,12 +58,12 @@ struct IntervalRowView: View {
         .onAppear {
             valueText = "\(intervalValue)"
         }
-        .onChange(of: intervalValue) { newValue in
+        .onChange(of: intervalValue) { _, newValue in
             if focusedField != .value {
                 valueText = "\(newValue)"
             }
         }
-        .onChange(of: focusedField) { newFocus in
+        .onChange(of: focusedField) { _, newFocus in
             if newFocus != .value {
                 commitValue()
             }
