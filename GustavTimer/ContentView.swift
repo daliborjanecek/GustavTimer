@@ -20,12 +20,13 @@ struct ContentView: View {
     @AppStorage("isSoundEnabled") private var isSoundEnabled: Bool = true
     
     @State private var showSettings = false
+    @State private var showWhatsNew = false
     @AppStorage("lastOnboardingVersion") private var lastOnboardingVersion: Int = 0
-    
+
     private var defaultTimerId: Int = 0
-    
+
     var body: some View {
-        TimerView(showSettings: $showSettings)
+        TimerView(showSettings: $showSettings, showWhatsNew: $showWhatsNew)
             .sheet(isPresented: $showSettings) {
                 SettingsView()
             }
@@ -33,6 +34,9 @@ struct ContentView: View {
                 get: { lastOnboardingVersion != AppConfig.onboardingVersion },
                 set: { if !$0 { lastOnboardingVersion = AppConfig.onboardingVersion } }
             )) {
+                OnboardingView()
+            }
+            .sheet(isPresented: $showWhatsNew) {
                 OnboardingView()
             }
             .onAppear {
