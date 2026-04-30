@@ -61,24 +61,9 @@ struct SettingsView: View {
     var banner: some View {
         SettingsSection(label: AppConfig.bannerName) {
             let rn = Int.random(in: 0..<AppConfig.bannerImages.count)
-            
-            Image(AppConfig.bannerImages[rn].imageResource)
-                .resizable()
-                .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+
+            ChallengePackBannerView(bannerImage: AppConfig.bannerImages[rn])
                 .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .overlay(alignment: .bottomLeading) {
-                    Image(.youtubeLogo)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 18)
-                        .padding()
-                }
-                .onTapGesture {
-                    if let url = AppConfig.bannerImages[rn].getURL() {
-                        UIApplication.shared.open(url)
-                    }
-                }
         }
     }
     

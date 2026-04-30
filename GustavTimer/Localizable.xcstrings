@@ -273,6 +273,40 @@
         }
       }
     },
+    "CHALLENGE_DOWNLOAD" : {
+      "comment" : "Button label to download the challenge video pack.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stáhnout výzvu"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download Pack"
+          }
+        }
+      }
+    },
+    "CHALLENGE_PLAY" : {
+      "comment" : "Button label to play the downloaded challenge videos.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Přehrát výzvu"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play Challenge"
+          }
+        }
+      }
+    },
     "COUNTDOWN" : {
       "localizations" : {
         "cs" : {

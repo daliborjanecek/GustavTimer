@@ -1,0 +1,19 @@
+{
+  "identifier": "cz.daliborjanecek.GustavTimer.ChallengePack",
+  "version": "1.0.0",
+  "essential": false,
+  "videos": [
+    { "order": 1,  "file": "videos/01_duckwalk.mp4",         "title": "Duck Walk" },
+    { "order": 2,  "file": "videos/02_wallsit.mp4",          "title": "Wall Sit" },
+    { "order": 3,  "file": "videos/03_mountainclimbers.mp4", "title": "Mountain Climbers" },
+    { "order": 4,  "file": "videos/04_legraises.mp4",        "title": "Leg Raises" },
+    { "order": 5,  "file": "videos/05_plank.mp4",            "title": "Plank" },
+    { "order": 6,  "file": "videos/06_jumplunges.mp4",       "title": "Jump Lunges" },
+    { "order": 7,  "file": "videos/07_burpees.mp4",          "title": "Burpees" },
+    { "order": 8,  "file": "videos/08_pushups.mp4",          "title": "Push-ups" },
+    { "order": 9,  "file": "videos/09_squats.mp4",           "title": "Squats" },
+    { "order": 10, "file": "videos/10_lunges.mp4",           "title": "Lunges" },
+    { "order": 11, "file": "videos/11_situps.mp4",           "title": "Sit-ups" },
+    { "order": 12, "file": "videos/12_high_knees.mp4",       "title": "High Knees" }
+  ]
+}

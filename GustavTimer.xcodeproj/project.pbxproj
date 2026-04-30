@@ -31,6 +31,9 @@
 		CF228F542E7D7ED4000DEF21 /* SearchTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF228F532E7D7ECF000DEF21 /* SearchTabView.swift */; };
 		CF279C4C2C31A8940084C43F /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF279C4B2C31A8940084C43F /* SoundManager.swift */; };
 		CF4977932EED67BB00EE09B1 /* BannerImageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF4977922EED67B700EE09B1 /* BannerImageModel.swift */; };
+		CFCC00010001000000000002 /* ChallengePackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFCC00010001000000000001 /* ChallengePackManager.swift */; };
+		CFCC00010001000000000004 /* ChallengePackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFCC00010001000000000003 /* ChallengePackView.swift */; };
+		CFCC00010001000000000006 /* ChallengeVideoListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFCC00010001000000000005 /* ChallengeVideoListView.swift */; };
 		CF4A94BD2F4EF11200A7B250 /* PredefinedTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF4A94BC2F4EF11200A7B250 /* PredefinedTimer.swift */; };
 		CF4DB2832F09511B007D5692 /* String+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF4DB2822F095116007D5692 /* String+Extension.swift */; };
 		CF4DB2852F098208007D5692 /* Int+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF4DB2842F098203007D5692 /* Int+Extension.swift */; };
@@ -93,6 +96,10 @@
 		CF228F532E7D7ECF000DEF21 /* SearchTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTabView.swift; sourceTree = "<group>"; };
 		CF279C4B2C31A8940084C43F /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 		CF4977922EED67B700EE09B1 /* BannerImageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerImageModel.swift; sourceTree = "<group>"; };
+		CFCC00010001000000000001 /* ChallengePackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengePackManager.swift; sourceTree = "<group>"; };
+		CFCC00010001000000000003 /* ChallengePackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengePackView.swift; sourceTree = "<group>"; };
+		CFCC00010001000000000005 /* ChallengeVideoListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeVideoListView.swift; sourceTree = "<group>"; };
+		CFCC00010001000000000007 /* GustavTimer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GustavTimer.entitlements; sourceTree = "<group>"; };
 		CF4A94BC2F4EF11200A7B250 /* PredefinedTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PredefinedTimer.swift; sourceTree = "<group>"; };
 		CF4DB2822F095116007D5692 /* String+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Extension.swift"; sourceTree = "<group>"; };
 		CF4DB2842F098203007D5692 /* Int+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Int+Extension.swift"; sourceTree = "<group>"; };
@@ -179,6 +186,7 @@
 				CFCE3C702C43104100D33AE3 /* Views */,
 				CF279C462C31A0CF0084C43F /* Sound */,
 				CF5B11122AD33CE500F42131 /* Info.plist */,
+				CFCC00010001000000000007 /* GustavTimer.entitlements */,
 				CF9922AC2C8F84C9004186DF /* AppConfig.swift */,
 				CF21843329F052590060706C /* GustavTimerApp.swift */,
 				CF21843529F052590060706C /* ContentView.swift */,
@@ -296,8 +304,18 @@
 			isa = PBXGroup;
 			children = (
 				CF279C4B2C31A8940084C43F /* SoundManager.swift */,
+				CFCC00010001000000000001 /* ChallengePackManager.swift */,
 			);
 			path = Managers;
+			sourceTree = "<group>";
+		};
+		CFCC00010001000000000008 /* Challenge */ = {
+			isa = PBXGroup;
+			children = (
+				CFCC00010001000000000003 /* ChallengePackView.swift */,
+				CFCC00010001000000000005 /* ChallengeVideoListView.swift */,
+			);
+			path = Challenge;
 			sourceTree = "<group>";
 		};
 		CFCE3C702C43104100D33AE3 /* Views */ = {
@@ -308,6 +326,7 @@
 				CF2222D12E353FA100A90265 /* Timer */,
 				CF2222D72E354A6A00A90265 /* WhatsNew */,
 				CF2222D22E353FE800A90265 /* Settings */,
+				CFCC00010001000000000008 /* Challenge */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -454,6 +473,9 @@
 				CF01945C2C8A20D700CAC1BD /* SoundSettingsView.swift in Sources */,
 				CF9922B12C959AC1004186DF /* ControlButton.swift in Sources */,
 				CF4977932EED67BB00EE09B1 /* BannerImageModel.swift in Sources */,
+				CFCC00010001000000000002 /* ChallengePackManager.swift in Sources */,
+				CFCC00010001000000000004 /* ChallengePackView.swift in Sources */,
+				CFCC00010001000000000006 /* ChallengeVideoListView.swift in Sources */,
 				CF228F502E7C52B9000DEF21 /* AppSettings.swift in Sources */,
 				CFADBCF22AC9C8AE00AE27D8 /* ProgressArrayView.swift in Sources */,
 				CFC4C1872D047C1D0086CEBB /* WhatsNewView.swift in Sources */,
@@ -618,6 +640,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = GustavTimer/GustavTimer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GustavTimer/Preview Content\"";
@@ -656,6 +679,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = GustavTimer/GustavTimer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GustavTimer/Preview Content\"";
