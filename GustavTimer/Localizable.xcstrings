@@ -1623,6 +1623,22 @@
         }
       }
     },
+    "SET_TICKING" : {
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sekundové tikání"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Second ticking"
+          }
+        }
+      }
+    },
     "SETTINGS" : {
       "extractionState" : "manual",
       "localizations" : {

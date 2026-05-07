@@ -187,6 +187,9 @@ struct SettingsView: View {
             ))
             .tint(Color.gustavVolt)
             
+            Toggle("SET_TICKING", isOn: $appSettings.isTicking)
+            .tint(Color.gustavVolt)
+            
             NavigationLink {
                 SoundSettingsView(selectedSound: .init(get: {
                     return currentTimerData.selectedSound ?? nil

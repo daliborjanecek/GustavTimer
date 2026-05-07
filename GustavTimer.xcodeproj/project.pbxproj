@@ -56,6 +56,7 @@
 		CFCD99D02CA068B00017BD0E /* ListButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFCD99CF2CA068B00017BD0E /* ListButton.swift */; };
 		CFCE3C762C431EC900D33AE3 /* View+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFCE3C752C431EC900D33AE3 /* View+Extension.swift */; };
 		CFDE17AE2F48A646006BEF5D /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = CFDE17AD2F48A646006BEF5D /* TelemetryDeck */; };
+		CFEF371F2FAD23570071E2A8 /* tick.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CFEF371E2FAD23570071E2A8 /* tick.mp3 */; };
 		CFF207D62E6CA9BA00D0C369 /* FavouritesEmptyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFF207D52E6CA9B300D0C369 /* FavouritesEmptyView.swift */; };
 		CFF207D82E6CA9F900D0C369 /* FavouriteRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFF207D72E6CA9F300D0C369 /* FavouriteRowView.swift */; };
 		CFF3BAEB2EFD7D7D0069C610 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFF3BAEA2EFD7D720069C610 /* OnboardingView.swift */; };
@@ -118,6 +119,7 @@
 		CFC4C1862D047C1D0086CEBB /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		CFCD99CF2CA068B00017BD0E /* ListButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListButton.swift; sourceTree = "<group>"; };
 		CFCE3C752C431EC900D33AE3 /* View+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extension.swift"; sourceTree = "<group>"; };
+		CFEF371E2FAD23570071E2A8 /* tick.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = tick.mp3; sourceTree = "<group>"; };
 		CFF207D52E6CA9B300D0C369 /* FavouritesEmptyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavouritesEmptyView.swift; sourceTree = "<group>"; };
 		CFF207D72E6CA9F300D0C369 /* FavouriteRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavouriteRowView.swift; sourceTree = "<group>"; };
 		CFF3BAEA2EFD7D720069C610 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -263,6 +265,7 @@
 				CF107C532EDE269A00A172E8 /* gong.mp3 */,
 				CF107C512EDE25B800A172E8 /* bicycle.mp3 */,
 				CF107C4F2EDE24A700A172E8 /* retro.mp3 */,
+				CFEF371E2FAD23570071E2A8 /* tick.mp3 */,
 			);
 			path = Sound;
 			sourceTree = "<group>";
@@ -422,6 +425,7 @@
 				CF8438982F12BF3E0033EE39 /* ob_favourites.mp4 in Resources */,
 				CF8438992F12BF3E0033EE39 /* ob_timer.mp4 in Resources */,
 				CF107C5C2EDE29BE00A172E8 /* bubble.mp3 in Resources */,
+				CFEF371F2FAD23570071E2A8 /* tick.mp3 in Resources */,
 				CF107C5A2EDE295A00A172E8 /* bell.mp3 in Resources */,
 				CF107C4A2EDE1C1400A172E8 /* whistle.mp3 in Resources */,
 				CFF71ACC2B8B99BC00884E82 /* Localizable.xcstrings in Resources */,
@@ -637,7 +641,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.2.1;
+				MARKETING_VERSION = 2.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = cz.daliborjanecek.GustavTimer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -675,7 +679,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.2.1;
+				MARKETING_VERSION = 2.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = cz.daliborjanecek.GustavTimer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

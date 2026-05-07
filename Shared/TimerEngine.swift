@@ -121,6 +121,10 @@ enum TimerFeedback {
     /// Odpočet skončil, timer právě startuje.
     /// Typicky výraznější vibrace.
     case countdownEnd
+    
+    /// Zapalí se při každé změně zobrazené sekundy (tj. 1× za sekundu).
+    /// Typicky zvukový nebo haptický tik odpočítávání.
+    case secondTick
 }
 
 // MARK: - TimerEngine
@@ -262,6 +266,8 @@ class TimerEngine: ObservableObject {
     /// Reference na asynchronní Task, který provádí tikání.
     /// Cancel se provede při stop() nebo novém start().
     private var timerTask: Task<Void, Never>?
+
+    private var lastSecond: Int = -1
 
     // MARK: - Vypočítané vlastnosti
 
@@ -443,6 +449,7 @@ class TimerEngine: ObservableObject {
         stop()
         finishedRounds = 0
         activeTimerIndex = 0
+        lastSecond = -1
         if !intervals.isEmpty {
             remainingTime = intervals[0].duration
         }
@@ -598,6 +605,13 @@ class TimerEngine: ObservableObject {
 
         if remainingTime <= .zero {
             switchToNextInterval()
+        } else {
+            let c = remainingTime.components
+            let currentSecond = c.attoseconds > 0 ? Int(c.seconds) + 1 : Int(c.seconds)
+            if currentSecond != lastSecond && currentSecond > 0 {
+                lastSecond = currentSecond
+                onFeedback?(.secondTick)
+            }
         }
     }
 
@@ -614,6 +628,7 @@ class TimerEngine: ObservableObject {
         } else {
             onFeedback?(.intervalTransition)
             remainingTime = intervals[activeTimerIndex].duration
+            lastSecond = Int(intervals[activeTimerIndex].duration.components.seconds)
 
             // Přeskočit nulové intervaly
             if intervals[activeTimerIndex].duration <= .zero {
@@ -635,6 +650,7 @@ class TimerEngine: ObservableObject {
             onFeedback?(.roundComplete)
             finishedRounds += 1
             remainingTime = intervals[0].duration
+            lastSecond = Int(intervals[0].duration.components.seconds)
         } else {
             onFeedback?(.timerEnd)
             reset()

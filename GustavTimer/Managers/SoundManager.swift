@@ -44,4 +44,16 @@ class SoundManager {
             print("Error playing sound. \(error.localizedDescription)")
         }
     }
+    
+    func playTick() {
+        
+        guard let url = Bundle.main.url(forResource: "tick", withExtension: ".mp3") else { return }
+        
+        do {
+            player = try AVAudioPlayer(contentsOf: url)
+            player?.play()
+        } catch let error {
+            print("Error playing sound. \(error.localizedDescription)")
+        }
+    }
 }

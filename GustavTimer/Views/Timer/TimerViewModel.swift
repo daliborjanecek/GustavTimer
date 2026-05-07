@@ -44,6 +44,7 @@ class TimerViewModel: ObservableObject {
     @AppStorage("whatsNewVersion") var whatsNewVersion: Int = 0
     @AppStorage("isSoundEnabled") var isSoundEnabled: Bool = true
     @AppStorage("isVibrating") var isVibrating: Bool = false
+    @AppStorage("isTicking") var isTicking: Bool = false
     @AppStorage("timeDisplayFormat") var timeDisplayFormat: TimeDisplayFormat = .seconds
 
     // MARK: - Soukromé vlastnosti
@@ -129,6 +130,8 @@ class TimerViewModel: ObservableObject {
                 self.vibrate()
             case .countdownEnd:
                 self.vibrateRound()
+            case .secondTick:
+                self.playTickSound()
             }
         }
 
@@ -258,10 +261,15 @@ class TimerViewModel: ObservableObject {
     }
 
     private func playSound() {
-        guard isSoundEnabled else { return }
+        guard isSoundEnabled else { playTickSound(); return }
         if let sound {
             SoundManager.instance.playSound(soundModel: sound)
         }
+    }
+    
+    private func playTickSound() {
+        guard isTicking else { return }
+        SoundManager.instance.playTick()
     }
 
     // MARK: - Co je nového
