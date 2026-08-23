@@ -281,70 +281,45 @@ class TimerViewModel: ObservableObject {
     }
 
     // MARK: - Deep Links
-    func handleDeepLink(url: URL) {
-        guard url.scheme == "gustavtimerapp",
-              let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-              let host = components.host else { return }
 
-        switch host {
-        case "whatsnew":
+    /// Vstupní bod pro obě formy odkazu – historické `gustavtimerapp://timer?...`
+    /// i Universal Link `https://gustavtraining.com/t?...`. Rozpoznání i normalizaci
+    /// dělá `SharedTimerLink.route`, takže existuje jediná parsovací cesta.
+    func handleDeepLink(url: URL) {
+        switch SharedTimerLink.route(url: url) {
+        case .whatsNew:
             showingWhatsNew = true
-        case "timer":
-            handleTimerDeepLink(components: components)
-        default:
-            print("Neznámý deep link: \(host)")
+        case .sharedTimer(let items):
+            handleSharedTimer(items: items)
+        case nil:
+            print("Neznámý deep link: \(url)")
         }
     }
 
-    private func handleTimerDeepLink(components: URLComponents) {
-        let originalTimers = timers
-        var newTimers: [IntervalData] = []
-        var newRounds: Int? = nil
+    /// Načte sdílený timer z query parametrů.
+    ///
+    /// Chování při vadném vstupu: pokud odkaz neobsahuje jediný platný interval
+    /// (nesmyslné hodnoty, jen trackovací parametry, prázdný dotaz), `parse`
+    /// vrátí `nil` a metoda nesáhne na nic – stávající timer, počet kol ani
+    /// uložená data se nezmění a nastavení se neotevře. Jednotlivé neplatné
+    /// parametry se ignorují, celý odkaz kvůli nim nepadá.
+    func handleSharedTimer(items: [URLQueryItem]) {
+        let limits = SharedTimerLink.Limits(
+            maxIntervalCount: AppConfig.maxTimerCount,
+            maxIntervalValue: AppConfig.maxTimerValue,
+            maxRounds: AppConfig.roundsOptions.last ?? 31
+        )
 
-        if let queryItems = components.queryItems {
-            for item in queryItems {
-                // Rezervované klíčové slovo "rounds" – nastavuje počet opakování
-                if item.name.lowercased() == "rounds" {
-                    if let value = item.value, let intValue = Int(value) {
-                        if intValue == -1 {
-                            newRounds = -1
-                        } else {
-                            newRounds = max(1, min(AppConfig.roundsOptions.last ?? 31, intValue))
-                        }
-                    }
-                    continue
-                }
+        guard let link = SharedTimerLink.parse(items: items, limits: limits) else { return }
 
-                // Plný formát: name=value → pojmenovaný interval
-                if let value = item.value, let intValue = Int(value),
-                   intValue > 0, intValue <= AppConfig.maxTimerValue {
-                    newTimers.append(IntervalData(value: intValue, name: item.name))
-                }
-                // Minimalistický formát: jen číslo bez hodnoty → interval pojmenovaný jako "Kolo N"
-                else if item.value == nil, let intValue = Int(item.name),
-                        intValue > 0, intValue <= AppConfig.maxTimerValue {
-                    let roundName = NSLocalizedString("ROUND", comment: "") + " \(newTimers.count + 1)"
-                    newTimers.append(IntervalData(value: intValue, name: roundName))
-                }
-
-                // Nepřekročit maximální počet intervalů
-                if newTimers.count >= AppConfig.maxTimerCount { break }
-            }
-        }
-
-        if !newTimers.isEmpty {
-            timers = newTimers
-            // Pokud rounds není v URL → výchozí hodnota je nekonečno (-1)
-            rounds = newRounds ?? -1
-            startedFromDeeplink = true
-            UserDefaults.standard.set(true, forKey: "startedFromDeeplink")
-            // Uložit do SwiftData, aby SettingsView četlo aktuální intervaly
-            saveTimers()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.showingSheet = true
-            }
-        } else {
-            timers = originalTimers
+        timers = link.intervals
+        rounds = link.rounds
+        startedFromDeeplink = true
+        UserDefaults.standard.set(true, forKey: "startedFromDeeplink")
+        // Uložit do SwiftData, aby SettingsView četlo aktuální intervaly
+        saveTimers(name: link.title)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.showingSheet = true
         }
     }
 }
@@ -381,7 +356,9 @@ extension TimerViewModel {
         }
     }
 
-    private func saveTimers() {
+    /// - Parameter name: Nový název hlavního timeru. `nil` název nemění –
+    ///   používá ho jen sdílený odkaz, který nese `_title`.
+    private func saveTimers(name: String? = nil) {
         guard let context = modelContext else { return }
 
         do {
@@ -399,6 +376,7 @@ extension TimerViewModel {
             }
 
             timerData.intervals = timers
+            if let name { timerData.name = name }
             try context.save()
         } catch {
             print("Chyba při ukládání časovačů: \(error)")

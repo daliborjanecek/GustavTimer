@@ -221,16 +221,20 @@ struct FavouritesView: View {
         return false
     }
 
+    /// Sdílený odkaz na timer ve tvaru `https://gustavtraining.com/t?...`.
+    /// Skládání drží `SharedTimerLink`, aby generování a parsování nemohlo
+    /// vzniknout ve dvou nezávislých kopiích.
     private func deeplinkURL(for timer: TimerData) -> URL? {
-        var components = URLComponents()
-        components.scheme = "gustavtimerapp"
-        components.host = "timer"
-        var queryItems: [URLQueryItem] = timer.intervals.map {
-            URLQueryItem(name: $0.name, value: String($0.value))
-        }
-        queryItems.append(URLQueryItem(name: "rounds", value: String(timer.rounds)))
-        components.queryItems = queryItems
-        return components.url
+        SharedTimerLink.url(
+            intervals: timer.intervals,
+            rounds: timer.rounds,
+            title: timer.name,
+            limits: SharedTimerLink.Limits(
+                maxIntervalCount: AppConfig.maxTimerCount,
+                maxIntervalValue: AppConfig.maxTimerValue,
+                maxRounds: AppConfig.roundsOptions.last ?? 31
+            )
+        )
     }
 }
 

@@ -85,6 +85,9 @@ struct TimerView: View {
             }
         }
         .onOpenURL { url in
+            // Universal Link i historické gustavtimerapp:// chodí sem.
+            // Normalizaci obou tvarů dělá SharedTimerLink.route, ať neexistují
+            // dvě větve, které se můžou rozejít.
             viewModel.handleDeepLink(url: url)
         }
     }

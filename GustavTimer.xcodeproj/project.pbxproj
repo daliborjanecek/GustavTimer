@@ -66,8 +66,20 @@
 		CFFAF94B2F3DEE2C00A20D76 /* SoundModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9462F3DEE2C00A20D76 /* SoundModel.swift */; };
 		CFFAF94C2F3DEE2C00A20D76 /* TimeDisplayFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9472F3DEE2C00A20D76 /* TimeDisplayFormat.swift */; };
 		CFFAF94D2F3DEE2C00A20D76 /* TimerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9482F3DEE2C00A20D76 /* TimerEngine.swift */; };
+		CFA10A022FA9B00100000002 /* SharedTimerLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10A012FA9B00100000001 /* SharedTimerLink.swift */; };
+		CFA10A052FA9B00100000005 /* SharedTimerLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */; };
 		CFFAF94F2F3DEE3C00A20D76 /* SoundModel+Title.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF94E2F3DEE3C00A20D76 /* SoundModel+Title.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		CFA10A102FA9B00100000010 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CF21842829F052590060706C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CF21842F29F052590060706C;
+			remoteInfo = GustavTimer;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		CF01945B2C8A20D700CAC1BD /* SoundSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundSettingsView.swift; sourceTree = "<group>"; };
@@ -129,6 +141,10 @@
 		CFFAF9462F3DEE2C00A20D76 /* SoundModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundModel.swift; sourceTree = "<group>"; };
 		CFFAF9472F3DEE2C00A20D76 /* TimeDisplayFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeDisplayFormat.swift; sourceTree = "<group>"; };
 		CFFAF9482F3DEE2C00A20D76 /* TimerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerEngine.swift; sourceTree = "<group>"; };
+		CFA10A012FA9B00100000001 /* SharedTimerLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTimerLink.swift; sourceTree = "<group>"; };
+		CFA10A032FA9B00100000003 /* GustavTimer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GustavTimer.entitlements; sourceTree = "<group>"; };
+		CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTimerLinkTests.swift; sourceTree = "<group>"; };
+		CFA10A082FA9B00100000008 /* GustavTimerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GustavTimerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CFFAF94E2F3DEE3C00A20D76 /* SoundModel+Title.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SoundModel+Title.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -139,6 +155,13 @@
 			files = (
 				CF17ADD82F083A6B00A92841 /* GustavUI in Frameworks */,
 				CFDE17AE2F48A646006BEF5D /* TelemetryDeck in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CFA10A0A2FA9B0010000000A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -157,6 +180,7 @@
 			children = (
 				CFFAF9492F3DEE2C00A20D76 /* Shared */,
 				CF21843229F052590060706C /* GustavTimer */,
+				CFA10A062FA9B00100000006 /* GustavTimerTests */,
 				CF17ADD62F083A6100A92841 /* Frameworks */,
 				CF21843129F052590060706C /* Products */,
 			);
@@ -166,13 +190,23 @@
 			isa = PBXGroup;
 			children = (
 				CF21843029F052590060706C /* GustavTimer.app */,
+				CFA10A082FA9B00100000008 /* GustavTimerTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		CFA10A062FA9B00100000006 /* GustavTimerTests */ = {
+			isa = PBXGroup;
+			children = (
+				CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */,
+			);
+			path = GustavTimerTests;
 			sourceTree = "<group>";
 		};
 		CF21843229F052590060706C /* GustavTimer */ = {
 			isa = PBXGroup;
 			children = (
+				CFA10A032FA9B00100000003 /* GustavTimer.entitlements */,
 				CFF3BAEE2EFD8EAC0069C610 /* Media */,
 				CF228F4F2E7C52B5000DEF21 /* AppSettings.swift */,
 				CF9922BA2C9766DC004186DF /* Managers */,
@@ -351,6 +385,7 @@
 				CFFAF9462F3DEE2C00A20D76 /* SoundModel.swift */,
 				CFFAF9472F3DEE2C00A20D76 /* TimeDisplayFormat.swift */,
 				CFFAF9482F3DEE2C00A20D76 /* TimerEngine.swift */,
+				CFA10A012FA9B00100000001 /* SharedTimerLink.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -375,6 +410,24 @@
 			productReference = CF21843029F052590060706C /* GustavTimer.app */;
 			productType = "com.apple.product-type.application";
 		};
+		CFA10A072FA9B00100000007 /* GustavTimerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CFA10A0C2FA9B0010000000C /* Build configuration list for PBXNativeTarget "GustavTimerTests" */;
+			buildPhases = (
+				CFA10A092FA9B00100000009 /* Sources */,
+				CFA10A0A2FA9B0010000000A /* Frameworks */,
+				CFA10A0B2FA9B0010000000B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CFA10A0F2FA9B0010000000F /* PBXTargetDependency */,
+			);
+			name = GustavTimerTests;
+			productName = GustavTimerTests;
+			productReference = CFA10A082FA9B00100000008 /* GustavTimerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -387,6 +440,10 @@
 				TargetAttributes = {
 					CF21842F29F052590060706C = {
 						CreatedOnToolsVersion = 14.3;
+					};
+					CFA10A072FA9B00100000007 = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = CF21842F29F052590060706C;
 					};
 				};
 			};
@@ -409,6 +466,7 @@
 			projectRoot = "";
 			targets = (
 				CF21842F29F052590060706C /* GustavTimer */,
+				CFA10A072FA9B00100000007 /* GustavTimerTests */,
 			);
 		};
 /* End PBXProject section */
@@ -436,6 +494,13 @@
 				CF107C4C2EDE211700A172E8 /* hey.mp3 in Resources */,
 				CF107C4E2EDE225E00A172E8 /* game.mp3 in Resources */,
 				CF107C502EDE24A700A172E8 /* retro.mp3 in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CFA10A0B2FA9B0010000000B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -471,6 +536,7 @@
 				CFFAF94B2F3DEE2C00A20D76 /* SoundModel.swift in Sources */,
 				CFFAF94C2F3DEE2C00A20D76 /* TimeDisplayFormat.swift in Sources */,
 				CFFAF94D2F3DEE2C00A20D76 /* TimerEngine.swift in Sources */,
+				CFA10A022FA9B00100000002 /* SharedTimerLink.swift in Sources */,
 				CFCE3C762C431EC900D33AE3 /* View+Extension.swift in Sources */,
 				CF70037F2C8DED37009F1531 /* BackgroundSelectorView.swift in Sources */,
 				CF7BAE252EC27A74002A4746 /* SettingsView.swift in Sources */,
@@ -489,7 +555,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CFA10A092FA9B00100000009 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CFA10A052FA9B00100000005 /* SharedTimerLinkTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CFA10A0F2FA9B0010000000F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CF21842F29F052590060706C /* GustavTimer */;
+			targetProxy = CFA10A102FA9B00100000010 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		CF21843C29F0525E0060706C /* Debug */ = {
@@ -622,6 +704,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = GustavTimer/GustavTimer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GustavTimer/Preview Content\"";
@@ -660,6 +743,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = GustavTimer/GustavTimer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GustavTimer/Preview Content\"";
@@ -692,6 +776,46 @@
 			};
 			name = Release;
 		};
+		CFA10A0D2FA9B0010000000D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.daliborjanecek.GustavTimerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GustavTimer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GustavTimer";
+			};
+			name = Debug;
+		};
+		CFA10A0E2FA9B0010000000E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.daliborjanecek.GustavTimerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GustavTimer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GustavTimer";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -709,6 +833,15 @@
 			buildConfigurations = (
 				CF21843F29F0525E0060706C /* Debug */,
 				CF21844029F0525E0060706C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CFA10A0C2FA9B0010000000C /* Build configuration list for PBXNativeTarget "GustavTimerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CFA10A0D2FA9B0010000000D /* Debug */,
+				CFA10A0E2FA9B0010000000E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
