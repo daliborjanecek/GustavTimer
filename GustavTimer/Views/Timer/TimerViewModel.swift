@@ -28,7 +28,19 @@ class TimerViewModel: ObservableObject {
     @Published var showingSheet = false
     @Published var showingWhatsNew: Bool = false
     @Published var editMode = EditMode.inactive
-    @Published var startedFromDeeplink: Bool = false
+
+    /// Počítadlo se zvýší při každém úspěšném načtení sdíleného odkazu.
+    /// SettingsView na jeho změnu reaguje zobrazením alertu – oproti boolean
+    /// příznaku funguje spolehlivě i když je Settings pořád otevřené z předchozího
+    /// odkazu (aplikace jen na pozadí), kdy by zápis `true → true` do UserDefaults
+    /// nevyvolal žádnou pozorovatelnou změnu.
+    @AppStorage("deeplinkLoadToken") var deeplinkLoadToken: Int = 0
+
+    /// Název timeru z `_title` posledního načteného odkazu. Prázdný řetězec
+    /// znamená, že odkaz `_title` neobsahoval – SharedTimerLink.parse prázdný
+    /// ani jen z mezer sestávající title nikdy nevrátí, takže je to bezpečná
+    /// hodnota "chybí".
+    @AppStorage("deeplinkLoadedTitle") var deeplinkLoadedTitle: String = ""
 
     // MARK: Lottie animation state
     @Published var appearanceIconAnimation = LottiePlaybackMode.paused(at: .frame(0))
@@ -182,8 +194,6 @@ class TimerViewModel: ObservableObject {
 
     func resetTimer() {
         engine.reset()
-        startedFromDeeplink = false
-        UserDefaults.standard.set(false, forKey: "startedFromDeeplink")
     }
 
     func skipLap() {
@@ -320,8 +330,8 @@ class TimerViewModel: ObservableObject {
 
         timers = link.intervals
         rounds = link.rounds
-        startedFromDeeplink = true
-        UserDefaults.standard.set(true, forKey: "startedFromDeeplink")
+        deeplinkLoadedTitle = link.title ?? ""
+        deeplinkLoadToken += 1
         // Uložit do SwiftData, aby SettingsView četlo aktuální intervaly
         saveTimers(name: link.title)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

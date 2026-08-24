@@ -21,9 +21,12 @@ struct SettingsView: View {
     @State private var newTimerName = ""
     @State private var showSaveAlert = false
     @State private var showAlreadySavedAlert = false
+    @State private var showDeeplinkLoadedAlert = false
     @State private var selectedSoundTitle: String? = nil
     @State private var cachedLastSavedTimers: [TimerData] = []
-    @AppStorage("startedFromDeeplink") private var startedFromDeeplink: Bool = false
+    @AppStorage("deeplinkLoadToken") private var deeplinkLoadToken: Int = 0
+    @AppStorage("lastAcknowledgedDeeplinkToken") private var lastAcknowledgedDeeplinkToken: Int = 0
+    @AppStorage("deeplinkLoadedTitle") private var deeplinkLoadedTitle: String = ""
     
     private var currentTimerData: TimerData {
         getOrCreateTimerData()
@@ -47,10 +50,20 @@ struct SettingsView: View {
             .environment(\.editMode, $editMode)
             .saveTimerAlert(isPresented: $showSaveAlert, timerName: $newTimerName, onSave: saveTimer)
             .alreadySavedAlert(isPresented: $showAlreadySavedAlert)
+            .deeplinkLoadedAlert(isPresented: $showDeeplinkLoadedAlert, timerTitle: deeplinkLoadedTitle)
             .toolbar { toolbar }
             .font(.gustavBody)
-            .onAppear { refreshLastSavedTimers() }
-            .onDisappear { startedFromDeeplink = false }
+            .onAppear {
+                refreshLastSavedTimers()
+                checkForNewDeeplinkLoad()
+            }
+            // Settings může zůstat otevřené přes další načtení odkazu (aplikace jen
+            // na pozadí) – onAppear se tehdy znovu nespustí, protože instance
+            // SettingsView se nemění. Token ale poroste dál, takže tohle je jediné
+            // spolehlivé místo, které takový případ zachytí.
+            .onChange(of: deeplinkLoadToken) { _, _ in
+                checkForNewDeeplinkLoad()
+            }
         }
         .tint(Color.gustavNavigationItemsColor)
     }
@@ -106,31 +119,22 @@ struct SettingsView: View {
                 .font(.sectionHeader)
                 .foregroundStyle(Color.gustavNeutral)
         } footer: {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 16) {
-                    if currentTimerData.intervals.count < AppConfig.maxTimerCount {
-                        Text(summaryText)
-                            .font(.sectionFooter)
-                            .foregroundStyle(Color.gustavNeutral)
-                            .multilineTextAlignment(.leading)
-                        Spacer()
-                        GustavSmallPillButton(label: "ADD_INTERVAL") {
-                            addInterval(to: currentTimerData)
-                        }
-                        .padding(.leading, -16)
-                    } else {
-                        Text(summaryText + " " + String(format: NSLocalizedString("MAX_LIMIT_REACHED", comment: ""), AppConfig.maxTimerCount))
-                            .font(.sectionFooter)
-                            .foregroundStyle(Color.gustavNeutral)
-                        Spacer()
-                    }
-                }
-
-                if startedFromDeeplink {
-                    // TODO: Grafická úprava – stylizovat jako banner/toast
-                    Text("DEEPLINK_LOADED")
+            HStack(alignment: .top, spacing: 16) {
+                if currentTimerData.intervals.count < AppConfig.maxTimerCount {
+                    Text(summaryText)
                         .font(.sectionFooter)
                         .foregroundStyle(Color.gustavNeutral)
+                        .multilineTextAlignment(.leading)
+                    Spacer()
+                    GustavSmallPillButton(label: "ADD_INTERVAL") {
+                        addInterval(to: currentTimerData)
+                    }
+                    .padding(.leading, -16)
+                } else {
+                    Text(summaryText + " " + String(format: NSLocalizedString("MAX_LIMIT_REACHED", comment: ""), AppConfig.maxTimerCount))
+                        .font(.sectionFooter)
+                        .foregroundStyle(Color.gustavNeutral)
+                    Spacer()
                 }
             }
         }
@@ -321,6 +325,15 @@ struct SettingsView: View {
             .filter { $0.order != 0 }
             .sorted(by: { ($0.lastUsed ?? .distantPast) > ($1.lastUsed ?? .distantPast) })
         cachedLastSavedTimers = Array(saved)
+    }
+
+    /// Zobrazí alert, pokud přibyl nový token oproti tomu, co už uživatel viděl.
+    /// Token roste při každém načtení sdíleného odkazu, takže na rozdíl od
+    /// boolean příznaku zůstává rozpoznatelný i při opakovaných odkazech.
+    private func checkForNewDeeplinkLoad() {
+        guard deeplinkLoadToken != lastAcknowledgedDeeplinkToken else { return }
+        lastAcknowledgedDeeplinkToken = deeplinkLoadToken
+        showDeeplinkLoadedAlert = true
     }
     
     private func saveTimer() {

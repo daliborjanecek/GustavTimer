@@ -308,7 +308,7 @@
       }
     },
     "DEEPLINK_LOADED" : {
-      "comment" : "Text shown in the intervals footer when the timer was loaded from an external deeplink.",
+      "comment" : "Message shown in the alert when the timer was loaded from an external deeplink.",
       "localizations" : {
         "cs" : {
           "stringUnit" : {
@@ -320,6 +320,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Timer loaded from external link"
+          }
+        }
+      }
+    },
+    "DEEPLINK_LOADED_TITLE" : {
+      "comment" : "Title of the alert shown after a timer was set up from an external deeplink.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nový timer nastaven"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New timer set"
           }
         }
       }

@@ -43,3 +43,27 @@ extension View {
         }
     }
 }
+
+extension View {
+    /// - Parameter timerTitle: Název z `_title` sdíleného odkazu. Když je `nil`
+    ///   nebo prázdný, titulek alertu je obecný ("Nový timer nastaven").
+    @ViewBuilder
+    func deeplinkLoadedAlert(
+        isPresented: Binding<Bool>,
+        timerTitle: String?
+    ) -> some View {
+        if let timerTitle, !timerTitle.isEmpty {
+            self.alert(timerTitle, isPresented: isPresented) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("DEEPLINK_LOADED")
+            }
+        } else {
+            self.alert("DEEPLINK_LOADED_TITLE", isPresented: isPresented) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("DEEPLINK_LOADED")
+            }
+        }
+    }
+}
