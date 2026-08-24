@@ -9,6 +9,17 @@ import SwiftUI
 import StoreKit
 import SwiftData
 
+/// Modály nad timerem. SwiftUI umí na jednom view prezentovat jen jeden sheet
+/// naráz, takže je držíme v jediném stavu – dřív se onboarding a „co je nového“
+/// přetahovaly o prezentaci a po zavření prvního naskočil druhý.
+enum AppSheet: Identifiable {
+    case settings
+    case onboarding
+    case whatsNew
+
+    var id: Self { self }
+}
+
 struct ContentView: View {
     @Query var timerData: [TimerData]
     
@@ -19,28 +30,24 @@ struct ContentView: View {
     @AppStorage("selectedSound") private var selectedSound: String = "beep"
     @AppStorage("isSoundEnabled") private var isSoundEnabled: Bool = true
     
-    @State private var showSettings = false
-    @State private var showWhatsNew = false
+    @State private var activeSheet: AppSheet?
     @AppStorage("lastOnboardingVersion") private var lastOnboardingVersion: Int = 0
 
     private var defaultTimerId: Int = 0
 
     var body: some View {
-        TimerView(showSettings: $showSettings, showWhatsNew: $showWhatsNew)
-            .sheet(isPresented: $showSettings) {
-                SettingsView()
-            }
-            .sheet(isPresented: Binding(
-                get: { lastOnboardingVersion != AppConfig.onboardingVersion },
-                set: { if !$0 { lastOnboardingVersion = AppConfig.onboardingVersion } }
-            )) {
-                OnboardingView()
-            }
-            .sheet(isPresented: $showWhatsNew) {
-                OnboardingView()
+        TimerView(activeSheet: $activeSheet)
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .settings:
+                    SettingsView()
+                case .onboarding, .whatsNew:
+                    OnboardingView()
+                }
             }
             .onAppear {
                 initializeDataIfNeeded()
+                showOnboardingIfNeeded()
             }
     }
     
@@ -50,6 +57,14 @@ struct ContentView: View {
             context.insert(defaultTimer)
             try? context.save()
         }
+    }
+
+    /// Onboarding má přednost před „co je nového“ – po čisté instalaci se
+    /// uživateli ukáže jen on.
+    private func showOnboardingIfNeeded() {
+        guard lastOnboardingVersion != AppConfig.onboardingVersion else { return }
+        lastOnboardingVersion = AppConfig.onboardingVersion
+        activeSheet = .onboarding
     }
 }
 

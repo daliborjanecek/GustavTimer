@@ -14,8 +14,7 @@ import GustavUICore
 import GustavUIAnimations
 
 struct TimerView: View {
-    @Binding var showSettings: Bool
-    @Binding var showWhatsNew: Bool
+    @Binding var activeSheet: AppSheet?
     @Environment(\.modelContext) var context
     @Environment(\.requestReview) var requestReview
     @Query(sort: \TimerData.id, order: .reverse) private var timerData: [TimerData]
@@ -35,11 +34,11 @@ struct TimerView: View {
         .onAppear {
             setupViewModel()
         }
-        .onChange(of: showSettings) { _, newValue in
-            if newValue {
+        .onChange(of: activeSheet) { oldValue, newValue in
+            if newValue == .settings {
                 // SettingsView se otevírá, zastavit časovač
                 viewModel.stopTimer()
-            } else {
+            } else if oldValue == .settings {
                 // SettingsView se zavřelo, znovu načti data z databáze a resetuj časovač
                 viewModel.reloadTimers(resetCurrentState: true)
                 viewModel.setSound(sound: timerData.first(where: { $0.order == 0 })?.selectedSound)
@@ -67,21 +66,14 @@ struct TimerView: View {
         }
         .onChange(of: viewModel.showingSheet) { _, newValue in
             if newValue {
-                showSettings = true
                 viewModel.showingSheet = false
+                present(.settings)
             }
         }
         .onChange(of: viewModel.showingWhatsNew) { _, newValue in
             if newValue {
                 viewModel.showingWhatsNew = false
-                if showSettings {
-                    showSettings = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        showWhatsNew = true
-                    }
-                } else {
-                    showWhatsNew = true
-                }
+                present(.whatsNew)
             }
         }
         .onOpenURL { url in
@@ -229,7 +221,7 @@ private extension TimerView {
     
     var settingsButton: some View {
         Button {
-            showSettings.toggle()
+            present(.settings)
         } label: {
             HStack {
                 settingsIcons
@@ -286,6 +278,19 @@ private extension TimerView {
 // MARK: - Helper Methods
 private extension TimerView {
     
+    /// Prezentace sheetu. Když už nějaký běží, musí se nejdřív doopravdy zavřít,
+    /// jinak SwiftUI ten nový neukáže.
+    func present(_ sheet: AppSheet) {
+        guard activeSheet != nil, activeSheet != sheet else {
+            activeSheet = sheet
+            return
+        }
+        activeSheet = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            activeSheet = sheet
+        }
+    }
+
     func setupViewModel() {
         viewModel.setModelContext(context)
         viewModel.showWhatsNew()

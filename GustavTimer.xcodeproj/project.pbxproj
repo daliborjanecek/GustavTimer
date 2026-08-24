@@ -48,6 +48,8 @@
 		CF9922AD2C8F84C9004186DF /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF9922AC2C8F84C9004186DF /* AppConfig.swift */; };
 		CF9922AF2C920C51004186DF /* Image+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF9922AE2C920C51004186DF /* Image+Extension.swift */; };
 		CF9922B12C959AC1004186DF /* ControlButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF9922B02C959AC1004186DF /* ControlButton.swift */; };
+		CFA10A022FA9B00100000002 /* SharedTimerLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10A012FA9B00100000001 /* SharedTimerLink.swift */; };
+		CFA10A052FA9B00100000005 /* SharedTimerLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */; };
 		CFADBCF22AC9C8AE00AE27D8 /* ProgressArrayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFADBCF12AC9C8AE00AE27D8 /* ProgressArrayView.swift */; };
 		CFB1394D2AE572D300EE8B2C /* BackgroundImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB1394C2AE572D300EE8B2C /* BackgroundImageView.swift */; };
 		CFB1394F2AE59ED900EE8B2C /* BackgroundImageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB1394E2AE59ED900EE8B2C /* BackgroundImageModel.swift */; };
@@ -66,8 +68,6 @@
 		CFFAF94B2F3DEE2C00A20D76 /* SoundModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9462F3DEE2C00A20D76 /* SoundModel.swift */; };
 		CFFAF94C2F3DEE2C00A20D76 /* TimeDisplayFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9472F3DEE2C00A20D76 /* TimeDisplayFormat.swift */; };
 		CFFAF94D2F3DEE2C00A20D76 /* TimerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9482F3DEE2C00A20D76 /* TimerEngine.swift */; };
-		CFA10A022FA9B00100000002 /* SharedTimerLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10A012FA9B00100000001 /* SharedTimerLink.swift */; };
-		CFA10A052FA9B00100000005 /* SharedTimerLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */; };
 		CFFAF94F2F3DEE3C00A20D76 /* SoundModel+Title.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF94E2F3DEE3C00A20D76 /* SoundModel+Title.swift */; };
 /* End PBXBuildFile section */
 
@@ -124,6 +124,10 @@
 		CF9922AC2C8F84C9004186DF /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		CF9922AE2C920C51004186DF /* Image+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Image+Extension.swift"; sourceTree = "<group>"; };
 		CF9922B02C959AC1004186DF /* ControlButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlButton.swift; sourceTree = "<group>"; };
+		CFA10A012FA9B00100000001 /* SharedTimerLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTimerLink.swift; sourceTree = "<group>"; };
+		CFA10A032FA9B00100000003 /* GustavTimer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GustavTimer.entitlements; sourceTree = "<group>"; };
+		CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTimerLinkTests.swift; sourceTree = "<group>"; };
+		CFA10A082FA9B00100000008 /* GustavTimerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GustavTimerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CFADBCF12AC9C8AE00AE27D8 /* ProgressArrayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressArrayView.swift; sourceTree = "<group>"; };
 		CFB1394C2AE572D300EE8B2C /* BackgroundImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundImageView.swift; sourceTree = "<group>"; };
 		CFB1394E2AE59ED900EE8B2C /* BackgroundImageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundImageModel.swift; sourceTree = "<group>"; };
@@ -141,10 +145,6 @@
 		CFFAF9462F3DEE2C00A20D76 /* SoundModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundModel.swift; sourceTree = "<group>"; };
 		CFFAF9472F3DEE2C00A20D76 /* TimeDisplayFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeDisplayFormat.swift; sourceTree = "<group>"; };
 		CFFAF9482F3DEE2C00A20D76 /* TimerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerEngine.swift; sourceTree = "<group>"; };
-		CFA10A012FA9B00100000001 /* SharedTimerLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTimerLink.swift; sourceTree = "<group>"; };
-		CFA10A032FA9B00100000003 /* GustavTimer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GustavTimer.entitlements; sourceTree = "<group>"; };
-		CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTimerLinkTests.swift; sourceTree = "<group>"; };
-		CFA10A082FA9B00100000008 /* GustavTimerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GustavTimerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CFFAF94E2F3DEE3C00A20D76 /* SoundModel+Title.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SoundModel+Title.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -193,14 +193,6 @@
 				CFA10A082FA9B00100000008 /* GustavTimerTests.xctest */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		CFA10A062FA9B00100000006 /* GustavTimerTests */ = {
-			isa = PBXGroup;
-			children = (
-				CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */,
-			);
-			path = GustavTimerTests;
 			sourceTree = "<group>";
 		};
 		CF21843229F052590060706C /* GustavTimer */ = {
@@ -335,6 +327,14 @@
 				CF279C4B2C31A8940084C43F /* SoundManager.swift */,
 			);
 			path = Managers;
+			sourceTree = "<group>";
+		};
+		CFA10A062FA9B00100000006 /* GustavTimerTests */ = {
+			isa = PBXGroup;
+			children = (
+				CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */,
+			);
+			path = GustavTimerTests;
 			sourceTree = "<group>";
 		};
 		CFCE3C702C43104100D33AE3 /* Views */ = {
@@ -724,7 +724,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.3.0;
+				MARKETING_VERSION = 2.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = cz.daliborjanecek.GustavTimer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -763,7 +763,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.3.0;
+				MARKETING_VERSION = 2.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = cz.daliborjanecek.GustavTimer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

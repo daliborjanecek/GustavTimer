@@ -274,6 +274,12 @@ class TimerViewModel: ObservableObject {
 
     // MARK: - Co je nového
     func showWhatsNew() {
+        // Čerstvá instalace: uživatel dostane onboarding, „co je nového“ by bylo
+        // duplicitní. Verzi si jen zapíšeme, ať se ukáže až u příštího updatu.
+        guard whatsNewVersion > 0 else {
+            whatsNewVersion = AppConfig.version
+            return
+        }
         if whatsNewVersion < AppConfig.version {
             showingWhatsNew = true
             whatsNewVersion = AppConfig.version
