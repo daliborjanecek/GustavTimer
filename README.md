@@ -14,6 +14,7 @@ Intervalový časovač pro iPhone navržený pro sport a trénink. Umožňuje se
 - **Odpočet** – volitelný 3sekundový odpočet (3-2-1) před startem
 - **Skip & Reset** – přeskočení aktuálního intervalu nebo návrat na začátek
 - **Always-on display** – během běhu se displej nevypíná
+- **Live Activity** – při přepnutí do jiné aplikace nebo zamčení telefonu se na zamykací obrazovce a v Dynamic Islandu ukáže, že timer běží; po návratu do aplikace odpočet naváže přesně tam, kde reálně je
 - **Landscape režim** – velký odpočet s přesností na setiny sekundy, tap kdekoliv = start/stop
 
 ### Zpětná vazba
@@ -42,6 +43,7 @@ Intervalový časovač pro iPhone navržený pro sport a trénink. Umožňuje se
 | Persistence | SwiftData (`TimerData`, `CustomImageModel`) + `@AppStorage` |
 | Animace | Lottie (přes balíček GustavUI) |
 | Zvuk | AVFoundation (`AVAudioPlayer`) |
+| Live Activity | ActivityKit + WidgetKit (target `GustavTimerWidget`) |
 | Analytika | TelemetryDeck (anonymní signály o používání) |
 | Design systém | **GustavUI** – lokální Swift Package sdílený mezi Gustav aplikacemi (barvy, fonty Martian Grotesk/Mono, komponenty, animace) |
 
@@ -90,7 +92,7 @@ GustavTimer/
 ├── AppConfig.swift           # Konstanty, presety, URL, pozadí
 ├── AppSettings.swift         # Sdružená @AppStorage nastavení
 ├── Models/                   # TimerData, CustomImageModel, PredefinedTimer, …
-├── Managers/SoundManager.swift
+├── Managers/                  # SoundManager, TimerLiveActivityController
 ├── Views/
 │   ├── Timer/                # TimerView, TimerViewModel, progress, pozadí
 │   ├── Settings/             # SettingsView, FavouritesView, podpohledy
@@ -104,7 +106,15 @@ Shared/                       # ⭐ Logika sdílitelná s watchOS
 ├── TimerEngine.swift         # Jádro odpočtu
 ├── IntervalData.swift        # Model intervalu
 ├── SoundModel.swift          # Enum zvuků
-└── TimeDisplayFormat.swift   # Formát zobrazení času
+├── TimeDisplayFormat.swift   # Formát zobrazení času
+├── SharedTimerLink.swift     # Sdílené odkazy
+└── TimerActivityAttributes.swift  # Stav Live Activity
+
+GustavTimerWidget/            # Widget extension – Live Activity
+├── GustavTimerWidgetBundle.swift
+├── TimerLiveActivity.swift   # Zamykací obrazovka + Dynamic Island
+├── WidgetTheme.swift         # Barvy a fonty
+└── Fonts/                    # Vlastní kopie fontů
 ```
 
 ---

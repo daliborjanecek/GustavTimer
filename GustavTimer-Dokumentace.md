@@ -34,7 +34,8 @@ aktualizovano: 2026-05-30
 16. [[#16 · Konfigurace (AppConfig)]]
 17. [[#17 · Přehled klíčů UserDefaults]]
 18. [[#18 · Mapa souborů]]
-19. [[#19 · Poznámky k implementaci a TODO]]
+19. [[#19 · Live Activity]]
+20. [[#20 · Poznámky k implementaci a TODO]]
 
 ---
 
@@ -148,7 +149,7 @@ stateDiagram-v2
     Idle --> Countdown: start() & hasCountdown<br/>(první kolo)
     Idle --> Running: start()
     Countdown --> Running: odpočet 3-2-1 hotov
-    Running --> Running: tick každých 10ms
+    Running --> Running: tick (10 ms v popředí, 50 ms na pozadí)
     Running --> Stopped: stop()
     Stopped --> Running: start() (pokračuje)
     Running --> Idle: poslední kolo → reset()
@@ -183,6 +184,10 @@ stateDiagram-v2
 - **`timeRatio(for:)`** – poměr délky intervalu vůči celému kolu (pro šířku segmentů v progress baru).
 - **`formattedCurrentTime(format:)`** – formátovaný čas dle `TimeDisplayFormat`.
 
+### Změny plánu (`onScheduleChange`)
+
+Callback **`onScheduleChange`** se pálí pokaždé, když se změní běh timeru – start, stop, reset, skip, přechod intervalu, kolo, začátek i konec úvodního odpočtu. Na rozdíl od `onFeedback(.intervalTransition)` se volá až po dokončení přechodu, takže engine je v konzistentním stavu. Používá ho `TimerViewModel` k aktualizaci Live Activity.
+
 ### Události (`TimerFeedback`)
 
 Engine při určitých momentech zavolá `onFeedback(...)`:
@@ -198,7 +203,7 @@ Engine při určitých momentech zavolá `onFeedback(...)`:
 
 ### Logika přechodů
 
-- **`tick()`** odečte uplynulý čas; při `remainingTime <= 0` → `switchToNextInterval()`.
+- **`tick(_:silent:)`** odečte **skutečně uplynulý čas** (měřený `ContinuousClock`, ne počtem tiků) a provede všechny přechody, které se do něj vejdou. Zbytek času se přelévá do dalších intervalů, takže i jeden velký skok (aplikace byla uspaná) skončí na správné pozici. `silent` potlačí pípání a vibrace, aby se při dohánění času nespustila jejich salva.
 - **`switchToNextInterval()`** – posune `activeTimerIndex`. Pokud je za koncem pole → `handleRoundCompletion()`. **Nulové intervaly (0 s) se automaticky přeskakují.**
 - **`handleRoundCompletion()`**:
   1. `rounds == -1` (nekonečno) → nové kolo,
@@ -212,6 +217,8 @@ Engine při určitých momentech zavolá `onFeedback(...)`:
 | `start()` / `stop()` / `startStop()` | Spuštění / zastavení (bez resetu pozice) |
 | `reset()` | Návrat na první interval, první kolo |
 | `skipCurrentInterval()` | Přeskočí aktuální interval (nastaví remaining na 0) |
+| `syncToWallClock()` | Dorovná stav podle reálného času (po návratu z pozadí) |
+| `setTickInterval(_:)` | Jak často se probouzí smyčka (10 ms v popředí, 50 ms na pozadí) |
 | `addInterval(_:)` | Přidá interval (pokud není dosaženo `maxTimers`) |
 | `removeInterval(at:)` | Odebere interval (index nebo `IndexSet`) |
 | `loadIntervals(_:resetState:)` | Nahraje nové intervaly z persistence |
@@ -610,7 +617,7 @@ GustavTimer/
 ├── ContentView.swift             # Root – TimerView + sheety (Settings/Onboarding/WhatsNew)
 ├── AppConfig.swift               # Konstanty, presety, URL, pozadí
 ├── AppSettings.swift             # ObservableObject sdružující @AppStorage nastavení
-├── Info.plist                    # URL scheme gustavtimerapp
+├── Info.plist                    # URL scheme, NSSupportsLiveActivities
 ├── PrivacyInfo.xcprivacy         # Privacy manifest
 ├── Localizable.xcstrings         # Lokalizace (en, cs)
 │
@@ -623,7 +630,8 @@ GustavTimer/
 │   └── SoundModel+Title.swift    # iOS lokalizované názvy zvuků
 │
 ├── Managers/
-│   └── SoundManager.swift        # AVAudioPlayer singleton
+│   ├── SoundManager.swift        # AVAudioPlayer singleton
+│   └── TimerLiveActivityController.swift  # Obsluha ActivityKitu
 │
 ├── Views/
 │   ├── Timer/
@@ -666,12 +674,77 @@ Shared/                            # ⭐ Čistá logika sdílitelná s watchOS
 ├── TimerEngine.swift              # Jádro odpočtu
 ├── IntervalData.swift             # Model intervalu
 ├── SoundModel.swift               # Enum zvuků
-└── TimeDisplayFormat.swift        # Formát zobrazení času
+├── TimeDisplayFormat.swift        # Formát zobrazení času
+├── SharedTimerLink.swift          # Parsování a generování sdílených odkazů
+└── TimerActivityAttributes.swift  # Stav Live Activity (app + widget)
+
+GustavTimerWidget/                 # Widget extension (Live Activity)
+├── GustavTimerWidgetBundle.swift  # @main
+├── TimerLiveActivity.swift        # Zamykací obrazovka + Dynamic Island
+├── WidgetTheme.swift              # Barvy a fonty bez závislosti na GustavUI
+├── Fonts/ *.ttf                   # Vlastní kopie fontů (UIAppFonts)
+├── Assets.xcassets                # AccentColor, WidgetBackground
+└── Info.plist                     # NSExtension + UIAppFonts
 ```
 
 ---
 
-## 19 · Poznámky k implementaci a TODO
+## 19 · Live Activity
+
+`Shared/TimerActivityAttributes.swift` + `Managers/TimerLiveActivityController.swift` + target **GustavTimerWidget**
+
+### Co dlaždice ukazuje
+
+Live Activity **vědomě nic neodpočítává** – ani název timeru, ani konec tréninku:
+
+| Stav | Nadpis | Podřádek |
+|---|---|---|
+| Timer běží | TIMER RUNNING | Open the app for the countdown |
+| Pozastaveno | TIMER PAUSED | Open the app to resume |
+
+### Proč tam není odpočet
+
+Live Activity se sama nepřekresluje a aktualizaci jí umí poslat jen běžící aplikace (nebo push ze serveru). Aplikace ale na pozadí neběží – systém ji během chvíle uspí. Cokoli, co by se muselo průběžně měnit (odpočet, název intervalu, číslo kola), by proto na obrazovce zamrzlo a začalo lhát: odpočet doběhne na nulu a zůstane na ní, i když trénink je dávno ve třetím kole.
+
+Pokusy o obcházení tohohle omezení skončily takto:
+
+- **Tichá audio smyčka** (background mód `audio`) aplikaci na pozadí sice udržela naživu a odpočet i přepínání intervalů fungovaly, ale ne spolehlivě napříč zařízeními. Bylo odstraněno.
+- **Dopočet z rozvrhu ve widgetu** (widget si sám spočítá, který interval běží) funguje jen ve chvíli, kdy systém widget skutečně překreslí – a to si řídí sám. Aktualizace stavu překreslení negarantuje. Ze stejného důvodu selhalo i přepnutí na „hotovo" přes `staleDate`.
+- **Rozpočet aktualizací**: ActivityKit z pozadí přebytečné aktualizace zahazuje. V logu je to vidět jako nepoměr mezi „update odeslán" a systémovým „Updating content for activity".
+
+Zbylo tedy jediné poctivé řešení: ukazovat výhradně to, co platí i po hodině bez jediné aktualizace.
+
+> [!danger] `Text(timerInterval:)` a `.fixedSize()`
+> Kdyby se někdy odpočet do dlaždice vracel: systémový odpočet si velikost řídí sám a s `.fixedSize()` se **celá dlaždice přestane vykreslovat**. Zůstane viset poslední snímek, nikde se nic nehlásí a vypadá to jako zaseknutý timer. Totéž platí pro `ProgressView(timerInterval:)`.
+
+### Stav aktivity (`TimerActivityAttributes.ContentState`)
+
+Jediné pole: `phase` (`.running` / `.paused`). `TimerActivityAttributes` nemá žádné vlastnosti – ani název timeru.
+
+Konec tréninku se do stavu nedává schválně. Šlo by ho poslat jako absolutní datum a přes `staleDate` nechat dlaždici přepnout na „hotovo", ale v praxi se to překreslení nespolehlivě dostavovalo – systém si okamžik renderu řídí sám. Dlaždice, která tvrdí „běží" u dávno doběhnutého tréninku, je pořád lepší než ta, která se zasekne na půl cesty.
+
+### Životní cyklus
+
+| Okamžik | Co se stane |
+|---|---|
+| Start timeru | `Activity.request` – aktivita běží po celou dobu tréninku |
+| Pauza / obnovení | `Activity.update` s novou fází |
+| Konec tréninku (aplikace žije) | `finish()` – aktivita zmizí |
+| Konec tréninku (aplikace uspaná) | Dlaždice zůstane viset; zmizí, jakmile uživatel otevře aplikaci |
+| Reset / otevření nastavení | `finish()` – aktivita zmizí okamžitě |
+| Start aplikace | `endOrphanedActivities()` – uklidí aktivity po pádu nebo force quit |
+
+### Návrat do popředí
+
+`TimerView` posílá `scenePhase` do `TimerViewModel.handleScenePhase(_:)`. Při návratu zavolá `engine.syncToWallClock()`, který dopočítá čas strávený mimo – engine v jednom kroku přeskočí všechny intervaly a kola, která mezitím měla proběhnout (tiše, bez záplavy pípání). **Timer tedy po návratu ukazuje správný stav bez ohledu na to, jak dlouho byla aplikace pryč.**
+
+### Widget bez závislostí
+
+`GustavTimerWidget` záměrně nezávisí na balíčku GustavUI – veze si vlastní kopii fontů (`UIAppFonts` v Info.plist) a barvy má jako konstanty ve `WidgetTheme.swift`. `Bundle.module` u SwiftPM balíčku končí při chybějícím resource bundlu tvrdým `fatalError` a pád extension znamená to samé jako zamrzlá dlaždice: zůstane viset poslední snímek.
+
+---
+
+## 20 · Poznámky k implementaci a TODO
 
 > [!warning] Postřehy z kódu (stav k verzi 2.3.0)
 > - **`WhatsNewView.swift`** je nedokončený placeholder – reálně se používá `OnboardingView`.

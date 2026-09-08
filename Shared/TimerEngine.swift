@@ -16,7 +16,7 @@
 //  │                                                             │
 //  │   intervals: [Work 20s, Rest 10s]    rounds: 8             │
 //  │                                                             │
-//  │   start() → tick 10ms → remainingTime -= 10ms              │
+//  │   start() → tick → remainingTime -= skutečně uplynulý čas   │
 //  │                  │                                          │
 //  │                  └─ remainingTime <= 0?                     │
 //  │                       ├─ další interval → onFeedback(.intervalTransition)
@@ -136,7 +136,7 @@ enum TimerFeedback {
 ///     2. Konfigurace:   engine.loadIntervals([...]), engine.rounds = 8
 ///     3. Callbacky:     engine.onFeedback = { ... }
 ///     4. Spuštění:      engine.start()
-///     5. Běh:           engine tikne každých 10ms, aktualizuje remainingTime
+///     5. Běh:           engine tiká (10 ms v popředí) a odečítá skutečně uplynulý čas
 ///     6. Přechody:      automaticky přepíná intervaly a kola
 ///     7. Zastavení:     engine.stop() nebo automaticky po posledním kole
 ///     8. Reset:         engine.reset() – vrátí vše na začátek
@@ -261,6 +261,18 @@ class TimerEngine: ObservableObject {
     ///     }
     var onStop: (() -> Void)?
 
+    /// Volá se pokaždé, když se změní *plán* běhu – tedy přechod intervalu, kolo
+    /// nebo stav běhu (start/stop/reset/skip). Netiká každých pár milisekund,
+    /// takže je vhodný pro věci mimo UI: Live Activity, notifikace, widgety.
+    ///
+    ///     engine.onScheduleChange = { [weak self] in
+    ///         self?.liveActivity.refresh()
+    ///     }
+    ///
+    /// Callback se vždy volá až *po* dokončení změny, takže engine je v konzistentním
+    /// stavu (na rozdíl od onFeedback(.intervalTransition), který se pálí uprostřed přechodu).
+    var onScheduleChange: (() -> Void)?
+
     // MARK: - Privátní
 
     /// Reference na asynchronní Task, který provádí tikání.
@@ -268,6 +280,23 @@ class TimerEngine: ObservableObject {
     private var timerTask: Task<Void, Never>?
 
     private var lastSecond: Int = -1
+
+    /// Hodiny, podle kterých se měří skutečně uplynulý čas.
+    /// `ContinuousClock` běží dál i když zařízení spí – na rozdíl od počítání tiků
+    /// tedy odpočet nezaostane, když systém smyčku na chvíli přiškrtí.
+    private let clock = ContinuousClock()
+
+    /// Okamžik posledního zpracovaného tiku. Slouží k dopočítání času, který
+    /// uplynul, zatímco smyčka neběžela (aplikace uspaná na pozadí).
+    private var lastTickInstant: ContinuousClock.Instant?
+
+    /// Jak často se smyčka probouzí. V popředí jemně (kvůli plynulému UI),
+    /// na pozadí se dá zhrubit přes `setTickInterval(_:)` a šetřit tím baterii –
+    /// na přesnost odpočtu to vliv nemá, ta se počítá z hodin, ne z počtu tiků.
+    private var tickInterval: Duration = .milliseconds(10)
+
+    /// Pojistka proti zacyklení při samých nulových intervalech.
+    private static let maxTransitionsPerTick = 10_000
 
     // MARK: - Vypočítané vlastnosti
 
@@ -376,7 +405,9 @@ class TimerEngine: ObservableObject {
         }
 
         isRunning = true
+        lastTickInstant = clock.now
         onStart?()
+        onScheduleChange?()
 
         timerTask?.cancel()
         timerTask = Task { [weak self] in
@@ -387,6 +418,7 @@ class TimerEngine: ObservableObject {
                 await MainActor.run {
                     self.isCountingDown = true
                     self.countdownValue = self.countdownDuration
+                    self.onScheduleChange?()
                 }
                 for value in stride(from: self.countdownDuration, through: 1, by: -1) {
                     guard !Task.isCancelled && self.isRunning else { return }
@@ -400,27 +432,74 @@ class TimerEngine: ObservableObject {
                 await MainActor.run {
                     self.isCountingDown = false
                     self.onFeedback?(.countdownEnd)
+                    self.onScheduleChange?()
                 }
             }
 
             // --- Standardní tick smyčka ---
-            let tickInterval: Duration = .milliseconds(10)
-            let clock = ContinuousClock()
+            //
+            // Smyčka neodečítá "jeden tik", ale skutečně uplynulý čas změřený
+            // hodinami. Když ji systém přiškrtí (aplikace na pozadí, zatížené CPU),
+            // následující tik ten výpadek dožene a odpočet zůstane přesný.
+            await MainActor.run { self.lastTickInstant = self.clock.now }
 
             while !Task.isCancelled && self.isRunning {
-                let start = clock.now
+                let interval = await MainActor.run { self.tickInterval }
+                try? await Task.sleep(for: interval)
+
+                guard !Task.isCancelled && self.isRunning else { return }
 
                 await MainActor.run {
-                    self.tick(tickInterval)
-                }
-
-                let elapsed = clock.now - start
-                let sleepTime = tickInterval - elapsed
-                if sleepTime > .zero {
-                    try? await Task.sleep(for: sleepTime)
+                    self.tickElapsedTime()
                 }
             }
         }
+    }
+
+    /// Odečte čas, který uplynul od posledního tiku, a posune stav timeru.
+    /// Voláno ze smyčky i z `syncToWallClock()` po návratu z pozadí.
+    ///
+    /// - Parameter silent: Potlačí průběžnou zpětnou vazbu (pípání, vibrace).
+    ///   Používá se při dohánění času stráveného na pozadí – jinak by se najednou
+    ///   spustilo tolik pípnutí, kolik intervalů mezitím proběhlo.
+    private func tickElapsedTime(silent: Bool = false) {
+        let now = clock.now
+        guard let last = lastTickInstant else {
+            lastTickInstant = now
+            return
+        }
+        lastTickInstant = now
+
+        let elapsed = now - last
+        guard elapsed > .zero else { return }
+
+        tick(elapsed, silent: silent)
+    }
+
+    /// Dorovná stav timeru podle reálného času – zavolej po návratu aplikace
+    /// z pozadí (nebo kdykoli je podezření, že smyčka chvíli neběžela).
+    ///
+    ///     .onChange(of: scenePhase) { _, phase in
+    ///         if phase == .active { engine.syncToWallClock() }
+    ///     }
+    ///
+    /// Když smyčka běžela normálně, je volání prakticky no-op (uplynulo pár ms).
+    /// Když aplikace spala, engine v jednom kroku přeskočí všechny intervaly
+    /// a kola, která mezitím měla proběhnout – bez záplavy pípání.
+    func syncToWallClock() {
+        guard isRunning, !isCountingDown else { return }
+        tickElapsedTime(silent: true)
+        onScheduleChange?()
+    }
+
+    /// Nastaví, jak často se probouzí tick smyčka.
+    /// Na pozadí se vyplatí zhrubit (šetří baterii), přesnost odpočtu to neovlivní –
+    /// ta se počítá z hodin, ne z počtu tiků.
+    ///
+    ///     engine.setTickInterval(.milliseconds(50))   // aplikace na pozadí
+    ///     engine.setTickInterval(.milliseconds(10))   // zpět v popředí
+    func setTickInterval(_ interval: Duration) {
+        tickInterval = max(interval, .milliseconds(1))
     }
 
     /// Zastaví timer bez resetování pozice.
@@ -435,7 +514,9 @@ class TimerEngine: ObservableObject {
         isCountingDown = false
         timerTask?.cancel()
         timerTask = nil
+        lastTickInstant = nil
         onStop?()
+        onScheduleChange?()
     }
 
     /// Zastaví timer a vrátí vše na začátek (první interval, první kolo).
@@ -453,6 +534,7 @@ class TimerEngine: ObservableObject {
         if !intervals.isEmpty {
             remainingTime = intervals[0].duration
         }
+        onScheduleChange?()
     }
 
     /// Přeskočí aktuální interval – nastaví remainingTime na nulu,
@@ -462,6 +544,7 @@ class TimerEngine: ObservableObject {
     ///     engine.skipCurrentInterval()
     func skipCurrentInterval() {
         remainingTime = .zero
+        onScheduleChange?()
     }
 
     // MARK: - Správa intervalů
@@ -598,20 +681,54 @@ class TimerEngine: ObservableObject {
 
     // MARK: - Privátní logika
 
-    /// Jeden tik časovače – odečte uplynulý čas a zkontroluje přechod.
+    /// Odečte uplynulý čas a provede všechny přechody, které se do něj vejdou.
     /// Volá se na MainActor (kvůli @Published property updates).
-    private func tick(_ interval: Duration) {
-        remainingTime -= interval
+    ///
+    /// Na rozdíl od naivního "odečti tik a zkontroluj nulu" umí zpracovat i velký
+    /// skok (aplikace byla uspaná na pozadí): zbytek času se přelévá do dalších
+    /// intervalů a kol, dokud se nevyčerpá nebo timer neskončí.
+    ///
+    /// - Parameters:
+    ///   - elapsed: Skutečně uplynulý čas od posledního zpracování.
+    ///   - silent: Potlačí zpětnou vazbu přechodů (dohánění času z pozadí).
+    private func tick(_ elapsed: Duration, silent: Bool = false) {
+        var remainingElapsed = elapsed
+        var transitions = 0
+        var didSwitch = false
 
-        if remainingTime <= .zero {
-            switchToNextInterval()
-        } else {
-            let c = remainingTime.components
-            let currentSecond = c.attoseconds > 0 ? Int(c.seconds) + 1 : Int(c.seconds)
-            if currentSecond != lastSecond && currentSecond > 0 {
-                lastSecond = currentSecond
-                onFeedback?(.secondTick)
+        while remainingElapsed > .zero && isRunning {
+            // Nikdy neodečteme víc, než kolik zbývá v aktuálním intervalu –
+            // přebytek se použije na intervaly následující.
+            let step = min(remainingElapsed, max(remainingTime, .zero))
+            remainingTime -= step
+            remainingElapsed -= step
+
+            guard remainingTime <= .zero else { break }
+
+            switchToNextInterval(silent: silent)
+            didSwitch = true
+
+            // timerEnd resetuje engine a zastaví běh – zbytek času zahodíme.
+            guard isRunning else { return }
+
+            transitions += 1
+            if transitions >= Self.maxTransitionsPerTick {
+                // Pojistka: samé nulové intervaly by jinak točily nekonečnou smyčku.
+                break
             }
+        }
+
+        if didSwitch {
+            onScheduleChange?()
+        }
+
+        guard !silent else { return }
+
+        let c = remainingTime.components
+        let currentSecond = c.attoseconds > 0 ? Int(c.seconds) + 1 : Int(c.seconds)
+        if currentSecond != lastSecond && currentSecond > 0 {
+            lastSecond = currentSecond
+            onFeedback?(.secondTick)
         }
     }
 
@@ -620,19 +737,19 @@ class TimerEngine: ObservableObject {
     /// Pokud existuje další interval → nastaví remainingTime a zavolá onFeedback(.intervalTransition).
     /// Pokud je to poslední interval → zavolá handleRoundCompletion().
     /// Nulové intervaly (duration <= 0) se automaticky přeskakují.
-    private func switchToNextInterval() {
+    private func switchToNextInterval(silent: Bool = false) {
         activeTimerIndex += 1
 
         if activeTimerIndex >= intervals.count {
-            handleRoundCompletion()
+            handleRoundCompletion(silent: silent)
         } else {
-            onFeedback?(.intervalTransition)
+            if !silent { onFeedback?(.intervalTransition) }
             remainingTime = intervals[activeTimerIndex].duration
             lastSecond = Int(intervals[activeTimerIndex].duration.components.seconds)
 
             // Přeskočit nulové intervaly
             if intervals[activeTimerIndex].duration <= .zero {
-                switchToNextInterval()
+                switchToNextInterval(silent: silent)
             }
         }
     }
@@ -643,15 +760,17 @@ class TimerEngine: ObservableObject {
     ///     1. rounds == -1 (nekonečno) → nové kolo, onFeedback(.roundComplete)
     ///     2. finishedRounds < rounds  → nové kolo, onFeedback(.roundComplete)
     ///     3. finishedRounds == rounds → konec, onFeedback(.timerEnd), reset()
-    private func handleRoundCompletion() {
+    private func handleRoundCompletion(silent: Bool = false) {
         activeTimerIndex = 0
 
         if rounds == -1 || finishedRounds < rounds {
-            onFeedback?(.roundComplete)
+            if !silent { onFeedback?(.roundComplete) }
             finishedRounds += 1
             remainingTime = intervals[0].duration
             lastSecond = Int(intervals[0].duration.components.seconds)
         } else {
+            // Konec tréninku hlásíme i při tichém dohánění – uživatel se vrátí
+            // do aplikace a musí vidět (a mít započítáno), že timer doběhl.
             onFeedback?(.timerEnd)
             reset()
         }

@@ -17,6 +17,7 @@ struct TimerView: View {
     @Binding var activeSheet: AppSheet?
     @Environment(\.modelContext) var context
     @Environment(\.requestReview) var requestReview
+    @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \TimerData.id, order: .reverse) private var timerData: [TimerData]
     @StateObject var viewModel = TimerViewModel()
     @State private var orientation = UIDeviceOrientation.unknown
@@ -75,6 +76,11 @@ struct TimerView: View {
                 viewModel.showingWhatsNew = false
                 present(.whatsNew)
             }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            // Odchod na pozadí předá odpočet Live Activity, návrat ho zase
+            // srovná s reálným časem.
+            viewModel.handleScenePhase(newPhase)
         }
         .onOpenURL { url in
             // Universal Link i historické gustavtimerapp:// chodí sem.
