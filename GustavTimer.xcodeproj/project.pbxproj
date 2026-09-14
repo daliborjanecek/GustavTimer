@@ -115,7 +115,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		03D87E732B4F6315CEBB7C9D /* MartianGrotesk-CnRg.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "MartianGrotesk-CnRg.ttf"; sourceTree = "<group>"; };
+		03D87E732B4F6315CEBB7C9D /* MartianGrotesk-CnRg.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "MartianGrotesk-CnRg.ttf"; sourceTree = "<group>"; };
 		4CC875EA07905B4B00E09DDA /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		633754527AF8690733725156 /* TimerLiveActivityController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimerLiveActivityController.swift; sourceTree = "<group>"; };
 		75B8184B77C56B03B04D069A /* TimerLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimerLiveActivity.swift; sourceTree = "<group>"; };
@@ -188,7 +188,7 @@
 		CFFAF9482F3DEE2C00A20D76 /* TimerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerEngine.swift; sourceTree = "<group>"; };
 		CFFAF94E2F3DEE3C00A20D76 /* SoundModel+Title.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SoundModel+Title.swift"; sourceTree = "<group>"; };
 		D02ADADDD7254BF6DF5AA6D6 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		E7115454184315FF8AEDAD81 /* MartianGrotesk-StdMd.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "MartianGrotesk-StdMd.ttf"; sourceTree = "<group>"; };
+		E7115454184315FF8AEDAD81 /* MartianGrotesk-StdMd.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "MartianGrotesk-StdMd.ttf"; sourceTree = "<group>"; };
 		FB6D8C70A9000D034B6BDA02 /* TimerActivityAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimerActivityAttributes.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -226,7 +226,6 @@
 				E7115454184315FF8AEDAD81 /* MartianGrotesk-StdMd.ttf */,
 				03D87E732B4F6315CEBB7C9D /* MartianGrotesk-CnRg.ttf */,
 			);
-			name = Fonts;
 			path = Fonts;
 			sourceTree = "<group>";
 		};
@@ -248,7 +247,6 @@
 				B41392BEFAA30EC6798B4D80 /* WidgetTheme.swift */,
 				15F543D8486269D67A1D994F /* Fonts */,
 			);
-			name = GustavTimerWidget;
 			path = GustavTimerWidget;
 			sourceTree = "<group>";
 		};
@@ -544,7 +542,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1430;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					CF21842F29F052590060706C = {
 						CreatedOnToolsVersion = 14.3;
@@ -910,6 +908,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GustavTimer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Gustav Timer";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -949,6 +948,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GustavTimer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Gustav Timer";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -977,7 +977,6 @@
 		CFA10A0D2FA9B0010000000D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -997,7 +996,6 @@
 		CFA10A0E2FA9B0010000000E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
