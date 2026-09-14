@@ -118,9 +118,12 @@ struct FavouritesView: View {
         
         ToolbarItem {
             Button {
-                let savedTimers = timerData.filter { $0.order != 0 }
-                if let mainTimer = timerData.first(where: { $0.order == 0 }),
+                let savedTimers = timerData.filter { $0.order != AppConfig.mainTimerOrder }
+                if let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }),
                    !savedTimers.contains(where: { $0.matchesWorkout(of: mainTimer) }) {
+                    // Dialog startuje se stávajícím názvem, ať ho uživatel
+                    // nemusí psát znovu – stačí ho upravit nebo potvrdit.
+                    newTimerName = mainTimer.name
                     showSaveAlert.toggle()
                 } else {
                     showAlreadySavedAlert.toggle()
@@ -170,24 +173,31 @@ struct FavouritesView: View {
     }
     
     private func saveTimer() {
-        if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            let newId = (timerData.map { $0.order }.max() ?? 0) + 1
-            var settings = mainTimer.settings
-            settings.name = newTimerName
-            let newTimer = TimerData(order: newId, settings: settings)
-            context.insert(newTimer)
-            // Aktivní timer převezme pojmenování, aby se hned poznal jako uložený.
-            mainTimer.name = newTimerName
+        guard let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) else { return }
 
-            // Track timer save event
-            let intervalPattern = newTimer.intervals.map { String($0.value) }.joined(separator: "/")
-            TelemetryDeck.signal(
-                "timer.saved",
-                parameters: [
-                    "interval_pattern": intervalPattern
-                ]
-            )
-        }
+        let newId = (timerData.map { $0.order }.max() ?? 0) + 1
+        var settings = mainTimer.settings
+        settings.name = resolvedTimerName(fallback: mainTimer.name)
+        let newTimer = TimerData(order: newId, settings: settings)
+        context.insert(newTimer)
+        // Aktivní timer převezme pojmenování, aby se hned poznal jako uložený.
+        mainTimer.name = settings.name
+
+        // Track timer save event
+        let intervalPattern = newTimer.intervals.map { String($0.value) }.joined(separator: "/")
+        TelemetryDeck.signal(
+            "timer.saved",
+            parameters: [
+                "interval_pattern": intervalPattern
+            ]
+        )
+    }
+
+    /// Název z dialogu, ořezaný a omezený délkou. Vymazané pole se nebere jako
+    /// „pojmenuj to prázdně“ – v oblíbených by z toho byl bezejmenný řádek.
+    private func resolvedTimerName(fallback: String) -> String {
+        let trimmed = newTimerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return String((trimmed.isEmpty ? fallback : trimmed).prefix(AppConfig.maxTimerTitle))
     }
     
     /// Nastaví hlavní timer podle zadaného nastavení.
