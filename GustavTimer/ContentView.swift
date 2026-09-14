@@ -21,19 +21,10 @@ enum AppSheet: Identifiable {
 }
 
 struct ContentView: View {
-    @Query var timerData: [TimerData]
-    
     @Environment(\.modelContext) var context
     
-    @AppStorage("selectedBackgroundIndex") private var selectedBackgroundIndex: Int = 0
-    @AppStorage("activeTimerId") private var activeTimerId: Int = 0
-    @AppStorage("selectedSound") private var selectedSound: String = "beep"
-    @AppStorage("isSoundEnabled") private var isSoundEnabled: Bool = true
-    
     @State private var activeSheet: AppSheet?
-    @AppStorage("lastOnboardingVersion") private var lastOnboardingVersion: Int = 0
-
-    private var defaultTimerId: Int = 0
+    @AppStorage(AppPreferences.Key.lastOnboardingVersion) private var lastOnboardingVersion: Int = 0
 
     var body: some View {
         TimerView(activeSheet: $activeSheet)
@@ -47,16 +38,14 @@ struct ContentView: View {
             }
             .onAppear {
                 initializeDataIfNeeded()
+                SettingsMigration.runIfNeeded(context: context)
                 showOnboardingIfNeeded()
             }
     }
     
     private func initializeDataIfNeeded() {
-        if timerData.isEmpty {
-            let defaultTimer = AppConfig.defaultTimer
-            context.insert(defaultTimer)
-            try? context.save()
-        }
+        TimerData.mainTimer(in: context)
+        try? context.save()
     }
 
     /// Onboarding má přednost před „co je nového“ – po čisté instalaci se

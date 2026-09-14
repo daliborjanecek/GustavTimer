@@ -9,12 +9,11 @@ import SwiftUI
 import SwiftData
 
 struct SearchTabView: View {
-    @ObservedObject var appSettings = AppSettings()
-    
     @Binding var searchText: String
     @FocusState private var isFocused: Bool
     @Query(sort: \TimerData.order, order: .reverse) var timerData: [TimerData]
     @Environment(\.dismiss) var dismiss
+    @Environment(\.modelContext) var context
     
     var body: some View {
         NavigationStack {
@@ -59,7 +58,7 @@ struct SearchTabView: View {
     
     private func isTimerSelected(timer: TimerData) -> Bool {
         if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            return mainTimer == timer
+            return mainTimer.matchesWorkout(of: timer)
         }
         return false
     }
@@ -79,10 +78,10 @@ struct SearchTabView: View {
     }
     
     private func selectTimer(timer: TimerData) {
+        timer.selected()
         if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            mainTimer.name = timer.name
-            mainTimer.intervals = timer.intervals
-            appSettings.save(from: timer)
+            mainTimer.settings = timer.settings
+            try? context.save()
         }
     }
 }

@@ -59,8 +59,13 @@ struct AppConfig {
         
     ]
     
-    // Default timer
-    static let defaultTimer = TimerData(order: 0, name: "Gustav Timer", rounds: -1, selectedSound: soundThemes.first ?? nil, isVibrating: false)
+    /// `order` hlavního (aktivního) timeru. Ostatní hodnoty: > 0 uložené
+    /// oblíbené, < 0 předdefinované presety.
+    static let mainTimerOrder: Int = 0
+
+    /// Výchozí timer nové instalace. Hodnotový typ – dřív to byla jedna sdílená
+    /// instance `@Model`, kterou tři různá místa vkládala do kontextu.
+    static let defaultTimer: TimerSettings = .default
     
     static let soundThemes: [SoundModel] = SoundModel.allCases
     

@@ -24,6 +24,16 @@ class TimerViewModel: ObservableObject {
         countdownDuration: AppConfig.countdownDuration
     )
 
+    // MARK: - Nastavení aktivního timeru
+
+    /// Kompletní nastavení běžícího timeru. Jediný zdroj pravdy – čte se
+    /// z `TimerData` (order == 0) a přes `apply(_:resetState:)` se rozvede
+    /// do enginu i do zpětné vazby.
+    ///
+    /// Do verze 2.3 tady byla řada `@AppStorage` vlastností, které se rozcházely
+    /// s tím, co bylo uložené v databázi. Viz `TimerSettings`.
+    @Published private(set) var settings: TimerSettings = .default
+
     // MARK: - iOS-specific publikované vlastnosti
     @Published var showingSheet = false
     @Published var showingWhatsNew: Bool = false
@@ -34,33 +44,27 @@ class TimerViewModel: ObservableObject {
     /// příznaku funguje spolehlivě i když je Settings pořád otevřené z předchozího
     /// odkazu (aplikace jen na pozadí), kdy by zápis `true → true` do UserDefaults
     /// nevyvolal žádnou pozorovatelnou změnu.
-    @AppStorage("deeplinkLoadToken") var deeplinkLoadToken: Int = 0
+    @AppStorage(AppPreferences.Key.deeplinkLoadToken) var deeplinkLoadToken: Int = 0
 
     /// Název timeru z `_title` posledního načteného odkazu. Prázdný řetězec
     /// znamená, že odkaz `_title` neobsahoval – SharedTimerLink.parse prázdný
     /// ani jen z mezer sestávající title nikdy nevrátí, takže je to bezpečná
     /// hodnota "chybí".
-    @AppStorage("deeplinkLoadedTitle") var deeplinkLoadedTitle: String = ""
+    @AppStorage(AppPreferences.Key.deeplinkLoadedTitle) var deeplinkLoadedTitle: String = ""
 
     // MARK: Lottie animation state
     @Published var appearanceIconAnimation = LottiePlaybackMode.paused(at: .frame(0))
     @Published var loopIconAnimation = LottiePlaybackMode.paused(at: .frame(0))
 
-    // MARK: - Nastavení (AppStorage)
-    @AppStorage("rounds") var rounds: Int = -1
-    @AppStorage("stopCounter") var stopCounter: Int = 0
-    @AppStorage("completedTimerCount") var completedTimerCount: Int = 0
+    // MARK: - Statistiky a stav aplikace (UserDefaults)
+    @AppStorage(AppPreferences.Key.stopCounter) var stopCounter: Int = 0
+    @AppStorage(AppPreferences.Key.completedTimerCount) var completedTimerCount: Int = 0
+    @AppStorage(AppPreferences.Key.whatsNewVersion) var whatsNewVersion: Int = 0
 
     // MARK: - Review prompt
     var onReviewRequested: (() -> Void)?
-    @AppStorage("whatsNewVersion") var whatsNewVersion: Int = 0
-    @AppStorage("isSoundEnabled") var isSoundEnabled: Bool = true
-    @AppStorage("isVibrating") var isVibrating: Bool = false
-    @AppStorage("isTicking") var isTicking: Bool = false
-    @AppStorage("timeDisplayFormat") var timeDisplayFormat: TimeDisplayFormat = .seconds
 
     // MARK: - Soukromé vlastnosti
-    private var sound: SoundModel?
     private var modelContext: ModelContext?
     private var cancellables = Set<AnyCancellable>()
 
@@ -85,7 +89,6 @@ class TimerViewModel: ObservableObject {
     // MARK: - Inicializace
     init() {
         setupEngineCallbacks()
-        syncRoundsToEngine()
         bindEngineChanges()
     }
 
@@ -97,17 +100,6 @@ class TimerViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
-            }
-            .store(in: &cancellables)
-
-        // Sleduj změny v rounds a synchronizuj s engine
-        // (didSet se nevolá při změně z jiné @AppStorage instance)
-        NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
-            .compactMap { [weak self] _ in self?.rounds }
-            .removeDuplicates()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] newValue in
-                self?.engine.rounds = newValue
             }
             .store(in: &cancellables)
     }
@@ -157,8 +149,15 @@ class TimerViewModel: ObservableObject {
         }
     }
 
-    private func syncRoundsToEngine() {
-        engine.rounds = rounds
+    // MARK: - Aplikace nastavení
+
+    /// Jediné místo, kde se nastavení timeru dostává do enginu.
+    /// Zvuk, vibrace a tikání si zpětná vazba čte přímo ze `settings`.
+    private func apply(_ new: TimerSettings, resetState: Bool) {
+        settings = new
+        engine.rounds = new.rounds
+        engine.hasCountdown = new.hasCountdown
+        engine.loadIntervals(new.intervals, resetState: resetState)
     }
 
     // MARK: - Nastavení kontextu
@@ -204,17 +203,17 @@ class TimerViewModel: ObservableObject {
 
     func addTimer() {
         engine.addInterval()
-        saveTimers()
+        persistIntervals()
     }
 
     func removeTimer(at offsets: IndexSet) {
         engine.removeInterval(at: offsets)
-        saveTimers()
+        persistIntervals()
     }
 
     func removeTimer(index: Int) {
         engine.removeInterval(at: index)
-        saveTimers()
+        persistIntervals()
     }
 
     // MARK: - Progress bar
@@ -236,13 +235,6 @@ class TimerViewModel: ObservableObject {
         engine.formattedCurrentTime(format: timeDisplayFormat)
     }
 
-    // MARK: - Nastavení zvuku
-
-    func setSound(sound: SoundModel?) {
-        isSoundEnabled = sound != nil
-        self.sound = sound
-    }
-
     /// Zobrazení/skrytí nastavení
     func toggleSheet() {
         showingSheet.toggle()
@@ -253,32 +245,36 @@ class TimerViewModel: ObservableObject {
     // MARK: - Zpětná vazba (vibrace a zvuky) – iOS specific
 
     private func vibrate() {
-        guard isVibrating && engine.isRunning else { return }
+        guard settings.isVibrating && engine.isRunning else { return }
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
     }
 
     private func vibrateRound() {
-        guard isVibrating && engine.isRunning else { return }
+        guard settings.isVibrating && engine.isRunning else { return }
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
     }
 
     private func vibrateEnd() {
-        guard isVibrating else { return }
+        guard settings.isVibrating else { return }
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.error)
     }
 
     private func playSound() {
-        guard isSoundEnabled else { playTickSound(); return }
-        if let sound {
+        if let sound = settings.sound {
             SoundManager.instance.playSound(soundModel: sound)
+        } else {
+            // Poslední sekunda intervalu nedostane .secondTick – engine místo ní
+            // pošle .intervalTransition – takže tik při ztlumeném zvuku
+            // doplňujeme tady. Bez toho by tikání na přechodu vynechalo.
+            playTickSound()
         }
     }
     
     private func playTickSound() {
-        guard isTicking else { return }
+        guard settings.isTicking else { return }
         SoundManager.instance.playTick()
     }
 
@@ -328,12 +324,16 @@ class TimerViewModel: ObservableObject {
 
         guard let link = SharedTimerLink.parse(items: items, limits: limits) else { return }
 
-        timers = link.intervals
-        rounds = link.rounds
+        var merged = settings
+        merged.intervals = link.intervals
+        merged.rounds = link.rounds
+        if let title = link.title { merged.name = title }
+
+        apply(merged, resetState: true)
+        persist(merged)
+
         deeplinkLoadedTitle = link.title ?? ""
         deeplinkLoadToken += 1
-        // Uložit do SwiftData, aby SettingsView četlo aktuální intervaly
-        saveTimers(name: link.title)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.showingSheet = true
         }
@@ -342,68 +342,33 @@ class TimerViewModel: ObservableObject {
 
 // MARK: - Správa dat
 extension TimerViewModel {
+
     private func loadTimers(resetCurrentState: Bool = true) {
         guard let context = modelContext else {
-            engine.loadIntervals([
-                IntervalData(value: 60, name: "Work"),
-                IntervalData(value: 30, name: "Rest")
-            ])
+            apply(.default, resetState: true)
             return
         }
 
-        do {
-            let descriptor = FetchDescriptor<TimerData>(
-                predicate: #Predicate<TimerData> { $0.order == 0 }
-            )
-            let timerDataArray = try context.fetch(descriptor)
-
-            if let timerData = timerDataArray.first {
-                engine.loadIntervals(timerData.intervals, resetState: resetCurrentState)
-                engine.hasCountdown = timerData.hasCountdown
-            } else {
-                createAndSaveDefaultTimers()
-            }
-        } catch {
-            print("Chyba při načítání časovačů: \(error)")
-            engine.loadIntervals([
-                IntervalData(value: 60, name: "Work"),
-                IntervalData(value: 30, name: "Rest")
-            ])
-        }
+        apply(TimerData.mainTimer(in: context).settings, resetState: resetCurrentState)
     }
 
-    /// - Parameter name: Nový název hlavního timeru. `nil` název nemění –
-    ///   používá ho jen sdílený odkaz, který nese `_title`.
-    private func saveTimers(name: String? = nil) {
+    /// Zapíše kompletní nastavení do hlavního timeru (order == 0).
+    private func persist(_ newSettings: TimerSettings) {
         guard let context = modelContext else { return }
 
+        TimerData.mainTimer(in: context).settings = newSettings
         do {
-            let descriptor = FetchDescriptor<TimerData>(
-                predicate: #Predicate<TimerData> { $0.order == 0 }
-            )
-            let timerDataArray = try context.fetch(descriptor)
-
-            let timerData: TimerData
-            if let existingData = timerDataArray.first {
-                timerData = existingData
-            } else {
-                timerData = AppConfig.defaultTimer
-                context.insert(timerData)
-            }
-
-            timerData.intervals = timers
-            if let name { timerData.name = name }
             try context.save()
         } catch {
             print("Chyba při ukládání časovačů: \(error)")
         }
     }
 
-    private func createAndSaveDefaultTimers() {
-        engine.loadIntervals([
-            IntervalData(value: 60, name: "Work"),
-            IntervalData(value: 30, name: "Rest")
-        ])
-        saveTimers()
+    /// Uloží intervaly upravené přes engine (addTimer/removeTimer).
+    private func persistIntervals() {
+        var updated = settings
+        updated.intervals = timers
+        settings = updated
+        persist(updated)
     }
 }

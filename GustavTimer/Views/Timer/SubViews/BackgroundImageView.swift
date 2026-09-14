@@ -9,7 +9,7 @@ import SwiftUI
 import SwiftData
 
 struct BackgroundImageView: View {
-    @AppStorage("bgIndex") var bgIndex: Int = 0
+    @AppStorage(AppPreferences.Key.backgroundIndex) var bgIndex: Int = 0
     @Query var customImage: [CustomImageModel]
     
     var body: some View {

@@ -15,7 +15,7 @@ struct FavouriteRowView: View {
     var tip: String? = nil
         
     var isMainTimer: Bool {
-        timer.order == AppConfig.defaultTimer.order
+        timer.order == AppConfig.mainTimerOrder
     }
     
     var body: some View {
@@ -149,8 +149,7 @@ struct FavouriteRowView: View {
             }(), selected: false, isMinimized: true)
         }
         FavouriteRowView(timer: {
-            let timer = AppConfig.defaultTimer
-            timer.order = 11
+            let timer = TimerData(order: 11, settings: AppConfig.defaultTimer)
             timer.intervals = [
                 IntervalData(value: 30, name: "Work"),
                 IntervalData(value: 15, name: "Rest")

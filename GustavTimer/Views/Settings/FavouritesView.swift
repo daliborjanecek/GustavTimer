@@ -15,8 +15,6 @@ struct FavouritesView: View {
     @Query(sort: \TimerData.order, order: .reverse) var timerData: [TimerData]
     @Environment(\.modelContext) var context
     
-    @ObservedObject var appSettings = AppSettings()
-    
     @State var showSaveAlert: Bool = false
     @State var newTimerName: String = ""
     @State var showDeleteAlert: Bool = false
@@ -121,7 +119,8 @@ struct FavouritesView: View {
         ToolbarItem {
             Button {
                 let savedTimers = timerData.filter { $0.order != 0 }
-                if let mainTimer = timerData.first(where: { $0.order == 0 }), !savedTimers.contains(mainTimer) {
+                if let mainTimer = timerData.first(where: { $0.order == 0 }),
+                   !savedTimers.contains(where: { $0.matchesWorkout(of: mainTimer) }) {
                     showSaveAlert.toggle()
                 } else {
                     showAlreadySavedAlert.toggle()
@@ -173,10 +172,12 @@ struct FavouritesView: View {
     private func saveTimer() {
         if let mainTimer = timerData.first(where: { $0.order == 0 }) {
             let newId = (timerData.map { $0.order }.max() ?? 0) + 1
-            let newTimer = TimerData(order: newId, name: newTimerName, rounds: appSettings.rounds, isVibrating: appSettings.isVibrating)
-            newTimer.intervals = mainTimer.intervals
-            newTimer.selectedSound = mainTimer.selectedSound
+            var settings = mainTimer.settings
+            settings.name = newTimerName
+            let newTimer = TimerData(order: newId, settings: settings)
             context.insert(newTimer)
+            // Aktivní timer převezme pojmenování, aby se hned poznal jako uložený.
+            mainTimer.name = newTimerName
 
             // Track timer save event
             let intervalPattern = newTimer.intervals.map { String($0.value) }.joined(separator: "/")
@@ -192,12 +193,7 @@ struct FavouritesView: View {
     private func selectTimer(timer: TimerData) {
         timer.selected()
         if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            mainTimer.name = timer.name
-            mainTimer.intervals = timer.intervals
-            mainTimer.selectedSound = timer.selectedSound
-            mainTimer.isVibrating = timer.isVibrating
-            mainTimer.rounds = timer.rounds
-            appSettings.save(from: timer)
+            mainTimer.settings = timer.settings
             try? context.save()
         }
     }
@@ -216,7 +212,7 @@ struct FavouritesView: View {
     
     private func isTimerSelected(timer: TimerData) -> Bool {
         if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            return mainTimer == timer
+            return mainTimer.matchesWorkout(of: timer)
         }
         return false
     }
@@ -242,8 +238,7 @@ struct FavouritesView: View {
     List {
         FavouritesEmptyView()
         FavouriteRowView(timer: {
-            let timer = AppConfig.defaultTimer
-            timer.order = 11
+            let timer = TimerData(order: 11, settings: AppConfig.defaultTimer)
             timer.intervals = [
                 IntervalData(value: 30, name: "Work"),
                 IntervalData(value: 15, name: "Rest")

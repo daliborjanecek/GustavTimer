@@ -14,7 +14,7 @@ struct BackgroundSelectorView: View {
         GridItem(.adaptive(minimum: 120))
     ]
         
-    @AppStorage("bgIndex") var bgIndex: Int = 0
+    @AppStorage(AppPreferences.Key.backgroundIndex) var bgIndex: Int = 0
     
     @Environment(\.modelContext) var context
     @Query var customImage: [CustomImageModel]

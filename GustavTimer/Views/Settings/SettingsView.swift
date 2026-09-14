@@ -11,8 +11,6 @@ import GustavUICore
 import TelemetryDeck
 
 struct SettingsView: View {
-    @StateObject private var appSettings = AppSettings()
-
     @Query(sort: \TimerData.id, order: .reverse) private var timerData: [TimerData]
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
@@ -22,11 +20,10 @@ struct SettingsView: View {
     @State private var showSaveAlert = false
     @State private var showAlreadySavedAlert = false
     @State private var showDeeplinkLoadedAlert = false
-    @State private var selectedSoundTitle: String? = nil
     @State private var cachedLastSavedTimers: [TimerData] = []
-    @AppStorage("deeplinkLoadToken") private var deeplinkLoadToken: Int = 0
-    @AppStorage("lastAcknowledgedDeeplinkToken") private var lastAcknowledgedDeeplinkToken: Int = 0
-    @AppStorage("deeplinkLoadedTitle") private var deeplinkLoadedTitle: String = ""
+    @AppStorage(AppPreferences.Key.deeplinkLoadToken) private var deeplinkLoadToken: Int = 0
+    @AppStorage(AppPreferences.Key.lastAcknowledgedDeeplinkToken) private var lastAcknowledgedDeeplinkToken: Int = 0
+    @AppStorage(AppPreferences.Key.deeplinkLoadedTitle) private var deeplinkLoadedTitle: String = ""
     
     private var currentTimerData: TimerData {
         getOrCreateTimerData()
@@ -143,9 +140,9 @@ struct SettingsView: View {
     var roundsView: some View {
         Section {
             NavigationLink {
-                RoundsSettingsView(rounds: $appSettings.rounds)
+                RoundsSettingsView(rounds: setting(\.rounds))
             } label: {
-                ListButton(name: "ROUNDS", value: "\(appSettings.rounds == -1 ? "LOOP" : String(appSettings.rounds))")
+                ListButton(name: "ROUNDS", value: "\(currentTimerData.rounds == -1 ? "LOOP" : String(currentTimerData.rounds))")
             }
         }
     }
@@ -156,7 +153,7 @@ struct SettingsView: View {
             let lastSavedTimers = cachedLastSavedTimers.prefix(3)
             if !lastSavedTimers.isEmpty {
                 ForEach(lastSavedTimers) { timer in
-                    let isSelected = timer == currentTimerData
+                    let isSelected = timer.matchesWorkout(of: currentTimerData)
                     FavouriteRowView(timer: timer, selected: isSelected, isMinimized: true)
                         .onTapGesture {
                             DispatchQueue.main.async {
@@ -178,36 +175,17 @@ struct SettingsView: View {
     @ViewBuilder
     private var feedback: some View {
         SettingsSection(label: "FEEDBACK", footer: "FEEDBACK_DESCRIPTION") {
-            Toggle("HAPTICS", isOn: $appSettings.isVibrating)
+            Toggle("HAPTICS", isOn: setting(\.isVibrating))
                 .tint(Color.gustavVolt)
 
-            Toggle("SET_COUNTDOWN", isOn: .init(
-                get: { currentTimerData.hasCountdown },
-                set: { newValue in
-                    let timer = currentTimerData
-                    timer.hasCountdown = newValue
-                    try? context.save()
-                }
-            ))
-            .tint(Color.gustavVolt)
-            
-            Toggle("SET_TICKING", isOn: $appSettings.isTicking)
-            .tint(Color.gustavVolt)
-            
+            Toggle("SET_COUNTDOWN", isOn: setting(\.hasCountdown))
+                .tint(Color.gustavVolt)
+
+            Toggle("SET_TICKING", isOn: setting(\.isTicking))
+                .tint(Color.gustavVolt)
+
             NavigationLink {
-                SoundSettingsView(selectedSound: .init(get: {
-                    return currentTimerData.selectedSound ?? nil
-                }, set: { sound in
-                    let timer = currentTimerData
-                    timer.selectedSound = sound
-                    if let soundValue = sound {
-                        selectedSoundTitle = NSLocalizedString("\(soundValue.title)", comment: "")
-                    } else {
-                        selectedSoundTitle = nil
-                    }
-                    context.insert(timer)
-                    try? context.save()
-                }))
+                SoundSettingsView(selectedSound: setting(\.selectedSound))
             } label: {
                 ListButton(name: "SOUND", value: currentTimerData.selectedSound?.title ?? "MUTE")
             }
@@ -305,19 +283,27 @@ struct SettingsView: View {
     private func isTimerAlreadySaved() -> Bool {
         let savedTimers = timerData.filter { $0.order != 0 }
         if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            return savedTimers.contains(mainTimer)
+            return savedTimers.contains { $0.matchesWorkout(of: mainTimer) }
         }
         return false
     }
     
+    /// Binding na jedno pole aktivního timeru. Zápis rovnou uloží kontext,
+    /// aby se nastavení neztratilo, když uživatel zavře Settings swipem.
+    ///
+    ///     Toggle("SET_TICKING", isOn: setting(\.isTicking))
+    private func setting<Value>(_ keyPath: ReferenceWritableKeyPath<TimerData, Value>) -> Binding<Value> {
+        Binding(
+            get: { currentTimerData[keyPath: keyPath] },
+            set: { newValue in
+                currentTimerData[keyPath: keyPath] = newValue
+                try? context.save()
+            }
+        )
+    }
+
     private func getOrCreateTimerData() -> TimerData {
-        if let existing = timerData.first(where: { $0.order == 0 }) {
-            return existing
-        } else {
-            let newData = AppConfig.defaultTimer
-            context.insert(newData)
-            return newData
-        }
+        TimerData.mainTimer(in: context)
     }
     
     private func refreshLastSavedTimers() {
@@ -339,10 +325,11 @@ struct SettingsView: View {
     private func saveTimer() {
         if let mainTimer = timerData.first(where: { $0.order == 0 }) {
             let newOrder = (timerData.map { $0.order }.max() ?? 0) + 1
-            let newTimer = TimerData(order: newOrder, name: newTimerName, rounds: appSettings.rounds, isVibrating: appSettings.isVibrating)
-            newTimer.intervals = mainTimer.intervals
-            newTimer.selectedSound = mainTimer.selectedSound
-            context.insert(newTimer)
+            var settings = mainTimer.settings
+            settings.name = newTimerName
+            context.insert(TimerData(order: newOrder, settings: settings))
+            // Aktivní timer převezme pojmenování, aby se hned poznal jako uložený.
+            mainTimer.name = newTimerName
 
             // Track timer save event
             let intervalPattern = mainTimer.intervals.map { String($0.value) }.joined(separator: "/")
@@ -391,19 +378,16 @@ struct SettingsView: View {
     private func selectTimer(timer: TimerData) {
         timer.selected()
         if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            mainTimer.name = timer.name
-            mainTimer.intervals = timer.intervals
-            mainTimer.selectedSound = timer.selectedSound
-            mainTimer.isVibrating = timer.isVibrating
-            appSettings.save(from: timer)
+            mainTimer.settings = timer.settings
+            try? context.save()
         }
     }
     
     var summaryText: String {
         let roundTime = currentTimerData.intervals.reduce(0) { $0 + $1.value }
         var totalTime: Int? {
-            if appSettings.rounds > 1 {
-                return roundTime * appSettings.rounds
+            if currentTimerData.rounds > 1 {
+                return roundTime * currentTimerData.rounds
             } else {
                 return nil
             }

@@ -27,7 +27,7 @@
 		CF21844229F0528C0060706C /* TimerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21844129F0528C0060706C /* TimerViewModel.swift */; };
 		CF2222D02E353EA600A90265 /* TimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF2222CF2E353EA300A90265 /* TimerView.swift */; };
 		CF2222DA2E355A8200A90265 /* TimerData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF2222D92E355A8000A90265 /* TimerData.swift */; };
-		CF228F502E7C52B9000DEF21 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF228F4F2E7C52B5000DEF21 /* AppSettings.swift */; };
+		CF228F502E7C52B9000DEF21 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF228F4F2E7C52B5000DEF21 /* AppPreferences.swift */; };
 		CF228F542E7D7ED4000DEF21 /* SearchTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF228F532E7D7ECF000DEF21 /* SearchTabView.swift */; };
 		CF279C4C2C31A8940084C43F /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF279C4B2C31A8940084C43F /* SoundManager.swift */; };
 		CF4977932EED67BB00EE09B1 /* BannerImageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF4977922EED67B700EE09B1 /* BannerImageModel.swift */; };
@@ -69,6 +69,8 @@
 		CFFAF94C2F3DEE2C00A20D76 /* TimeDisplayFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9472F3DEE2C00A20D76 /* TimeDisplayFormat.swift */; };
 		CFFAF94D2F3DEE2C00A20D76 /* TimerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF9482F3DEE2C00A20D76 /* TimerEngine.swift */; };
 		CFFAF94F2F3DEE3C00A20D76 /* SoundModel+Title.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFAF94E2F3DEE3C00A20D76 /* SoundModel+Title.swift */; };
+		CFA10B022FB0C00100000002 /* TimerSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10B012FB0C00100000001 /* TimerSettings.swift */; };
+		CFA10B042FB0C00100000004 /* SettingsMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10B032FB0C00100000003 /* SettingsMigration.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -102,7 +104,7 @@
 		CF21844129F0528C0060706C /* TimerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerViewModel.swift; sourceTree = "<group>"; };
 		CF2222CF2E353EA300A90265 /* TimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerView.swift; sourceTree = "<group>"; };
 		CF2222D92E355A8000A90265 /* TimerData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerData.swift; sourceTree = "<group>"; };
-		CF228F4F2E7C52B5000DEF21 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		CF228F4F2E7C52B5000DEF21 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
 		CF228F532E7D7ECF000DEF21 /* SearchTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTabView.swift; sourceTree = "<group>"; };
 		CF279C4B2C31A8940084C43F /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 		CF4977922EED67B700EE09B1 /* BannerImageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerImageModel.swift; sourceTree = "<group>"; };
@@ -146,6 +148,8 @@
 		CFFAF9472F3DEE2C00A20D76 /* TimeDisplayFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeDisplayFormat.swift; sourceTree = "<group>"; };
 		CFFAF9482F3DEE2C00A20D76 /* TimerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerEngine.swift; sourceTree = "<group>"; };
 		CFFAF94E2F3DEE3C00A20D76 /* SoundModel+Title.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SoundModel+Title.swift"; sourceTree = "<group>"; };
+		CFA10B012FB0C00100000001 /* TimerSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerSettings.swift; sourceTree = "<group>"; };
+		CFA10B032FB0C00100000003 /* SettingsMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsMigration.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -200,7 +204,8 @@
 			children = (
 				CFA10A032FA9B00100000003 /* GustavTimer.entitlements */,
 				CFF3BAEE2EFD8EAC0069C610 /* Media */,
-				CF228F4F2E7C52B5000DEF21 /* AppSettings.swift */,
+				CF228F4F2E7C52B5000DEF21 /* AppPreferences.swift */,
+				CFA10B032FB0C00100000003 /* SettingsMigration.swift */,
 				CF9922BA2C9766DC004186DF /* Managers */,
 				CF7B1B3F2C8F6BA9005D4664 /* Models */,
 				CFCE3C772C431EF400D33AE3 /* Extensions */,
@@ -386,6 +391,7 @@
 				CFFAF9472F3DEE2C00A20D76 /* TimeDisplayFormat.swift */,
 				CFFAF9482F3DEE2C00A20D76 /* TimerEngine.swift */,
 				CFA10A012FA9B00100000001 /* SharedTimerLink.swift */,
+				CFA10B012FB0C00100000001 /* TimerSettings.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -523,7 +529,7 @@
 				CF01945C2C8A20D700CAC1BD /* SoundSettingsView.swift in Sources */,
 				CF9922B12C959AC1004186DF /* ControlButton.swift in Sources */,
 				CF4977932EED67BB00EE09B1 /* BannerImageModel.swift in Sources */,
-				CF228F502E7C52B9000DEF21 /* AppSettings.swift in Sources */,
+				CF228F502E7C52B9000DEF21 /* AppPreferences.swift in Sources */,
 				CFADBCF22AC9C8AE00AE27D8 /* ProgressArrayView.swift in Sources */,
 				CFC4C1872D047C1D0086CEBB /* WhatsNewView.swift in Sources */,
 				CF21844229F0528C0060706C /* TimerViewModel.swift in Sources */,
@@ -537,6 +543,8 @@
 				CFFAF94C2F3DEE2C00A20D76 /* TimeDisplayFormat.swift in Sources */,
 				CFFAF94D2F3DEE2C00A20D76 /* TimerEngine.swift in Sources */,
 				CFA10A022FA9B00100000002 /* SharedTimerLink.swift in Sources */,
+				CFA10B022FB0C00100000002 /* TimerSettings.swift in Sources */,
+				CFA10B042FB0C00100000004 /* SettingsMigration.swift in Sources */,
 				CFCE3C762C431EC900D33AE3 /* View+Extension.swift in Sources */,
 				CF70037F2C8DED37009F1531 /* BackgroundSelectorView.swift in Sources */,
 				CF7BAE252EC27A74002A4746 /* SettingsView.swift in Sources */,
