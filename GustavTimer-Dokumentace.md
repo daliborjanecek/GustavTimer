@@ -92,7 +92,7 @@ flowchart TB
         FV[FavouritesView]
         SND[SoundManager]
         AC[AppConfig]
-        AS[AppSettings]
+        AP[AppPreferences]
     end
 
     subgraph Persist["💾 Persistence"]
@@ -435,7 +435,7 @@ Enum (`Shared/SoundModel.swift`), každý case = MP3 v bundle:
 
 ```mermaid
 flowchart LR
-    A[Přechod intervalu/kola/konec] --> B{isSoundEnabled?}
+    A[Přechod intervalu/kola/konec] --> B{settings.sound != nil?}
     B -- ano --> C[playSound: vybraný zvuk]
     B -- ne --> D[playTickSound]
     E[secondTick - každou sekundu] --> F{isTicking?}
@@ -798,9 +798,9 @@ Konec tréninku se do stavu nedává schválně. Šlo by ho poslat jako absolutn
 > [!warning] Postřehy z kódu (stav k verzi 2.3.0)
 > - **`WhatsNewView.swift`** je nedokončený placeholder – reálně se používá `OnboardingView`.
 > - **Sekce „About"** v `SettingsView` je zakomentovaná (`// about`) a vede jen na `Text("About")`.
-> - V `ContentView` jsou `@AppStorage` klíče **`selectedBackgroundIndex`** a **`activeTimerId`**, které se reálně nepoužívají (pozadí jede přes `bgIndex`).
+> - ~~V `ContentView` jsou nepoužívané `@AppStorage` klíče~~ – vyřešeno ve verzi 2.4, klíče maže `SettingsMigration`.
 > - **rive-ios** je mezi závislostmi, ale animace tlačítek běží na **Lottie** (přes GustavUI). Parametr `riveAnimation` v `ControlButton` je už jen spínač „je to animované tlačítko?" – samotná animace je Lottie. Pravděpodobně historická závislost.
-> - **`AppSettings`** se na několika místech vytváří jako nová instance (`@StateObject` vs `@ObservedObject`), spoléhá na sdílený `@AppStorage` backing store.
+> - **`AppPreferences`** dnes slouží hlavně jako jmenný prostor klíčů (`AppPreferences.Key`); jako `ObservableObject` ji nikdo neinstancuje, protože nastavení timeru se přesunulo do `TimerData`. Její tři `@AppStorage` vlastnosti tak zatím nemají konzumenta – views sahají na klíče přímo.
 > - Footer s `DEEPLINK_LOADED` má v kódu `// TODO: stylizovat jako banner/toast`.
 > - Landscape režim záměrně skrývá progress bar a header (zakomentováno v `landscapeTimerView`).
 > - Zastaralý `.github/copilot-instructions.md` popisuje **starou** architekturu (GustavViewModel, EditSheetView, max 5 timerů, UserDefaults JSON) – **neodpovídá** současnému stavu (SwiftData, TimerEngine, max 10). Tato dokumentace vychází z aktuálního kódu.
