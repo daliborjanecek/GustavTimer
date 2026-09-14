@@ -324,10 +324,9 @@ class TimerViewModel: ObservableObject {
 
         guard let link = SharedTimerLink.parse(items: items, limits: limits) else { return }
 
-        var merged = settings
-        merged.intervals = link.intervals
-        merged.rounds = link.rounds
-        if let title = link.title { merged.name = title }
+        // Odkaz přebije jen to, co skutečně nese. Odkaz z verze 2.2/2.3
+        // neobsahuje zvuk ani vibrace, takže si uživatel nechá svoje.
+        let merged = link.applied(to: settings)
 
         apply(merged, resetState: true)
         persist(merged)

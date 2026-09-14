@@ -222,9 +222,7 @@ struct FavouritesView: View {
     /// vzniknout ve dvou nezávislých kopiích.
     private func deeplinkURL(for timer: TimerData) -> URL? {
         SharedTimerLink.url(
-            intervals: timer.intervals,
-            rounds: timer.rounds,
-            title: timer.name,
+            settings: timer.settings,
             limits: SharedTimerLink.Limits(
                 maxIntervalCount: AppConfig.maxTimerCount,
                 maxIntervalValue: AppConfig.maxTimerValue,
