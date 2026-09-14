@@ -30,6 +30,10 @@ struct AppConfig {
     
     // Maximální název intervalu
     static let maxTimerName: Int = 12
+
+    /// Maximální délka názvu timeru. Shodná s limitem `_title` ve sdíleném
+    /// odkazu, aby se název neořízl při průchodu odkazem.
+    static let maxTimerTitle: Int = 64
     
     // Background
     static let backgroundImages: [BackgroundImageModel] = [
@@ -77,6 +81,7 @@ struct AppConfig {
     static let sharedLinkLimits = SharedTimerLink.Limits(
         maxIntervalCount: maxTimerCount,
         maxIntervalValue: maxTimerValue,
-        maxRounds: roundsOptions.last ?? 31
+        maxRounds: roundsOptions.last ?? 31,
+        maxTitleLength: maxTimerTitle
     )
 }

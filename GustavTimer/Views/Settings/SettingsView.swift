@@ -33,6 +33,7 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 banner
+                timerNameView
                 intervalsView
                 roundsView
                 favourites
@@ -90,6 +91,30 @@ struct SettingsView: View {
         }
     }
     
+    @ViewBuilder
+    var timerNameView: some View {
+        SettingsSection(label: "TIMER_NAME") {
+            TextField("TIMER_NAME_PROMPT", text: timerNameBinding)
+                .font(.settingsIntervalName)
+                .submitLabel(.done)
+        }
+    }
+
+    /// Název timeru se ořezává na `AppConfig.maxTimerTitle`, aby přežil
+    /// průchod sdíleným odkazem bez tichého zkrácení.
+    ///
+    /// Zápis se schválně neukládá explicitně – stejně jako u názvů intervalů
+    /// se spoléhá na autosave SwiftData. `try? context.save()` při každém
+    /// stisku klávesy by byl zbytečný zápis na disk.
+    private var timerNameBinding: Binding<String> {
+        Binding(
+            get: { currentTimerData.name },
+            set: { newValue in
+                currentTimerData.name = String(newValue.prefix(AppConfig.maxTimerTitle))
+            }
+        )
+    }
+
     @ViewBuilder
     var intervalsView: some View {
         Section {

@@ -150,16 +150,30 @@ private extension TimerView {
     
     @ViewBuilder
     var currentTimerInfo: some View {
-        if let currentTimer = currentTimer {
-            Text("\(currentTimer.name) (\(viewModel.finishedRounds)\(viewModel.settings.rounds == -1 ? "" : ("/" + String(viewModel.settings.rounds))))")
+        if currentTimer != nil {
+            Text(headerLabel)
                 .safeAreaPadding(.horizontal)
-                .foregroundColor(Color.gustavVolt.opacity(viewModel.finishedRounds == 0 ? 0.0 : 1.0))
+                .foregroundColor(Color.gustavVolt)
+                .lineLimit(1)
                 .animation(.easeInOut(duration: 0.2), value: viewModel.finishedRounds)
         } else {
             Text("No Timer")
                 .safeAreaPadding(.horizontal)
                 .foregroundColor(Color.gustavVolt.opacity(0.5))
         }
+    }
+
+    /// Dokud timer neběží, je tu název timeru – dřív tady bylo prázdno
+    /// (text se schovával přes `opacity(0)`). Po startu ho vystřídá aktuální
+    /// interval a počet odběhnutých kol.
+    var headerLabel: String {
+        guard let currentTimer else { return "" }
+        guard viewModel.finishedRounds > 0 else { return viewModel.settings.name }
+
+        let rounds = viewModel.settings.rounds == -1
+            ? ""
+            : "/" + String(viewModel.settings.rounds)
+        return "\(currentTimer.name) (\(viewModel.finishedRounds)\(rounds))"
     }
     
     func counterDisplay(timeDisplayFormat: TimeDisplayFormat) -> some View {
