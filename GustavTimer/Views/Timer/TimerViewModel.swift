@@ -316,13 +316,7 @@ class TimerViewModel: ObservableObject {
     /// uložená data se nezmění a nastavení se neotevře. Jednotlivé neplatné
     /// parametry se ignorují, celý odkaz kvůli nim nepadá.
     func handleSharedTimer(items: [URLQueryItem]) {
-        let limits = SharedTimerLink.Limits(
-            maxIntervalCount: AppConfig.maxTimerCount,
-            maxIntervalValue: AppConfig.maxTimerValue,
-            maxRounds: AppConfig.roundsOptions.last ?? 31
-        )
-
-        guard let link = SharedTimerLink.parse(items: items, limits: limits) else { return }
+        guard let link = SharedTimerLink.parse(items: items, limits: AppConfig.sharedLinkLimits) else { return }
 
         // Odkaz přebije jen to, co skutečně nese. Odkaz z verze 2.2/2.3
         // neobsahuje zvuk ani vibrace, takže si uživatel nechá svoje.

@@ -9,14 +9,20 @@ import SwiftUI
 import GustavUICore
 
 struct FavouriteRowView: View {
-    let timer: TimerData
+
+    /// Nastavení zobrazovaného timeru. Hodnotový typ, takže řádek umí vykreslit
+    /// uložený oblíbený (`TimerData.settings`) i předdefinovaný preset,
+    /// který v databázi vůbec není.
+    let settings: TimerSettings
     let selected: Bool
+
+    /// Vykreslí řádek jako „aktuální timer“ – ztlumený název místo vlastního
+    /// a světlý progress bar. `order` součástí nastavení není, proto se to
+    /// předává zvlášť. Dnes to nikdo nenastavuje na `true`; řádek se používá
+    /// jen pro oblíbené a presety.
+    var isMainTimer: Bool = false
     var isMinimized: Bool = false
     var tip: String? = nil
-        
-    var isMainTimer: Bool {
-        timer.order == AppConfig.mainTimerOrder
-    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -25,7 +31,7 @@ struct FavouriteRowView: View {
                         if !isMinimized {
                             GeometryReader { geometry in
                                 HStack(alignment: .top, spacing: 5) {
-                                    ForEach(timer.intervals) { interval in
+                                    ForEach(settings.intervals) { interval in
                                         VStack(alignment: .leading) {
                                             Capsule()
                                                 .fill(progressBarColor)
@@ -49,15 +55,15 @@ struct FavouriteRowView: View {
                                 .padding(.trailing, 4)
                             
                             if !isMinimized {
-                                if timer.rounds == -1 {
+                                if settings.rounds == -1 {
                                     GustavIcon(.loop, size: 22, color: Color.gustavLight)
                                 }
                                 
-                                if timer.selectedSound != nil {
+                                if settings.sound != nil {
                                     GustavIcon(.sound, size: 22, color: Color.gustavLight)
                                 }
                                 
-                                if timer.isVibrating {
+                                if settings.isVibrating {
                                     GustavIcon(.vibration, size: 22, color: Color.gustavLight)
                                 }
                             }
@@ -85,7 +91,7 @@ struct FavouriteRowView: View {
         if isMainTimer {
             return "CURRENT_TIMER"
         } else {
-            return LocalizedStringKey(timer.name)
+            return LocalizedStringKey(settings.name)
         }
     }
     
@@ -104,57 +110,35 @@ struct FavouriteRowView: View {
     }
     
     func getIntervalWidth(interval: IntervalData, viewWidth: CGFloat) -> CGFloat {
-        let totalDuration = timer.intervals.reduce(0) { $0 + $1.value }
-        let spacing = CGFloat(timer.intervals.count - 1) * 5
-        return viewWidth * (CGFloat(interval.value) / CGFloat(totalDuration)) - (spacing / CGFloat(timer.intervals.count))
+        let totalDuration = settings.intervals.reduce(0) { $0 + $1.value }
+        let spacing = CGFloat(settings.intervals.count - 1) * 5
+        return viewWidth * (CGFloat(interval.value) / CGFloat(totalDuration)) - (spacing / CGFloat(settings.intervals.count))
     }
 }
 
 #Preview {
+    let workRest = [
+        IntervalData(value: 30, name: "Work"),
+        IntervalData(value: 15, name: "Rest")
+    ]
+    let beepTimer = TimerSettings(
+        name: "My Favourite Timer", intervals: workRest, rounds: 5,
+        sound: .beep, isVibrating: true, isTicking: false, hasCountdown: true
+    )
+    let whistleTimer = TimerSettings(
+        name: "My Favourite Timer", intervals: workRest, rounds: 5,
+        sound: .whistle, isVibrating: true, isTicking: false, hasCountdown: true
+    )
+
     List {
         Section {
-            FavouriteRowView(timer: {
-                let timer = TimerData(order: 2, name: "My Favourite Timer", rounds: 5, selectedSound: .beep, isVibrating: true)
-                timer.intervals = [
-                    IntervalData(value: 30, name: "Work"),
-                    IntervalData(value: 15, name: "Rest")
-                ]
-                return timer
-            }(), selected: true)
-            FavouriteRowView(timer: {
-                let timer = TimerData(order: 2, name: "My Favourite Timer", rounds: 5, selectedSound: .whistle, isVibrating: true)
-                timer.intervals = [
-                    IntervalData(value: 30, name: "Work"),
-                    IntervalData(value: 15, name: "Rest")
-                ]
-                return timer
-            }(), selected: true, tip: "Box breathing, soustřeď se výhradně na dech (4-4-4-4: nádech, zadržení, výdech, zadržení). Kdykoli myšlenky odjedou jinam, jednoduše je vrátíš zpět k dechu.")
+            FavouriteRowView(settings: beepTimer, selected: true)
+            FavouriteRowView(settings: whistleTimer, selected: true, tip: "Box breathing, soustřeď se výhradně na dech (4-4-4-4: nádech, zadržení, výdech, zadržení). Kdykoli myšlenky odjedou jinam, jednoduše je vrátíš zpět k dechu.")
         }
         Section {
-            FavouriteRowView(timer: {
-                let timer = TimerData(order: 2, name: "My Favourite Timer", rounds: 5, selectedSound: .beep, isVibrating: true)
-                timer.intervals = [
-                    IntervalData(value: 30, name: "Work"),
-                    IntervalData(value: 15, name: "Rest")
-                ]
-                return timer
-            }(), selected: true, isMinimized: true)
-            FavouriteRowView(timer: {
-                let timer = TimerData(order: 2, name: "My Favourite Timer", rounds: 5, selectedSound: .whistle, isVibrating: true)
-                timer.intervals = [
-                    IntervalData(value: 30, name: "Work"),
-                    IntervalData(value: 15, name: "Rest")
-                ]
-                return timer
-            }(), selected: false, isMinimized: true)
+            FavouriteRowView(settings: beepTimer, selected: true, isMinimized: true)
+            FavouriteRowView(settings: whistleTimer, selected: false, isMinimized: true)
         }
-        FavouriteRowView(timer: {
-            let timer = TimerData(order: 11, settings: AppConfig.defaultTimer)
-            timer.intervals = [
-                IntervalData(value: 30, name: "Work"),
-                IntervalData(value: 15, name: "Rest")
-            ]
-            return timer
-        }(), selected: false)
+        FavouriteRowView(settings: AppConfig.defaultTimer, selected: false, isMainTimer: true)
     }
 }

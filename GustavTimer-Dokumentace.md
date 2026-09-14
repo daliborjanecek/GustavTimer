@@ -243,7 +243,7 @@ Hlavní entita časovače. Ukládá se přes SwiftData.
 > [!important] Význam `order`
 > - **`order == 0`** → **aktivní (hlavní) časovač**, který právě běží na hlavní obrazovce. Vždy existuje právě jeden.
 > - **`order > 0`** → **uložené oblíbené** časovače (vyšší = novější).
-> - **`order < 0`** → **předdefinované** presety (v `AppConfig.predefinedTimers`, neukládají se do DB).
+> - **`order < 0`** → historicky předdefinované presety. Od verze 2.4 presety `TimerData` vůbec nejsou – jsou to hodnoty `TimerSettings` v enumu `PredefinedTimer` a `TimerData` z nich vznikne, až si je uživatel uloží mezi oblíbené.
 >
 > Shodu řeší `matchesWorkout(of:)` – porovná **celé nastavení kromě názvu**. Díky tomu appka pozná, zda je aktuální časovač už uložený mezi oblíbenými (hvězdička v toolbaru). Do verze 2.3 to bylo `Equatable` porovnávající jen `intervals`, takže časovač se stejnými intervaly a jiným zvukem se tvářil jako už uložený.
 
@@ -378,7 +378,7 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 - Prázdný stav → `FavouritesEmptyView`.
 
 ### Předdefinované (Preloaded) timery
-Z `AppConfig.predefinedTimers`, vyčíslené v enumu `PredefinedTimer`:
+Z enumu `PredefinedTimer` (každý case nese `settings: TimerSettings` a tři tipy):
 
 | Preset | Kola | Intervaly | Zvuk | Vibrace |
 |---|---|---|---|---|
@@ -515,7 +515,7 @@ gustavtimerapp://whatsnew
 ```
 
 > [!tip] Sdílení
-> Ve `FavouritesView` generuje **ShareLink** přesně takové URL (`deeplinkURL(for:)`), takže si uživatelé mohou posílat hotové tréninky odkazem. Po načtení z odkazu se v Settings zobrazí hláška `DEEPLINK_LOADED` (řízeno počítadlem `deeplinkLoadToken`).
+> **ShareLink** generuje přesně takové URL na třech místech: v toolbaru `SettingsView` (právě rozdělaný timer) a swipem na řádku oblíbeného či presetu ve `FavouritesView`. Limity drží `AppConfig.sharedLinkLimits`. Po načtení z odkazu se v Settings zobrazí hláška `DEEPLINK_LOADED` (řízeno počítadlem `deeplinkLoadToken`).
 
 ---
 
@@ -618,7 +618,7 @@ Vlastní rodiny **Martian Grotesk** (Std/Cn varianty) a **Martian Mono** (Regula
 | `roundsOptions` | 1…31 | Nabídka počtu kol |
 | `defaultTimer` | order 0, „Gustav Timer", smyčka | Výchozí časovač |
 
-Dále drží: `backgroundImages` (10), `bannerImages` (6 challenge videí), `predefinedTimers` (5), `soundThemes` a všechny **URL** (review, weights, Instagram, YouTube, YouTube challenge playlist).
+Dále drží: `backgroundImages` (10), `bannerImages` (6 challenge videí), `soundThemes`, `defaultTimer` (`TimerSettings`), `mainTimerOrder`, `sharedLinkLimits` a všechny **URL** (review, weights, Instagram, YouTube, YouTube challenge playlist).
 
 ---
 
@@ -665,7 +665,7 @@ GustavTimer/
 ├── Models/
 │   ├── TimerData.swift           # @Model – časovač (SwiftData)
 │   ├── CustomImageModel.swift    # @Model – vlastní pozadí
-│   ├── PredefinedTimer.swift     # Enum presetů + tipy
+│   ├── PredefinedTimer.swift     # Enum presetů (TimerSettings) + tipy
 │   ├── BackgroundImageModel.swift
 │   ├── BannerImageModel.swift    # Challenge banner + URL
 │   └── SoundModel+Title.swift    # iOS lokalizované názvy zvuků

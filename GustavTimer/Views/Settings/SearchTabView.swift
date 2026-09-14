@@ -18,30 +18,30 @@ struct SearchTabView: View {
     var body: some View {
         NavigationStack {
             List {
-                let favouriteResults = searchResults()
-                let predefinedResults = searchResults(searchPredefined: true)
-                
+                let favouriteResults = favouriteResults()
+                let predefinedResults = predefinedResults()
+
                 if !favouriteResults.isEmpty {
                     Section {
                         ForEach(favouriteResults) { timer in
-                            FavouriteRowView(timer: timer, selected: isTimerSelected(timer: timer))
+                            FavouriteRowView(settings: timer.settings, selected: isSelected(timer.settings))
                                 .onTapGesture {
-                                    selectTimer(timer: timer)
+                                    select(timer.settings, tracking: timer)
                                 }
                         }
                     } header: {
-                        if searchResults(searchPredefined: true).isEmpty == false {
+                        if !predefinedResults.isEmpty {
                             Text("FAVOURITES")
                         }
                     }
                 }
-                
+
                 if !predefinedResults.isEmpty {
                     Section {
-                        ForEach(predefinedResults) { timer in
-                            FavouriteRowView(timer: timer, selected: isTimerSelected(timer: timer))
+                        ForEach(predefinedResults) { preset in
+                            FavouriteRowView(settings: preset.settings, selected: isSelected(preset.settings))
                                 .onTapGesture {
-                                    selectTimer(timer: timer)
+                                    select(preset.settings)
                                 }
                         }
                     } header: {
@@ -56,32 +56,34 @@ struct SearchTabView: View {
         }
     }
     
-    private func isTimerSelected(timer: TimerData) -> Bool {
-        if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            return mainTimer.matchesWorkout(of: timer)
-        }
-        return false
+    private func isSelected(_ settings: TimerSettings) -> Bool {
+        guard let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) else { return false }
+        return mainTimer.settings.matchesWorkout(of: settings)
     }
-    
-    private func searchResults(searchPredefined: Bool = false) -> [TimerData] {
-        var searchedTimers: [TimerData] = []
-        if searchPredefined {
-            searchedTimers = AppConfig.predefinedTimers
-        } else {
-            searchedTimers = timerData.filter { $0.order != 0 }
-        }
-        if searchText.isEmpty {
-            return searchedTimers
-        } else {
-            return searchedTimers.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+
+    /// Uložené oblíbené odpovídající hledání. Vrací `TimerData`, protože
+    /// výběr jim započítává použití.
+    private func favouriteResults() -> [TimerData] {
+        let saved = timerData.filter { $0.order != AppConfig.mainTimerOrder }
+        guard !searchText.isEmpty else { return saved }
+        return saved.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    /// Presety odpovídající hledání. Ty v databázi nejsou, takže hodnoty.
+    private func predefinedResults() -> [PredefinedTimer] {
+        guard !searchText.isEmpty else { return PredefinedTimer.allCases }
+        return PredefinedTimer.allCases.filter {
+            $0.settings.name.localizedCaseInsensitiveContains(searchText)
         }
     }
-    
-    private func selectTimer(timer: TimerData) {
-        timer.selected()
-        if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            mainTimer.settings = timer.settings
-            try? context.save()
-        }
+
+    /// Nastaví hlavní timer podle zadaného nastavení.
+    ///
+    /// - Parameter tracking: uložený oblíbený, kterému se má započítat použití.
+    ///   Presety ho nemají – nejsou v databázi, takže není kam počítat.
+    private func select(_ settings: TimerSettings, tracking timer: TimerData? = nil) {
+        timer?.selected()
+        TimerData.mainTimer(in: context).settings = settings
+        try? context.save()
     }
 }

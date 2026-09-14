@@ -154,7 +154,7 @@ struct SettingsView: View {
             if !lastSavedTimers.isEmpty {
                 ForEach(lastSavedTimers) { timer in
                     let isSelected = timer.matchesWorkout(of: currentTimerData)
-                    FavouriteRowView(timer: timer, selected: isSelected, isMinimized: true)
+                    FavouriteRowView(settings: timer.settings, selected: isSelected, isMinimized: true)
                         .onTapGesture {
                             DispatchQueue.main.async {
                                 withAnimation {
@@ -256,6 +256,16 @@ struct SettingsView: View {
                 Image(systemName: isTimerAlreadySaved() ? "star.fill" : "star")
             }
         }
+
+        // Sdílení rozdělaného timeru – dřív šlo sdílet jen uložený oblíbený
+        // nebo preset, takže uživatel musel nejdřív ukládat.
+        if let url = shareURL {
+            ToolbarItem {
+                ShareLink(item: url) {
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
+        }
         
         if #available(iOS 26.0, *) {
             ToolbarSpacer(.fixed)
@@ -280,6 +290,11 @@ struct SettingsView: View {
         }
     }
     
+    /// Sdílený odkaz na právě rozdělaný timer. `nil`, dokud nemá jediný interval.
+    private var shareURL: URL? {
+        SharedTimerLink.url(settings: currentTimerData.settings, limits: AppConfig.sharedLinkLimits)
+    }
+
     private func isTimerAlreadySaved() -> Bool {
         let savedTimers = timerData.filter { $0.order != 0 }
         if let mainTimer = timerData.first(where: { $0.order == 0 }) {
@@ -377,10 +392,8 @@ struct SettingsView: View {
     
     private func selectTimer(timer: TimerData) {
         timer.selected()
-        if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            mainTimer.settings = timer.settings
-            try? context.save()
-        }
+        TimerData.mainTimer(in: context).settings = timer.settings
+        try? context.save()
     }
     
     var summaryText: String {

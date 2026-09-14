@@ -70,31 +70,13 @@ struct AppConfig {
     static let soundThemes: [SoundModel] = SoundModel.allCases
     
     static let roundsOptions: [Int] = Array(1...31)
-    
-    static let predefinedTimers: [TimerData] = [
-        // Meditation Timer
-        TimerData(order: -1, name: String(localized: "PT_5MIN_MEDITATION"), rounds: -1, selectedSound: .gong, isVibrating: false, intervals: [
-            IntervalData(value: 300, name: String(localized: "LAP_MEDITATION"))
-        ]),
-        // Tabata Timer
-        TimerData(order: -2, name: String(localized: "PT_TABATA"), rounds: 8, selectedSound: .bicycle, isVibrating: true, intervals: [
-            IntervalData(value: 20, name: String(localized: "LAP_WORK")),
-            IntervalData(value: 10, name: String(localized: "LAP_REST"))
-        ]),
-        // EMOM Timer
-        TimerData(order: -3, name: String(localized: "PT_EMOM_10MIN"), rounds: 10, selectedSound: .whistle, isVibrating: true, intervals: [
-            IntervalData(value: 60, name: String(localized: "LAP_WORK"))
-        ]),
-        // HIIT trénink
-        TimerData(order: -4, name: String(localized: "PT_HIIT"), rounds: 10, selectedSound: .whistle, isVibrating: true, intervals: [
-            IntervalData(value: 30, name: String(localized: "LAP_SPRINT")),
-            IntervalData(value: 15, name: String(localized: "LAP_REST"))
-        ]),
-        // AMRAP - As Many Rounds As Possible
-        TimerData(order: -5, name: String(localized: "PT_AMRAP"), rounds: 20, selectedSound: .beep, isVibrating: true, intervals: [
-            IntervalData(value: 60, name: String(localized: "LAP_MAX"))
-        ])
-    ]
-    
-    
+
+    /// Limity sdíleného odkazu odvozené z konfigurace aplikace.
+    /// `SharedTimerLink` si drží vlastní výchozí hodnoty, aby nebyl závislý
+    /// na iOS vrstvě – tohle je jejich jediné napojení na `AppConfig`.
+    static let sharedLinkLimits = SharedTimerLink.Limits(
+        maxIntervalCount: maxTimerCount,
+        maxIntervalValue: maxTimerValue,
+        maxRounds: roundsOptions.last ?? 31
+    )
 }
