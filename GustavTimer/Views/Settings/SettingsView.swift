@@ -11,8 +11,6 @@ import GustavUICore
 import TelemetryDeck
 
 struct SettingsView: View {
-    @StateObject private var appSettings = AppSettings()
-
     @Query(sort: \TimerData.id, order: .reverse) private var timerData: [TimerData]
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
@@ -22,11 +20,10 @@ struct SettingsView: View {
     @State private var showSaveAlert = false
     @State private var showAlreadySavedAlert = false
     @State private var showDeeplinkLoadedAlert = false
-    @State private var selectedSoundTitle: String? = nil
     @State private var cachedLastSavedTimers: [TimerData] = []
-    @AppStorage("deeplinkLoadToken") private var deeplinkLoadToken: Int = 0
-    @AppStorage("lastAcknowledgedDeeplinkToken") private var lastAcknowledgedDeeplinkToken: Int = 0
-    @AppStorage("deeplinkLoadedTitle") private var deeplinkLoadedTitle: String = ""
+    @AppStorage(AppPreferences.Key.deeplinkLoadToken) private var deeplinkLoadToken: Int = 0
+    @AppStorage(AppPreferences.Key.lastAcknowledgedDeeplinkToken) private var lastAcknowledgedDeeplinkToken: Int = 0
+    @AppStorage(AppPreferences.Key.deeplinkLoadedTitle) private var deeplinkLoadedTitle: String = ""
     
     private var currentTimerData: TimerData {
         getOrCreateTimerData()
@@ -36,6 +33,7 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 banner
+                timerNameView
                 intervalsView
                 roundsView
                 favourites
@@ -94,6 +92,30 @@ struct SettingsView: View {
     }
     
     @ViewBuilder
+    var timerNameView: some View {
+        SettingsSection(label: "TIMER_NAME") {
+            TextField("TIMER_NAME_PROMPT", text: timerNameBinding)
+                .font(.settingsIntervalName)
+                .submitLabel(.done)
+        }
+    }
+
+    /// Název timeru se ořezává na `AppConfig.maxTimerTitle`, aby přežil
+    /// průchod sdíleným odkazem bez tichého zkrácení.
+    ///
+    /// Zápis se schválně neukládá explicitně – stejně jako u názvů intervalů
+    /// se spoléhá na autosave SwiftData. `try? context.save()` při každém
+    /// stisku klávesy by byl zbytečný zápis na disk.
+    private var timerNameBinding: Binding<String> {
+        Binding(
+            get: { currentTimerData.name },
+            set: { newValue in
+                currentTimerData.name = String(newValue.prefix(AppConfig.maxTimerTitle))
+            }
+        )
+    }
+
+    @ViewBuilder
     var intervalsView: some View {
         Section {
             ForEach(currentTimerData.intervals) { interval in
@@ -143,9 +165,9 @@ struct SettingsView: View {
     var roundsView: some View {
         Section {
             NavigationLink {
-                RoundsSettingsView(rounds: $appSettings.rounds)
+                RoundsSettingsView(rounds: setting(\.rounds))
             } label: {
-                ListButton(name: "ROUNDS", value: "\(appSettings.rounds == -1 ? "LOOP" : String(appSettings.rounds))")
+                ListButton(name: "ROUNDS", value: "\(currentTimerData.rounds == -1 ? "LOOP" : String(currentTimerData.rounds))")
             }
         }
     }
@@ -156,8 +178,8 @@ struct SettingsView: View {
             let lastSavedTimers = cachedLastSavedTimers.prefix(3)
             if !lastSavedTimers.isEmpty {
                 ForEach(lastSavedTimers) { timer in
-                    let isSelected = timer == currentTimerData
-                    FavouriteRowView(timer: timer, selected: isSelected, isMinimized: true)
+                    let isSelected = timer.matchesWorkout(of: currentTimerData)
+                    FavouriteRowView(settings: timer.settings, selected: isSelected, isMinimized: true)
                         .onTapGesture {
                             DispatchQueue.main.async {
                                 withAnimation {
@@ -178,36 +200,17 @@ struct SettingsView: View {
     @ViewBuilder
     private var feedback: some View {
         SettingsSection(label: "FEEDBACK", footer: "FEEDBACK_DESCRIPTION") {
-            Toggle("HAPTICS", isOn: $appSettings.isVibrating)
+            Toggle("HAPTICS", isOn: setting(\.isVibrating))
                 .tint(Color.gustavVolt)
 
-            Toggle("SET_COUNTDOWN", isOn: .init(
-                get: { currentTimerData.hasCountdown },
-                set: { newValue in
-                    let timer = currentTimerData
-                    timer.hasCountdown = newValue
-                    try? context.save()
-                }
-            ))
-            .tint(Color.gustavVolt)
-            
-            Toggle("SET_TICKING", isOn: $appSettings.isTicking)
-            .tint(Color.gustavVolt)
-            
+            Toggle("SET_COUNTDOWN", isOn: setting(\.hasCountdown))
+                .tint(Color.gustavVolt)
+
+            Toggle("SET_TICKING", isOn: setting(\.isTicking))
+                .tint(Color.gustavVolt)
+
             NavigationLink {
-                SoundSettingsView(selectedSound: .init(get: {
-                    return currentTimerData.selectedSound ?? nil
-                }, set: { sound in
-                    let timer = currentTimerData
-                    timer.selectedSound = sound
-                    if let soundValue = sound {
-                        selectedSoundTitle = NSLocalizedString("\(soundValue.title)", comment: "")
-                    } else {
-                        selectedSoundTitle = nil
-                    }
-                    context.insert(timer)
-                    try? context.save()
-                }))
+                SoundSettingsView(selectedSound: setting(\.selectedSound))
             } label: {
                 ListButton(name: "SOUND", value: currentTimerData.selectedSound?.title ?? "MUTE")
             }
@@ -270,12 +273,25 @@ struct SettingsView: View {
         ToolbarItem {
             Button {
                 if !isTimerAlreadySaved() {
+                    // Dialog startuje se stávajícím názvem, ať ho uživatel
+                    // nemusí psát znovu – stačí ho upravit nebo potvrdit.
+                    newTimerName = currentTimerData.name
                     showSaveAlert = true
                 } else {
                     showAlreadySavedAlert = true
                 }
             } label: {
                 Image(systemName: isTimerAlreadySaved() ? "star.fill" : "star")
+            }
+        }
+
+        // Sdílení rozdělaného timeru – dřív šlo sdílet jen uložený oblíbený
+        // nebo preset, takže uživatel musel nejdřív ukládat.
+        if let url = shareURL {
+            ToolbarItem {
+                ShareLink(item: url) {
+                    Image(systemName: "square.and.arrow.up")
+                }
             }
         }
         
@@ -302,22 +318,35 @@ struct SettingsView: View {
         }
     }
     
+    /// Sdílený odkaz na právě rozdělaný timer. `nil`, dokud nemá jediný interval.
+    private var shareURL: URL? {
+        SharedTimerLink.url(settings: currentTimerData.settings, limits: AppConfig.sharedLinkLimits)
+    }
+
     private func isTimerAlreadySaved() -> Bool {
-        let savedTimers = timerData.filter { $0.order != 0 }
-        if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            return savedTimers.contains(mainTimer)
+        let savedTimers = timerData.filter { $0.order != AppConfig.mainTimerOrder }
+        if let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) {
+            return savedTimers.contains { $0.matchesWorkout(of: mainTimer) }
         }
         return false
     }
     
+    /// Binding na jedno pole aktivního timeru. Zápis rovnou uloží kontext,
+    /// aby se nastavení neztratilo, když uživatel zavře Settings swipem.
+    ///
+    ///     Toggle("SET_TICKING", isOn: setting(\.isTicking))
+    private func setting<Value>(_ keyPath: ReferenceWritableKeyPath<TimerData, Value>) -> Binding<Value> {
+        Binding(
+            get: { currentTimerData[keyPath: keyPath] },
+            set: { newValue in
+                currentTimerData[keyPath: keyPath] = newValue
+                try? context.save()
+            }
+        )
+    }
+
     private func getOrCreateTimerData() -> TimerData {
-        if let existing = timerData.first(where: { $0.order == 0 }) {
-            return existing
-        } else {
-            let newData = AppConfig.defaultTimer
-            context.insert(newData)
-            return newData
-        }
+        TimerData.mainTimer(in: context)
     }
     
     private func refreshLastSavedTimers() {
@@ -337,22 +366,30 @@ struct SettingsView: View {
     }
     
     private func saveTimer() {
-        if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            let newOrder = (timerData.map { $0.order }.max() ?? 0) + 1
-            let newTimer = TimerData(order: newOrder, name: newTimerName, rounds: appSettings.rounds, isVibrating: appSettings.isVibrating)
-            newTimer.intervals = mainTimer.intervals
-            newTimer.selectedSound = mainTimer.selectedSound
-            context.insert(newTimer)
+        guard let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) else { return }
 
-            // Track timer save event
-            let intervalPattern = mainTimer.intervals.map { String($0.value) }.joined(separator: "/")
-            TelemetryDeck.signal(
-                "timer.saved",
-                parameters: [
-                    "interval_pattern": intervalPattern
-                ]
-            )
-        }
+        let newOrder = (timerData.map { $0.order }.max() ?? 0) + 1
+        var settings = mainTimer.settings
+        settings.name = resolvedTimerName(fallback: mainTimer.name)
+        context.insert(TimerData(order: newOrder, settings: settings))
+        // Aktivní timer převezme pojmenování, aby se hned poznal jako uložený.
+        mainTimer.name = settings.name
+
+        // Track timer save event
+        let intervalPattern = mainTimer.intervals.map { String($0.value) }.joined(separator: "/")
+        TelemetryDeck.signal(
+            "timer.saved",
+            parameters: [
+                "interval_pattern": intervalPattern
+            ]
+        )
+    }
+
+    /// Název z dialogu, ořezaný a omezený délkou. Vymazané pole se nebere jako
+    /// „pojmenuj to prázdně“ – v oblíbených by z toho byl bezejmenný řádek.
+    private func resolvedTimerName(fallback: String) -> String {
+        let trimmed = newTimerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return String((trimmed.isEmpty ? fallback : trimmed).prefix(AppConfig.maxTimerTitle))
     }
     
     private func updateIntervalName(_ name: String, for intervalId: UUID, in timerData: TimerData) {
@@ -390,20 +427,15 @@ struct SettingsView: View {
     
     private func selectTimer(timer: TimerData) {
         timer.selected()
-        if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            mainTimer.name = timer.name
-            mainTimer.intervals = timer.intervals
-            mainTimer.selectedSound = timer.selectedSound
-            mainTimer.isVibrating = timer.isVibrating
-            appSettings.save(from: timer)
-        }
+        TimerData.mainTimer(in: context).settings = timer.settings
+        try? context.save()
     }
     
     var summaryText: String {
         let roundTime = currentTimerData.intervals.reduce(0) { $0 + $1.value }
         var totalTime: Int? {
-            if appSettings.rounds > 1 {
-                return roundTime * appSettings.rounds
+            if currentTimerData.rounds > 1 {
+                return roundTime * currentTimerData.rounds
             } else {
                 return nil
             }

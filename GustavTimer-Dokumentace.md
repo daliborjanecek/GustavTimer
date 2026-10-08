@@ -92,7 +92,7 @@ flowchart TB
         FV[FavouritesView]
         SND[SoundManager]
         AC[AppConfig]
-        AS[AppSettings]
+        AP[AppPreferences]
     end
 
     subgraph Persist["💾 Persistence"]
@@ -240,6 +240,7 @@ Hlavní entita časovače. Ukládá se přes SwiftData.
 | `rounds` | `Int` | Počet kol (`-1` = smyčka) |
 | `selectedSound` | `SoundModel?` | Zvuk (`nil` = ztlumeno) |
 | `isVibrating` | `Bool` | Haptika |
+| `isTicking` | `Bool` | Tikání každou sekundu (default `false`) |
 | `hasCountdown` | `Bool` | Úvodní odpočet 3-2-1 (default `true`) |
 | `order` | `Int` | **Klíčové pole** – řadí a rozlišuje časovače |
 | `createdAt` | `Date` | Datum vytvoření |
@@ -249,9 +250,9 @@ Hlavní entita časovače. Ukládá se přes SwiftData.
 > [!important] Význam `order`
 > - **`order == 0`** → **aktivní (hlavní) časovač**, který právě běží na hlavní obrazovce. Vždy existuje právě jeden.
 > - **`order > 0`** → **uložené oblíbené** časovače (vyšší = novější).
-> - **`order < 0`** → **předdefinované** presety (v `AppConfig.predefinedTimers`, neukládají se do DB).
+> - **`order < 0`** → historicky předdefinované presety. Od verze 2.4 presety `TimerData` vůbec nejsou – jsou to hodnoty `TimerSettings` v enumu `PredefinedTimer` a `TimerData` z nich vznikne, až si je uživatel uloží mezi oblíbené.
 >
-> Rovnost `TimerData` (`==`) se porovnává **pouze podle `intervals`** – dva časovače se stejnými intervaly jsou „shodné". Díky tomu appka pozná, zda je aktuální časovač už uložený mezi oblíbenými (hvězdička v toolbaru).
+> Shodu řeší `matchesWorkout(of:)` – porovná **celé nastavení kromě názvu**. Díky tomu appka pozná, zda je aktuální časovač už uložený mezi oblíbenými (hvězdička v toolbaru). Do verze 2.3 to bylo `Equatable` porovnávající jen `intervals`, takže časovač se stejnými intervaly a jiným zvukem se tvářil jako už uložený.
 
 #### `CustomImageModel` (`@Model`)
 Jednoduchý model držící `Data` vlastní fotky uživatele použité jako pozadí.
@@ -271,9 +272,22 @@ Je `Codable` → serializuje se pro SwiftData, sdílení odkazem i případný p
 ### Persistence – jak to funguje
 
 - **`@modelContainer(for: [CustomImageModel.self, TimerData.self])`** se nastavuje v `GustavTimerApp`.
-- Při prvním spuštění `ContentView.initializeDataIfNeeded()` vloží `AppConfig.defaultTimer` (order 0), pokud DB je prázdná.
-- `TimerViewModel` čte/zapisuje hlavní časovač (`order == 0`) přes `FetchDescriptor` s `#Predicate { $0.order == 0 }`.
-- Nastavení (kola, vibrace, zvuk, tikání) se zrcadlí i do **UserDefaults** přes `@AppStorage` – viz [[#17 · Přehled klíčů UserDefaults]].
+- Hlavní časovač zakládá **jediná metoda** `TimerData.mainTimer(in:)`. Je idempotentní (fetch vidí i nezapsané změny v kontextu), takže nevadí, že se `ContentView` a `TimerView` při startu potkávají v nedefinovaném pořadí.
+- `TimerViewModel` čte a zapisuje celé nastavení přes `TimerData.settings`.
+- **Od verze 2.4 je nastavení timeru výhradně ve SwiftData.** V UserDefaults zůstávají jen nastavení zařízení – viz [[#17 · Přehled klíčů UserDefaults]]. Přesun dělá jednorázově `SettingsMigration`.
+
+### `TimerSettings` (sdílený struct)
+
+Kompletní nastavení timeru jako hodnotový typ (`Shared/TimerSettings.swift`) – jediná definice toho, „co je timer": `name`, `intervals`, `rounds`, `sound`, `isVibrating`, `isTicking`, `hasCountdown`.
+
+`TimerData` je nad ním tenká obálka: `timerData.settings` čte i zapisuje **celé** nastavení naráz, takže nikde v aplikaci není místo, které by kopírovalo nastavení po polích (a mohlo tedy na některé zapomenout).
+
+```swift
+mainTimer.settings = favourite.settings   // výběr oblíbeného
+let merged = link.applied(to: mainTimer.settings)   // sdílený odkaz
+```
+
+> `sound: SoundModel?` je **jediná** reprezentace zvuku, `nil` = ztlumeno. Samostatný `isSoundEnabled` do verze 2.3 tutéž informaci duplikoval.
 
 ---
 
@@ -371,7 +385,7 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 - Prázdný stav → `FavouritesEmptyView`.
 
 ### Předdefinované (Preloaded) timery
-Z `AppConfig.predefinedTimers`, vyčíslené v enumu `PredefinedTimer`:
+Z enumu `PredefinedTimer` (každý case nese `settings: TimerSettings` a tři tipy):
 
 | Preset | Kola | Intervaly | Zvuk | Vibrace |
 |---|---|---|---|---|
@@ -421,7 +435,7 @@ Enum (`Shared/SoundModel.swift`), každý case = MP3 v bundle:
 
 ```mermaid
 flowchart LR
-    A[Přechod intervalu/kola/konec] --> B{isSoundEnabled?}
+    A[Přechod intervalu/kola/konec] --> B{settings.sound != nil?}
     B -- ano --> C[playSound: vybraný zvuk]
     B -- ne --> D[playTickSound]
     E[secondTick - každou sekundu] --> F{isTicking?}
@@ -464,22 +478,51 @@ Aplikace reaguje na URL scheme **`gustavtimerapp://`** (registrováno v `Info.pl
 
 ### Formát `timer` deep-linku
 
-- **Rezervovaný klíč `rounds`** – počet kol. `-1` = smyčka, jinak clamp do `1…31`.
+**Intervaly:**
 - **Plný formát** `nazev=hodnota` → pojmenovaný interval (hodnota 1–600 s).
 - **Minimalistický formát** `hodnota` (jen číslo bez `=`) → interval pojmenovaný `Kolo N`.
 - Max **10** intervalů (přebytek se ignoruje).
 
+**Nastavení timeru:**
+
+| Klíč | Hodnota | Význam |
+|---|---|---|
+| `rounds` | `-1` nebo `1…31` | Počet kol, `-1` = smyčka |
+| `_title` | text, max 64 znaků | Název timeru |
+| `_sound` | `beep`, `gong`, … nebo `off` | Zvuk přechodu, `off` = ticho |
+| `_vibe` | `1` / `0` | Vibrace |
+| `_tick` | `1` / `0` | Tikání každou sekundu |
+| `_cd` | `1` / `0` | Úvodní odpočet 3-2-1 |
+
+Booleany berou i `true/false`, `yes/no`, `on/off` (odkazy se píšou i ručně); generátor zapisuje `1`/`0`. U každého klíče vyhrává **první výskyt**, nesrozumitelná hodnota se ignoruje.
+
+> [!important] Chybějící parametr = zachovej současné
+> Na tomhle pravidle stojí celá zpětná kompatibilita. Odkaz z verze 2.2/2.3 neobsahuje `_sound` ani `_vibe`, takže **nesáhne na nastavení příjemce** – chová se přesně jako dřív. Nové odkazy nesou všechno explicitně.
+>
+> Proto generátor zapisuje nastavení **vždy**, i když odpovídá výchozím hodnotám: jinak by příjemce zdědil vlastní hodnotu a poslaný trénink by u něj zněl jinak.
+>
+> Výjimkou je `rounds` – chybí-li, je `-1`. Tak se odkazy chovaly od začátku.
+
+Slučování drží jediná funkce `SharedTimerLink.applied(to:)`:
+
+```swift
+let merged = link.applied(to: mainTimer.settings)
+```
+
+Neznámý zvuk (odkaz z novější verze aplikace) se ignoruje – **nesmí** skončit ztlumením.
+
 ### Příklady
 
 ```
-gustavtimerapp://timer?Work=30&Rest=15&rounds=8
-gustavtimerapp://timer?60&30&60&30          (minimalistický → Kolo 1..4)
-gustavtimerapp://timer?Sprint=20&Rest=10    (smyčka, rounds chybí → -1)
+https://gustavtraining.com/t?Work=20&Rest=10&rounds=8&_sound=bicycle&_vibe=1&_tick=0&_cd=1&_title=TABATA
+gustavtimerapp://timer?Work=30&Rest=15&rounds=8   (odkaz z 2.2.1, nastavení zůstane příjemci)
+gustavtimerapp://timer?60&30&60&30                (minimalistický → Kolo 1..4)
+gustavtimerapp://timer?Sprint=20&Rest=10          (smyčka, rounds chybí → -1)
 gustavtimerapp://whatsnew
 ```
 
 > [!tip] Sdílení
-> Ve `FavouritesView` generuje **ShareLink** přesně takové URL (`deeplinkURL(for:)`), takže si uživatelé mohou posílat hotové tréninky odkazem. Po načtení z odkazu se v Settings zobrazí hláška `DEEPLINK_LOADED` a nastaví se příznak `startedFromDeeplink`.
+> **ShareLink** generuje přesně takové URL na třech místech: v toolbaru `SettingsView` (právě rozdělaný timer) a swipem na řádku oblíbeného či presetu ve `FavouritesView`. Limity drží `AppConfig.sharedLinkLimits`. Po načtení z odkazu se v Settings zobrazí hláška `DEEPLINK_LOADED` (řízeno počítadlem `deeplinkLoadToken`).
 
 ---
 
@@ -582,7 +625,7 @@ Vlastní rodiny **Martian Grotesk** (Std/Cn varianty) a **Martian Mono** (Regula
 | `roundsOptions` | 1…31 | Nabídka počtu kol |
 | `defaultTimer` | order 0, „Gustav Timer", smyčka | Výchozí časovač |
 
-Dále drží: `backgroundImages` (10), `bannerImages` (6 challenge videí), `predefinedTimers` (5), `soundThemes` a všechny **URL** (review, weights, Instagram, YouTube, YouTube challenge playlist).
+Dále drží: `backgroundImages` (10), `bannerImages` (6 challenge videí), `soundThemes`, `defaultTimer` (`TimerSettings`), `mainTimerOrder`, `sharedLinkLimits` a všechny **URL** (review, weights, Instagram, YouTube, YouTube challenge playlist).
 
 ---
 
@@ -590,22 +633,26 @@ Dále drží: `backgroundImages` (10), `bannerImages` (6 challenge videí), `pre
 
 `@AppStorage` klíče napříč aplikací:
 
+> [!important] Od verze 2.4 jsou v UserDefaults **jen nastavení zařízení**.
+> Co definuje trénink (kola, zvuk, vibrace, tikání, odpočet), žije v `TimerData` – viz [[#4 · Datový model a persistence]]. Klíče jsou na jednom místě v `AppPreferences.Key`.
+
 | Klíč | Typ | Default | Význam |
 |---|---|---|---|
 | `bgIndex` | Int | 0 | Vybrané pozadí (`-1` = vlastní fotka) |
-| `rounds` | Int | -1 | Počet kol (smyčka) |
-| `isVibrating` | Bool | false | Haptika |
-| `isSoundEnabled` | Bool | true | Zvuk zapnut |
-| `isTicking` | Bool | false | Tikání každou sekundu |
-| `selectedSound` | String | "beep" | Vybraný zvuk |
 | `timeDisplayFormat` | enum | seconds | Formát času |
+| `lastSelectedSound` | enum | beep | Poslední vybraný zvuk (pro přepínač ztlumení) |
 | `completedTimerCount` | Int | 0 | Počet dokončených tréninků (review prompt) |
 | `stopCounter` | Int | 0 | Počítadlo zastavení |
 | `whatsNewVersion` | Int | 0 | Naposledy viděný What's New |
 | `lastOnboardingVersion` | Int | 0 | Naposledy viděný onboarding |
-| `startedFromDeeplink` | Bool | false | Časovač načten z odkazu |
+| `deeplinkLoadToken` | Int | 0 | Roste s každým načteným odkazem (spouští alert) |
+| `deeplinkLoadedTitle` | String | "" | Název z `_title` posledního odkazu |
+| `lastAcknowledgedDeeplinkToken` | Int | 0 | Token, jehož alert už uživatel viděl |
+| `didMigrateTimerSettingsToSwiftData` | Bool | false | Proběhla migrace nastavení |
 
-> `AppSettings` (`ObservableObject`) sdružuje `rounds`, `isVibrating`, `isSoundEnabled`, `isTicking` a umí je naplnit z `TimerData` (`save(from:)`).
+**Zrušené klíče** (maže je `SettingsMigration`): `rounds`, `isVibrating`, `isTicking`, `isSoundEnabled`, `selectedSound`, `selectedBackgroundIndex`, `activeTimerId`, `startedFromDeeplink`.
+
+> `AppPreferences` (`ObservableObject`) sdružuje nastavení zařízení. Nahrazuje `AppSettings`, která do verze 2.3 držela i nastavení timeru.
 
 ---
 
@@ -616,7 +663,8 @@ GustavTimer/
 ├── GustavTimerApp.swift          # @main – registrace fontů, TelemetryDeck, modelContainer
 ├── ContentView.swift             # Root – TimerView + sheety (Settings/Onboarding/WhatsNew)
 ├── AppConfig.swift               # Konstanty, presety, URL, pozadí
-├── AppSettings.swift             # ObservableObject sdružující @AppStorage nastavení
+├── AppPreferences.swift          # Nastavení zařízení (@AppStorage) + klíče UserDefaults
+├── SettingsMigration.swift       # Jednorázový přesun nastavení do SwiftData
 ├── Info.plist                    # URL scheme, NSSupportsLiveActivities
 ├── PrivacyInfo.xcprivacy         # Privacy manifest
 ├── Localizable.xcstrings         # Lokalizace (en, cs)
@@ -624,7 +672,7 @@ GustavTimer/
 ├── Models/
 │   ├── TimerData.swift           # @Model – časovač (SwiftData)
 │   ├── CustomImageModel.swift    # @Model – vlastní pozadí
-│   ├── PredefinedTimer.swift     # Enum presetů + tipy
+│   ├── PredefinedTimer.swift     # Enum presetů (TimerSettings) + tipy
 │   ├── BackgroundImageModel.swift
 │   ├── BannerImageModel.swift    # Challenge banner + URL
 │   └── SoundModel+Title.swift    # iOS lokalizované názvy zvuků
@@ -672,6 +720,7 @@ GustavTimer/
 
 Shared/                            # ⭐ Čistá logika sdílitelná s watchOS
 ├── TimerEngine.swift              # Jádro odpočtu
+├── TimerSettings.swift            # Kompletní nastavení timeru (hodnotový typ)
 ├── IntervalData.swift             # Model intervalu
 ├── SoundModel.swift               # Enum zvuků
 ├── TimeDisplayFormat.swift        # Formát zobrazení času
@@ -749,9 +798,9 @@ Konec tréninku se do stavu nedává schválně. Šlo by ho poslat jako absolutn
 > [!warning] Postřehy z kódu (stav k verzi 2.3.0)
 > - **`WhatsNewView.swift`** je nedokončený placeholder – reálně se používá `OnboardingView`.
 > - **Sekce „About"** v `SettingsView` je zakomentovaná (`// about`) a vede jen na `Text("About")`.
-> - V `ContentView` jsou `@AppStorage` klíče **`selectedBackgroundIndex`** a **`activeTimerId`**, které se reálně nepoužívají (pozadí jede přes `bgIndex`).
+> - ~~V `ContentView` jsou nepoužívané `@AppStorage` klíče~~ – vyřešeno ve verzi 2.4, klíče maže `SettingsMigration`.
 > - **rive-ios** je mezi závislostmi, ale animace tlačítek běží na **Lottie** (přes GustavUI). Parametr `riveAnimation` v `ControlButton` je už jen spínač „je to animované tlačítko?" – samotná animace je Lottie. Pravděpodobně historická závislost.
-> - **`AppSettings`** se na několika místech vytváří jako nová instance (`@StateObject` vs `@ObservedObject`), spoléhá na sdílený `@AppStorage` backing store.
+> - **`AppPreferences`** dnes slouží hlavně jako jmenný prostor klíčů (`AppPreferences.Key`); jako `ObservableObject` ji nikdo neinstancuje, protože nastavení timeru se přesunulo do `TimerData`. Její tři `@AppStorage` vlastnosti tak zatím nemají konzumenta – views sahají na klíče přímo.
 > - Footer s `DEEPLINK_LOADED` má v kódu `// TODO: stylizovat jako banner/toast`.
 > - Landscape režim záměrně skrývá progress bar a header (zakomentováno v `landscapeTimerView`).
 > - Zastaralý `.github/copilot-instructions.md` popisuje **starou** architekturu (GustavViewModel, EditSheetView, max 5 timerů, UserDefaults JSON) – **neodpovídá** současnému stavu (SwiftData, TimerEngine, max 10). Tato dokumentace vychází z aktuálního kódu.

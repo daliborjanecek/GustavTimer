@@ -17,6 +17,31 @@ import Foundation
 // na jazyce, ve kterém zrovna běží.
 private let roundPrefix = "ROUND"
 
+/// Nastavení timeru pro testy generátoru. Výchozí hodnoty jsou zvolené tak,
+/// aby šly očekávané odkazy psát doslova: `_sound=beep&_vibe=0&_tick=0&_cd=1`.
+private func settings(
+    _ intervals: [IntervalData],
+    rounds: Int = -1,
+    name: String = "",
+    sound: SoundModel? = .beep,
+    isVibrating: Bool = false,
+    isTicking: Bool = false,
+    hasCountdown: Bool = true
+) -> TimerSettings {
+    TimerSettings(
+        name: name,
+        intervals: intervals,
+        rounds: rounds,
+        sound: sound,
+        isVibrating: isVibrating,
+        isTicking: isTicking,
+        hasCountdown: hasCountdown
+    )
+}
+
+/// Koncovka, kterou generátor přilepí k odkazu s výchozím nastavením z `settings(_:)`.
+private let defaultSettingsQuery = "&_sound=beep&_vibe=0&_tick=0&_cd=1"
+
 /// Projde celou cestu: URL → route → parse. Vrací `nil`, když odkaz aplikaci nepatří
 /// nebo neobsahuje jediný platný interval.
 private func parse(_ string: String) -> SharedTimerLink? {
@@ -219,40 +244,43 @@ func trackingParametersAreCaseInsensitive() throws {
 
 @Test("Generovaný odkaz má očekávaný tvar")
 func generatedURLShape() throws {
-    let url = try #require(SharedTimerLink.url(
-        intervals: [
+    let url = try #require(SharedTimerLink.url(settings: settings(
+        [
             IntervalData(value: 40, name: "Work"),
             IntervalData(value: 20, name: "Rest")
         ],
         rounds: 4,
-        title: "THE COMEBACK"
-    ))
+        name: "THE COMEBACK"
+    )))
 
-    #expect(url.absoluteString == "https://gustavtraining.com/t?Work=40&Rest=20&rounds=4&_title=THE%20COMEBACK")
+    #expect(url.absoluteString ==
+        "https://gustavtraining.com/t?Work=40&Rest=20&rounds=4"
+        + defaultSettingsQuery
+        + "&_title=THE%20COMEBACK")
 }
 
 @Test("Timer bez názvu _title vůbec neposílá")
 func generatedURLOmitsEmptyTitle() throws {
-    let url = try #require(SharedTimerLink.url(
-        intervals: [IntervalData(value: 30, name: "Work")],
+    let url = try #require(SharedTimerLink.url(settings: settings(
+        [IntervalData(value: 30, name: "Work")],
         rounds: -1,
-        title: "   "
-    ))
+        name: "   "
+    )))
 
-    #expect(url.absoluteString == "https://gustavtraining.com/t?Work=30&rounds=-1")
+    #expect(url.absoluteString ==
+        "https://gustavtraining.com/t?Work=30&rounds=-1" + defaultSettingsQuery)
     #expect(!url.absoluteString.contains("_title"))
 }
 
 @Test("Diakritika a mezery v názvech intervalů se zakódují")
 func generatedURLEncodesNames() throws {
-    let url = try #require(SharedTimerLink.url(
-        intervals: [
+    let url = try #require(SharedTimerLink.url(settings: settings(
+        [
             IntervalData(value: 40, name: "Single-arm row"),
             IntervalData(value: 20, name: "Kruhový trénink")
         ],
-        rounds: 2,
-        title: nil
-    ))
+        rounds: 2
+    )))
 
     #expect(url.absoluteString.contains("Single-arm%20row=40"))
     #expect(url.absoluteString.contains("Kruhov%C3%BD%20tr%C3%A9nink=20"))
@@ -261,7 +289,7 @@ func generatedURLEncodesNames() throws {
 @Test("Generátor zapíše nejvýš deset intervalů")
 func generatedURLRespectsIntervalLimit() throws {
     let intervals = (1...15).map { IntervalData(value: 30, name: "L\($0)") }
-    let url = try #require(SharedTimerLink.url(intervals: intervals, rounds: 1))
+    let url = try #require(SharedTimerLink.url(settings: settings(intervals, rounds: 1)))
 
     #expect(url.absoluteString.contains("L10=30"))
     #expect(!url.absoluteString.contains("L11=30"))
@@ -269,7 +297,7 @@ func generatedURLRespectsIntervalLimit() throws {
 
 @Test("Timer bez intervalů odkaz nevytvoří")
 func generatedURLNilForEmptyTimer() {
-    #expect(SharedTimerLink.url(intervals: [], rounds: 4, title: "Prazdny") == nil)
+    #expect(SharedTimerLink.url(settings: settings([], rounds: 4, name: "Prazdny")) == nil)
 }
 
 // MARK: - Kolize s rezervovaným jmenným prostorem
@@ -287,13 +315,13 @@ func reservedNamesAreEscaped(_ input: String, _ expected: String) {
 
 @Test("Interval pojmenovaný rounds nepřepíše počet kol")
 func intervalNamedRoundsDoesNotClobberRounds() throws {
-    let url = try #require(SharedTimerLink.url(
-        intervals: [
+    let url = try #require(SharedTimerLink.url(settings: settings(
+        [
             IntervalData(value: 40, name: "Work"),
             IntervalData(value: 15, name: "rounds")
         ],
         rounds: 4
-    ))
+    )))
 
     let link = try #require(parse(url.absoluteString))
     #expect(link.rounds == 4, "Počet kol musí zůstat 4, ne 15")
@@ -314,7 +342,7 @@ func roundTrip() throws {
         IntervalData(value: 20, name: "Rest")
     ]
 
-    let url = try #require(SharedTimerLink.url(intervals: intervals, rounds: 4, title: "Kruhový trénink"))
+    let url = try #require(SharedTimerLink.url(settings: settings(intervals, rounds: 4, name: "Kruhový trénink")))
     let link = try #require(parse(url.absoluteString))
 
     #expect(link.intervals == intervals)
@@ -325,7 +353,7 @@ func roundTrip() throws {
 @Test("Round-trip zachová nekonečno")
 func roundTripInfiniteRounds() throws {
     let intervals = [IntervalData(value: 300, name: "Meditace")]
-    let url = try #require(SharedTimerLink.url(intervals: intervals, rounds: -1, title: nil))
+    let url = try #require(SharedTimerLink.url(settings: settings(intervals, rounds: -1)))
     let link = try #require(parse(url.absoluteString))
 
     #expect(link.intervals == intervals)
@@ -343,7 +371,7 @@ func roundTripHostileCharacters() throws {
         IntervalData(value: 30, name: "I?J")
     ]
 
-    let url = try #require(SharedTimerLink.url(intervals: intervals, rounds: 3))
+    let url = try #require(SharedTimerLink.url(settings: settings(intervals, rounds: 3)))
     let link = try #require(parse(url.absoluteString))
 
     #expect(link.intervals == intervals)
@@ -361,4 +389,168 @@ func legacyLinkStillWorks() throws {
     ])
     #expect(link.rounds == 8)
     #expect(link.title == nil)
+}
+
+// MARK: - Nastavení přenášená odkazem (od verze 2.4)
+//
+// Celá zpětná kompatibilita stojí na jediném pravidle: **chybějící parametr
+// znamená „zachovej současné“**, ne „vrať na výchozí“. Odkazy vygenerované
+// verzemi 2.2 a 2.3 kolují mezi lidmi a nesmí příjemci sáhnout na zvuk,
+// vibrace ani tikání.
+
+/// Nastavení, ve kterém se žádná hodnota neshoduje s `TimerSettings.default` –
+/// aby bylo poznat, kdy odkaz něco přepsal a kdy ne.
+private let distinctiveSettings = TimerSettings(
+    name: "MŮJ TIMER",
+    intervals: [IntervalData(value: 99, name: "Původní")],
+    rounds: 7,
+    sound: .gong,
+    isVibrating: true,
+    isTicking: true,
+    hasCountdown: false
+)
+
+@Test("Odkaz bez nových parametrů nesáhne na nastavení uživatele")
+func legacyLinkPreservesSettings() throws {
+    // Přesně to, co generovala verze 2.2.1.
+    let link = try #require(parse("gustavtimerapp://timer?Work=40&Rest=20&rounds=4"))
+    let result = link.applied(to: distinctiveSettings)
+
+    #expect(result.sound == .gong)
+    #expect(result.isVibrating == true)
+    #expect(result.isTicking == true)
+    #expect(result.hasCountdown == false)
+    #expect(result.name == "MŮJ TIMER")
+
+    // Co odkaz nese, přebije vždycky.
+    #expect(result.rounds == 4)
+    #expect(result.intervals == [
+        IntervalData(value: 40, name: "Work"),
+        IntervalData(value: 20, name: "Rest")
+    ])
+}
+
+@Test("Nové parametry přebijí současné nastavení")
+func newParametersOverride() throws {
+    let link = try #require(parse(
+        "https://gustavtraining.com/t?Work=40&rounds=2&_sound=whistle&_vibe=0&_tick=0&_cd=1&_title=TABATA"
+    ))
+    let result = link.applied(to: distinctiveSettings)
+
+    #expect(result.sound == .whistle)
+    #expect(result.isVibrating == false)
+    #expect(result.isTicking == false)
+    #expect(result.hasCountdown == true)
+    #expect(result.name == "TABATA")
+}
+
+@Test("_sound=off znamená ticho, ne „odkaz zvuk neřeší“")
+func explicitMuteOverridesSound() throws {
+    let link = try #require(parse("https://gustavtraining.com/t?Work=40&_sound=off"))
+    #expect(link.sound == .mute)
+    #expect(link.applied(to: distinctiveSettings).sound == nil)
+}
+
+@Test("Neznámý zvuk se ignoruje a nezpůsobí ztlumení")
+func unknownSoundIsIgnored() throws {
+    // Odkaz z novější verze aplikace, která zná zvuk, co tenhle build nemá.
+    let link = try #require(parse("https://gustavtraining.com/t?Work=40&_sound=trumpet"))
+    #expect(link.sound == nil)
+    #expect(link.applied(to: distinctiveSettings).sound == .gong)
+}
+
+@Test("Název zvuku se bere bez ohledu na velikost písmen")
+func soundValueIsCaseInsensitive() throws {
+    let link = try #require(parse("https://gustavtraining.com/t?Work=40&_sound=GONG"))
+    #expect(link.sound == .sound(.gong))
+}
+
+@Test("Boolean parametry berou i textové tvary", arguments: [
+    ("_vibe=1", true), ("_vibe=true", true), ("_vibe=YES", true), ("_vibe=on", true),
+    ("_vibe=0", false), ("_vibe=false", false), ("_vibe=no", false), ("_vibe=off", false)
+])
+func booleanFormsAreAccepted(_ query: String, _ expected: Bool) throws {
+    let link = try #require(parse("https://gustavtraining.com/t?Work=40&\(query)"))
+    #expect(link.isVibrating == expected)
+}
+
+@Test("Nesrozumitelný boolean se tváří, jako by v odkazu nebyl", arguments: [
+    "_vibe=mozna", "_vibe=2", "_vibe="
+])
+func nonsenseBooleanIsIgnored(_ query: String) throws {
+    let link = try #require(parse("https://gustavtraining.com/t?Work=40&\(query)"))
+    #expect(link.isVibrating == nil)
+    #expect(link.applied(to: distinctiveSettings).isVibrating == true)
+}
+
+@Test("U nastavení vyhrává první výskyt")
+func firstOccurrenceWinsForSettings() throws {
+    let link = try #require(parse("https://gustavtraining.com/t?Work=40&_sound=gong&_sound=bell&_tick=1&_tick=0"))
+    #expect(link.sound == .sound(.gong))
+    #expect(link.isTicking == true)
+}
+
+@Test("Neznámý rezervovaný klíč se ignoruje a nevytvoří interval")
+func unknownReservedKeyIsIgnored() throws {
+    let link = try #require(parse("https://gustavtraining.com/t?Work=40&_neco=30&_v=9"))
+    #expect(link.intervals == [IntervalData(value: 40, name: "Work")])
+}
+
+@Test("Round-trip zachová celé nastavení timeru")
+func roundTripPreservesAllSettings() throws {
+    let original = TimerSettings(
+        name: "THE COMEBACK",
+        intervals: [
+            IntervalData(value: 40, name: "Work"),
+            IntervalData(value: 20, name: "Rest")
+        ],
+        rounds: 4,
+        sound: .whistle,
+        isVibrating: true,
+        isTicking: true,
+        hasCountdown: false
+    )
+
+    let url = try #require(SharedTimerLink.url(settings: original))
+    let link = try #require(parse(url.absoluteString))
+
+    // Odkaz nese všechno, takže na základu nesmí záležet.
+    #expect(link.applied(to: .default) == original)
+    #expect(link.applied(to: distinctiveSettings) == original)
+}
+
+@Test("Round-trip zachová ztlumený timer")
+func roundTripPreservesMute() throws {
+    var original = TimerSettings.default
+    original.name = "TICHO"
+    original.sound = nil
+
+    let url = try #require(SharedTimerLink.url(settings: original))
+    #expect(url.absoluteString.contains("_sound=off"))
+
+    let link = try #require(parse(url.absoluteString))
+    #expect(link.applied(to: distinctiveSettings).sound == nil)
+}
+
+@Test("Interval pojmenovaný jako nový rezervovaný klíč odkaz nerozbije")
+func intervalNamedLikeNewReservedKey() throws {
+    let original = settings(
+        [
+            IntervalData(value: 30, name: "_sound"),
+            IntervalData(value: 15, name: "_cd")
+        ],
+        rounds: 2,
+        name: "KOLIZE",
+        sound: .bell
+    )
+
+    let url = try #require(SharedTimerLink.url(settings: original))
+    let link = try #require(parse(url.absoluteString))
+
+    // Intervaly přežily s vedoucí mezerou (escapování je jednosměrné)…
+    #expect(link.intervals.map(\.value) == [30, 15])
+    #expect(link.intervals.map(\.name) == [" _sound", " _cd"])
+    // …a skutečné parametry zůstaly nedotčené.
+    #expect(link.sound == .sound(.bell))
+    #expect(link.hasCountdown == true)
 }

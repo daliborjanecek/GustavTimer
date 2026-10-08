@@ -17,6 +17,19 @@
 //  Custom schéma se dál parsuje – odkazy vygenerované verzí 2.2.1 kolují
 //  mezi lidmi a musí fungovat dál.
 //
+//  Od verze 2.4 nese odkaz celé nastavení timeru, ne jen intervaly a kola:
+//
+//      .../t?Work=20&Rest=10&rounds=8&_sound=bicycle&_vibe=1&_tick=0&_cd=1&_title=TABATA
+//
+//  Klíčové pravidlo: **chybějící parametr znamená „zachovej současné“**,
+//  ne „vrať na výchozí“. Díky tomu se odkaz z verze 2.2/2.3 chová přesně
+//  jako dřív – nesáhne na zvuk ani vibrace příjemce – a zároveň jde rozlišit
+//  „odkaz zvuk neřeší“ od „odkaz říká ticho“ (`_sound=off`).
+//
+//  Proto také generátor zapisuje všechna nastavení vždycky, i když odpovídají
+//  výchozím hodnotám: jinak by příjemce zdědil vlastní hodnotu a poslaný
+//  trénink by u něj zněl jinak.
+//
 
 import Foundation
 
@@ -31,10 +44,66 @@ struct SharedTimerLink: Equatable {
     let intervals: [IntervalData]
 
     /// Počet opakování celého timeru. `-1` znamená nekonečno.
+    ///
+    /// Na rozdíl od nastavení níž není volitelný: chybí-li `rounds` v URL,
+    /// výsledkem je `-1`. Tak se odkazy chovaly od začátku a generátor ho
+    /// stejně zapisuje vždycky, takže to potká jen ručně psané odkazy.
     let rounds: Int
 
     /// Název timeru z parametru `_title`. `nil`, pokud v odkazu nebyl.
     let title: String?
+
+    /// Zvuk z parametru `_sound`. `nil` = odkaz zvuk neřeší,
+    /// `.mute` = odkaz výslovně říká ticho (`_sound=off`).
+    let sound: SharedSoundSelection?
+
+    /// Vibrace z parametru `_vibe`. `nil` = odkaz je neřeší.
+    let isVibrating: Bool?
+
+    /// Tikání z parametru `_tick`. `nil` = odkaz ho neřeší.
+    let isTicking: Bool?
+
+    /// Úvodní odpočet z parametru `_cd`. `nil` = odkaz ho neřeší.
+    let hasCountdown: Bool?
+
+    init(
+        intervals: [IntervalData],
+        rounds: Int,
+        title: String? = nil,
+        sound: SharedSoundSelection? = nil,
+        isVibrating: Bool? = nil,
+        isTicking: Bool? = nil,
+        hasCountdown: Bool? = nil
+    ) {
+        self.intervals = intervals
+        self.rounds = rounds
+        self.title = title
+        self.sound = sound
+        self.isVibrating = isVibrating
+        self.isTicking = isTicking
+        self.hasCountdown = hasCountdown
+    }
+}
+
+/// Zvuk přenesený sdíleným odkazem.
+///
+/// Samostatný typ, protože `SoundModel?` už jednu informaci nese (`nil` = ticho)
+/// a potřebujeme k ní ještě druhou: jestli se o zvuku odkaz vůbec zmínil.
+enum SharedSoundSelection: Equatable {
+    case mute
+    case sound(SoundModel)
+
+    /// Hodnota pro `TimerSettings.sound`.
+    var model: SoundModel? {
+        switch self {
+        case .mute: return nil
+        case .sound(let model): return model
+        }
+    }
+
+    init(_ model: SoundModel?) {
+        self = model.map { SharedSoundSelection.sound($0) } ?? .mute
+    }
 }
 
 // MARK: - Limity
@@ -76,6 +145,23 @@ extension SharedTimerLink {
 
     /// Rezervovaný klíč pro název timeru.
     static let titleKey = "_title"
+
+    /// Zvuk přechodu mezi intervaly. Hodnotou je `SoundModel.rawValue`
+    /// nebo `soundOffValue` pro ticho.
+    static let soundKey = "_sound"
+
+    /// Haptická odezva.
+    static let vibrationKey = "_vibe"
+
+    /// Tikání každou sekundu.
+    static let tickingKey = "_tick"
+
+    /// Úvodní odpočet 3-2-1.
+    static let countdownKey = "_cd"
+
+    /// Hodnota `_sound`, která znamená ticho. Nesmí se srazit s žádným
+    /// `SoundModel.rawValue`.
+    static let soundOffValue = "off"
 
     /// Jmenný prostor rezervovaný pro budoucí parametry. Klíč začínající
     /// podtržítkem se **nikdy** neinterpretuje jako interval, takže se dají
@@ -155,7 +241,11 @@ extension SharedTimerLink {
     ///    se ignoruje. Chybí-li parametr úplně, výsledkem je `-1`.
     /// 2. Klíč `_title` nastaví název timeru. Prázdná hodnota se ignoruje,
     ///    delší než `maxTitleLength` se ořízne. Vyhrává první výskyt.
-    /// 3. Klíč začínající `_` je rezervovaný – přeskočí se, nikdy nevznikne interval.
+    ///    Stejně tak `_sound`, `_vibe`, `_tick` a `_cd` – u všech vyhrává
+    ///    první výskyt a nesrozumitelná hodnota se ignoruje, takže zůstane
+    ///    `nil` a volající si nechá své současné nastavení.
+    /// 3. Ostatní klíče začínající `_` jsou rezervované – přeskočí se,
+    ///    nikdy z nich nevznikne interval.
     /// 4. Trackovací klíče (`utm_*`, `fbclid`, `gclid`) se přeskočí.
     /// 5. `název=hodnota` → pojmenovaný interval, pokud je hodnota celé číslo
     ///    v rozsahu `1...maxIntervalValue`.
@@ -178,6 +268,10 @@ extension SharedTimerLink {
         var intervals: [IntervalData] = []
         var rounds: Int?
         var title: String?
+        var sound: SharedSoundSelection?
+        var isVibrating: Bool?
+        var isTicking: Bool?
+        var hasCountdown: Bool?
 
         for item in items {
             let key = item.name
@@ -193,11 +287,39 @@ extension SharedTimerLink {
 
             // 2. + 3. Rezervovaný jmenný prostor
             if key.hasPrefix(reservedPrefix) {
-                if lowerKey == titleKey, title == nil {
-                    let trimmed = (item.value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmed.isEmpty {
-                        title = String(trimmed.prefix(limits.maxTitleLength))
+                switch lowerKey {
+                case Self.titleKey:
+                    if title == nil {
+                        let trimmed = (item.value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty {
+                            title = String(trimmed.prefix(limits.maxTitleLength))
+                        }
                     }
+
+                case Self.soundKey:
+                    // Neznámý zvuk (odkaz z novější verze aplikace) se ignoruje.
+                    // Nesmí skončit ztlumením – to by z chybějícího zvuku udělalo
+                    // tichý trénink, což odesílatel nezamýšlel.
+                    if sound == nil, let raw = item.value?.lowercased() {
+                        if raw == Self.soundOffValue {
+                            sound = .mute
+                        } else if let model = SoundModel(rawValue: raw) {
+                            sound = .sound(model)
+                        }
+                    }
+
+                case Self.vibrationKey:
+                    if isVibrating == nil { isVibrating = parseBool(item.value) }
+
+                case Self.tickingKey:
+                    if isTicking == nil { isTicking = parseBool(item.value) }
+
+                case Self.countdownKey:
+                    if hasCountdown == nil { hasCountdown = parseBool(item.value) }
+
+                default:
+                    // Neznámý rezervovaný klíč – nikdy z něj nevznikne interval.
+                    break
                 }
                 continue
             }
@@ -228,7 +350,52 @@ extension SharedTimerLink {
         guard !intervals.isEmpty else { return nil }
 
         // Chybí-li rounds v URL, výchozí hodnota je nekonečno.
-        return SharedTimerLink(intervals: intervals, rounds: rounds ?? -1, title: title)
+        return SharedTimerLink(
+            intervals: intervals,
+            rounds: rounds ?? -1,
+            title: title,
+            sound: sound,
+            isVibrating: isVibrating,
+            isTicking: isTicking,
+            hasCountdown: hasCountdown
+        )
+    }
+
+    /// Boolean ze sdíleného odkazu.
+    ///
+    /// Bere i textové tvary, protože odkazy se píšou a upravují i ručně.
+    /// `nil` = nesrozumitelná hodnota; parametr se pak tváří, jako by v odkazu
+    /// nebyl, a volající si nechá své současné nastavení.
+    private static func parseBool(_ value: String?) -> Bool? {
+        switch value?.lowercased() {
+        case "1", "true", "yes", "on":  return true
+        case "0", "false", "no", "off": return false
+        default:                        return nil
+        }
+    }
+}
+
+// MARK: - Sloučení s aktuálním nastavením
+
+extension SharedTimerLink {
+
+    /// Složí výsledné nastavení timeru: co odkaz nese, přebije; co nenese, zůstane.
+    ///
+    /// Intervaly a počet kol přebijí vždycky – bez nich by odkaz nedával smysl.
+    /// Ostatní nastavení jen tehdy, když je odkaz skutečně obsahoval, takže
+    /// odkaz z verze 2.2/2.3 nesáhne uživateli na zvuk, vibrace ani tikání.
+    ///
+    ///     let merged = link.applied(to: mainTimer.settings)
+    func applied(to base: TimerSettings) -> TimerSettings {
+        var result = base
+        result.intervals = intervals
+        result.rounds = rounds
+        if let title { result.name = title }
+        if let sound { result.sound = sound.model }
+        if let isVibrating { result.isVibrating = isVibrating }
+        if let isTicking { result.isTicking = isTicking }
+        if let hasCountdown { result.hasCountdown = hasCountdown }
+        return result
     }
 }
 
@@ -259,33 +426,38 @@ extension SharedTimerLink {
         return name
     }
 
-    /// Sestaví sdílený odkaz.
+    /// Sestaví sdílený odkaz z kompletního nastavení timeru.
     ///
-    /// Pořadí parametrů: intervaly (v pořadí timeru) → `rounds` → `_title`.
-    /// Intervalů se zapíše nejvýš `maxIntervalCount`, `rounds = -1` se zachovává
-    /// jako značka nekonečna. Timer bez názvu parametr `_title` úplně vynechá,
-    /// neposílá prázdnou hodnotu.
+    /// Pořadí parametrů: intervaly (v pořadí timeru) → `rounds` → `_sound` →
+    /// `_vibe` → `_tick` → `_cd` → `_title`. Intervalů se zapíše nejvýš
+    /// `maxIntervalCount`, `rounds = -1` se zachovává jako značka nekonečna.
+    /// Timer bez názvu parametr `_title` úplně vynechá, neposílá prázdnou hodnotu.
+    ///
+    /// Nastavení se zapisují **vždy**, i když odpovídají výchozím hodnotám –
+    /// u příjemce totiž chybějící parametr znamená „nech si svoje“, takže
+    /// vynechání by poslaný trénink u každého rozladilo jinak.
     ///
     /// - Returns: `nil`, pokud timer nemá jediný interval.
-    static func url(
-        intervals: [IntervalData],
-        rounds: Int,
-        title: String? = nil,
-        limits: Limits = .default
-    ) -> URL? {
+    static func url(settings: TimerSettings, limits: Limits = .default) -> URL? {
 
         var items: [URLQueryItem] = []
 
-        for interval in intervals.prefix(limits.maxIntervalCount) {
+        for interval in settings.intervals.prefix(limits.maxIntervalCount) {
             guard let key = encode(escapedIntervalName(interval.name)), !key.isEmpty else { continue }
             items.append(URLQueryItem(name: key, value: String(interval.value)))
         }
 
         guard !items.isEmpty else { return nil }
 
-        items.append(URLQueryItem(name: roundsKey, value: String(rounds)))
+        // Všechny hodnoty níž jsou holé ASCII (číslice, rawValue zvuku, 0/1),
+        // takže procentní kódování nepotřebují. Název ano – ten jde přes encode().
+        items.append(URLQueryItem(name: roundsKey, value: String(settings.rounds)))
+        items.append(URLQueryItem(name: soundKey, value: settings.sound?.rawValue ?? soundOffValue))
+        items.append(URLQueryItem(name: vibrationKey, value: settings.isVibrating ? "1" : "0"))
+        items.append(URLQueryItem(name: tickingKey, value: settings.isTicking ? "1" : "0"))
+        items.append(URLQueryItem(name: countdownKey, value: settings.hasCountdown ? "1" : "0"))
 
-        let trimmedTitle = (title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedTitle = settings.name.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedTitle.isEmpty, let encoded = encode(String(trimmedTitle.prefix(limits.maxTitleLength))) {
             items.append(URLQueryItem(name: titleKey, value: encoded))
         }

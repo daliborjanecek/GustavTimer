@@ -15,8 +15,6 @@ struct FavouritesView: View {
     @Query(sort: \TimerData.order, order: .reverse) var timerData: [TimerData]
     @Environment(\.modelContext) var context
     
-    @ObservedObject var appSettings = AppSettings()
-    
     @State var showSaveAlert: Bool = false
     @State var newTimerName: String = ""
     @State var showDeleteAlert: Bool = false
@@ -43,12 +41,12 @@ struct FavouritesView: View {
             let savedTimers = timerData.filter { $0.order != 0 }
             if !savedTimers.isEmpty {
                 ForEach(savedTimers) { timer in
-                    FavouriteRowView(timer: timer, selected: isTimerSelected(timer: timer))
+                    FavouriteRowView(settings: timer.settings, selected: isSelected(timer.settings))
                         .onTapGesture {
-                            selectTimer(timer: timer)
+                            select(timer.settings, tracking: timer)
                         }
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            if let url = deeplinkURL(for: timer) {
+                            if let url = SharedTimerLink.url(settings: timer.settings, limits: AppConfig.sharedLinkLimits) {
                                 ShareLink(item: url) {
                                     Label("SHARE", systemImage: "square.and.arrow.up")
                                 }
@@ -76,14 +74,14 @@ struct FavouritesView: View {
     private var preloadedTimers: some View {
         Section {
             let preloadedTimers = PredefinedTimer.allCases
-            ForEach(preloadedTimers) { timer in
-                FavouriteRowView(timer: timer.timer, selected: isTimerSelected(timer: timer.timer), tip: timer.description[selectedTip])
+            ForEach(preloadedTimers) { preset in
+                FavouriteRowView(settings: preset.settings, selected: isSelected(preset.settings), tip: preset.description[selectedTip])
                     .onTapGesture {
-                        analyticsPreloadedAction(timer: timer.timer)
-                        selectTimer(timer: timer.timer)
+                        analyticsPreloadedAction(preset.settings)
+                        select(preset.settings)
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                        if let url = deeplinkURL(for: timer.timer) {
+                        if let url = SharedTimerLink.url(settings: preset.settings, limits: AppConfig.sharedLinkLimits) {
                             ShareLink(item: url) {
                                 Label("SHARE", systemImage: "square.and.arrow.up")
                             }
@@ -120,8 +118,12 @@ struct FavouritesView: View {
         
         ToolbarItem {
             Button {
-                let savedTimers = timerData.filter { $0.order != 0 }
-                if let mainTimer = timerData.first(where: { $0.order == 0 }), !savedTimers.contains(mainTimer) {
+                let savedTimers = timerData.filter { $0.order != AppConfig.mainTimerOrder }
+                if let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }),
+                   !savedTimers.contains(where: { $0.matchesWorkout(of: mainTimer) }) {
+                    // Dialog startuje se stávajícím názvem, ať ho uživatel
+                    // nemusí psát znovu – stačí ho upravit nebo potvrdit.
+                    newTimerName = mainTimer.name
                     showSaveAlert.toggle()
                 } else {
                     showAlreadySavedAlert.toggle()
@@ -171,84 +173,64 @@ struct FavouritesView: View {
     }
     
     private func saveTimer() {
-        if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            let newId = (timerData.map { $0.order }.max() ?? 0) + 1
-            let newTimer = TimerData(order: newId, name: newTimerName, rounds: appSettings.rounds, isVibrating: appSettings.isVibrating)
-            newTimer.intervals = mainTimer.intervals
-            newTimer.selectedSound = mainTimer.selectedSound
-            context.insert(newTimer)
+        guard let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) else { return }
 
-            // Track timer save event
-            let intervalPattern = newTimer.intervals.map { String($0.value) }.joined(separator: "/")
-            TelemetryDeck.signal(
-                "timer.saved",
-                parameters: [
-                    "interval_pattern": intervalPattern
-                ]
-            )
-        }
-    }
-    
-    private func selectTimer(timer: TimerData) {
-        timer.selected()
-        if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            mainTimer.name = timer.name
-            mainTimer.intervals = timer.intervals
-            mainTimer.selectedSound = timer.selectedSound
-            mainTimer.isVibrating = timer.isVibrating
-            mainTimer.rounds = timer.rounds
-            appSettings.save(from: timer)
-            try? context.save()
-        }
-    }
-    
-    private func analyticsPreloadedAction(timer: TimerData) {
-        let intervalPattern = timer.intervals.map { String($0.value) }.joined(separator: "/")
+        let newId = (timerData.map { $0.order }.max() ?? 0) + 1
+        var settings = mainTimer.settings
+        settings.name = resolvedTimerName(fallback: mainTimer.name)
+        let newTimer = TimerData(order: newId, settings: settings)
+        context.insert(newTimer)
+        // Aktivní timer převezme pojmenování, aby se hned poznal jako uložený.
+        mainTimer.name = settings.name
 
+        // Track timer save event
+        let intervalPattern = newTimer.intervals.map { String($0.value) }.joined(separator: "/")
         TelemetryDeck.signal(
-            "timer.preloadselected",
+            "timer.saved",
             parameters: [
-                "timer_name": timer.name,
                 "interval_pattern": intervalPattern
             ]
         )
     }
+
+    /// Název z dialogu, ořezaný a omezený délkou. Vymazané pole se nebere jako
+    /// „pojmenuj to prázdně“ – v oblíbených by z toho byl bezejmenný řádek.
+    private func resolvedTimerName(fallback: String) -> String {
+        let trimmed = newTimerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return String((trimmed.isEmpty ? fallback : trimmed).prefix(AppConfig.maxTimerTitle))
+    }
     
-    private func isTimerSelected(timer: TimerData) -> Bool {
-        if let mainTimer = timerData.first(where: { $0.order == 0 }) {
-            return mainTimer == timer
-        }
-        return false
+    /// Nastaví hlavní timer podle zadaného nastavení.
+    ///
+    /// - Parameter tracking: uložený oblíbený, kterému se má započítat použití.
+    ///   Presety ho nemají – nejsou v databázi, takže není kam počítat.
+    private func select(_ settings: TimerSettings, tracking timer: TimerData? = nil) {
+        timer?.selected()
+        TimerData.mainTimer(in: context).settings = settings
+        try? context.save()
     }
 
-    /// Sdílený odkaz na timer ve tvaru `https://gustavtraining.com/t?...`.
-    /// Skládání drží `SharedTimerLink`, aby generování a parsování nemohlo
-    /// vzniknout ve dvou nezávislých kopiích.
-    private func deeplinkURL(for timer: TimerData) -> URL? {
-        SharedTimerLink.url(
-            intervals: timer.intervals,
-            rounds: timer.rounds,
-            title: timer.name,
-            limits: SharedTimerLink.Limits(
-                maxIntervalCount: AppConfig.maxTimerCount,
-                maxIntervalValue: AppConfig.maxTimerValue,
-                maxRounds: AppConfig.roundsOptions.last ?? 31
-            )
+    private func analyticsPreloadedAction(_ settings: TimerSettings) {
+        let intervalPattern = settings.intervals.map { String($0.value) }.joined(separator: "/")
+
+        TelemetryDeck.signal(
+            "timer.preloadselected",
+            parameters: [
+                "timer_name": settings.name,
+                "interval_pattern": intervalPattern
+            ]
         )
+    }
+
+    private func isSelected(_ settings: TimerSettings) -> Bool {
+        guard let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) else { return false }
+        return mainTimer.settings.matchesWorkout(of: settings)
     }
 }
 
 #Preview {
     List {
         FavouritesEmptyView()
-        FavouriteRowView(timer: {
-            let timer = AppConfig.defaultTimer
-            timer.order = 11
-            timer.intervals = [
-                IntervalData(value: 30, name: "Work"),
-                IntervalData(value: 15, name: "Rest")
-            ]
-            return timer
-        }(), selected: false)
+        FavouriteRowView(settings: AppConfig.defaultTimer, selected: false)
     }
 }

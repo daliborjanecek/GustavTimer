@@ -42,7 +42,6 @@ struct TimerView: View {
             } else if oldValue == .settings {
                 // SettingsView se zavřelo, znovu načti data z databáze a resetuj časovač
                 viewModel.reloadTimers(resetCurrentState: true)
-                viewModel.setSound(sound: timerData.first(where: { $0.order == 0 })?.selectedSound)
             }
         }
         .onAppear {
@@ -151,16 +150,30 @@ private extension TimerView {
     
     @ViewBuilder
     var currentTimerInfo: some View {
-        if let currentTimer = currentTimer {
-            Text("\(currentTimer.name) (\(viewModel.finishedRounds)\(viewModel.rounds == -1 ? "" : ("/" + String(viewModel.rounds))))")
+        if currentTimer != nil {
+            Text(headerLabel)
                 .safeAreaPadding(.horizontal)
-                .foregroundColor(Color.gustavVolt.opacity(viewModel.finishedRounds == 0 ? 0.0 : 1.0))
+                .foregroundColor(Color.gustavVolt)
+                .lineLimit(1)
                 .animation(.easeInOut(duration: 0.2), value: viewModel.finishedRounds)
         } else {
             Text("No Timer")
                 .safeAreaPadding(.horizontal)
                 .foregroundColor(Color.gustavVolt.opacity(0.5))
         }
+    }
+
+    /// Dokud timer neběží, je tu název timeru – dřív tady bylo prázdno
+    /// (text se schovával přes `opacity(0)`). Po startu ho vystřídá aktuální
+    /// interval a počet odběhnutých kol.
+    var headerLabel: String {
+        guard let currentTimer else { return "" }
+        guard viewModel.finishedRounds > 0 else { return viewModel.settings.name }
+
+        let rounds = viewModel.settings.rounds == -1
+            ? ""
+            : "/" + String(viewModel.settings.rounds)
+        return "\(currentTimer.name) (\(viewModel.finishedRounds)\(rounds))"
     }
     
     func counterDisplay(timeDisplayFormat: TimeDisplayFormat) -> some View {
@@ -240,17 +253,17 @@ private extension TimerView {
     
     var settingsIcons: some View {
         HStack {
-            if viewModel.rounds == -1 {
+            if viewModel.settings.rounds == -1 {
                 GustavAnimationView(.loop, mode: $viewModel.loopIconAnimation)
                     .frame(width: 20, height: 20)
             }
             
-            if viewModel.isVibrating {
+            if viewModel.settings.isVibrating {
                 GustavAnimationView(.vibration, mode: $viewModel.appearanceIconAnimation)
                     .frame(width: 20, height: 20)
             }
             
-            if viewModel.isSoundEnabled {
+            if viewModel.settings.sound != nil {
                 GustavAnimationView(.sound, mode: $viewModel.appearanceIconAnimation)
                     .frame(width: 20, height: 20)
             }
@@ -259,10 +272,11 @@ private extension TimerView {
     }
     
     var soundIcon: some View {
-        Image(systemName: viewModel.isSoundEnabled ? "speaker.wave.2.circle.fill" : "speaker.slash.circle.fill")
+        let isSoundEnabled = viewModel.settings.sound != nil
+        return Image(systemName: isSoundEnabled ? "speaker.wave.2.circle.fill" : "speaker.slash.circle.fill")
             .resizable()
             .scaledToFit()
-            .foregroundColor(Color(viewModel.isSoundEnabled ? Color.gustavVolt : Color.gustavNeutral))
+            .foregroundColor(Color(isSoundEnabled ? Color.gustavVolt : Color.gustavNeutral))
     }
 }
 
@@ -300,7 +314,6 @@ private extension TimerView {
     func setupViewModel() {
         viewModel.setModelContext(context)
         viewModel.showWhatsNew()
-        viewModel.setSound(sound: timerData.first(where: { $0.order == 0 })?.selectedSound)
         viewModel.onReviewRequested = {
             requestReview()
         }

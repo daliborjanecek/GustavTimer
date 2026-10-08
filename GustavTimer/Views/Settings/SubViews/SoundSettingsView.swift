@@ -12,7 +12,10 @@ import TelemetryDeck
 struct SoundSettingsView: View {
     
     @Binding var selectedSound: SoundModel?
-    @State var lastSelectedSound: SoundModel? = nil
+
+    /// Zvuk, na který se má vrátit přepínač ztlumení. Nastavení zařízení –
+    /// jako `@State` se ztrácel při každém odchodu z obrazovky.
+    @AppStorage(AppPreferences.Key.lastSelectedSound) private var lastSelectedSound: SoundModel = .beep
     
     var body: some View {
         List {
@@ -21,9 +24,9 @@ struct SoundSettingsView: View {
                     selectedSound != nil
                 }, set: { bool in
                     if bool {
-                        selectedSound = lastSelectedSound ?? .beep
+                        selectedSound = lastSelectedSound
                     } else {
-                        lastSelectedSound = selectedSound
+                        if let current = selectedSound { lastSelectedSound = current }
                         selectedSound = nil
                     }
                 })) {
@@ -79,6 +82,7 @@ struct SoundSettingsView: View {
     
     func setSelectedSound(_ sound: SoundModel) {
         self.selectedSound = sound
+        self.lastSelectedSound = sound
 
         TelemetryDeck.signal(
             "timer.sound_selected",
