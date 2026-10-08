@@ -744,16 +744,29 @@ GustavTimerWidget/                 # Widget extension (Live Activity)
 
 ### Co dlaždice ukazuje
 
-Live Activity **vědomě nic neodpočítává** – ani název timeru, ani konec tréninku:
+Hlavní číslo je **odpočet aktuálního intervalu** s jeho názvem, pod ním drobně čas celého tréninku. Progress bar dlaždice nemá:
 
-| Stav | Nadpis | Podřádek |
-|---|---|---|
-| Timer běží | TIMER RUNNING | Open the app for the countdown |
-| Pozastaveno | TIMER PAUSED | Open the app to resume |
+| Stav | Nadpis | Hlavní odpočet | Drobný řádek |
+|---|---|---|---|
+| Běží | název intervalu | zbývající čas intervalu (m:ss), na konci intervalu ho nahradí `IntervalEndedView` | Time left / Elapsed celého tréninku |
+| Pozastaveno | název intervalu | zastavený na okamžiku pauzy | zastavený |
+| Stale (interval vypršel, aplikace spí) | RUNNING | zbývající / uplynulý čas tréninku | Time left / Elapsed |
 
-### Proč tam není odpočet
+Všechny odpočty kreslí systém sám (`Text(timerInterval:pauseTime:)`) z absolutních dat. Během úvodního odpočtu 3-2-1 leží začátky v budoucnosti a odpočty do té doby stojí na plné délce.
 
-Live Activity se sama nepřekresluje a aktualizaci jí umí poslat jen běžící aplikace (nebo push ze serveru). Aplikace ale na pozadí neběží – systém ji během chvíle uspí. Cokoli, co by se muselo průběžně měnit (odpočet, název intervalu, číslo kola), by proto na obrazovce zamrzlo a začalo lhát: odpočet doběhne na nulu a zůstane na ní, i když trénink je dávno ve třetím kole.
+> [!danger] Jen `Text(timerInterval:)`
+> V Live Activity sám přepočítává jen `Text(timerInterval:)` / `Text(date, style: .timer)` a `ProgressView(timerInterval:)`. Live Activity nemá `TimelineProvider`. Zobrazení jen v sekundách („17 s“) přes zdroj času z iOS 18 `Text(.dateRange(endingAt:), format: Date.ComponentsFormatStyle(…))` bylo vyzkoušeno – **po pár sekundách se zastaví, a to i v Dynamic Islandu na odemčeném telefonu** (nejde tedy o ztlumení always-on displeje). Vestavěný `SystemFormatStyle.Timer` čisté sekundy neumí: s `maxFieldCount: 1` ukazuje „17 sekund“, ale od minuty výš „1 minuta“. Vlastní formát ani vlastní `TimeDataSource` napsat nejde. Odpočet intervalu je proto ve formátu m:ss.
+
+### Odpočet intervalu a uspaná aplikace
+
+Live Activity se sama nepřekresluje a aktualizaci jí umí poslat jen běžící aplikace (nebo push ze serveru). Aplikace ale na pozadí neběží – systém ji během chvíle uspí. Přechod na další interval tedy dlaždici dorazí jen tehdy, když aplikace ještě žije (popředí, prvních pár sekund na pozadí).
+
+Proto je konec aktuálního intervalu zároveň `staleDate` aktivity. Když ho systém vyhodnotí, dlaždice dostane `isStale == true` a hlavní číslo převezme čas celého tréninku, který platí vždy. **Toto přepnutí ale systém negarantuje** (viz níže) – pokud k němu nedojde, odpočet intervalu zůstane stát na 0:00, dokud uživatel neotevře aplikaci. Drobný řádek s časem tréninku běží správně v obou případech.
+
+> [!warning] Experiment: zmizení odpočtu na konci intervalu
+> Aby po konci intervalu nezůstalo viset 0:00, odpočet intervalu je maskovaný `ProgressView(timerInterval:)`, který se ke konci intervalu vyprázdní (progress bar široký 200 000 bodů, trojí maska kvůli poloprůhledné dráze). Šířka musí být pevná přes `.frame(width:)` – při roztažení přes `scaleEffect(x:)` se zakulacené konce progress baru protáhnou na tisíce bodů a jejich špička viditelně ořízne obsah. Postup není nikde zdokumentovaný a na Macu ho ověřit nejde – `ImageRenderer` `ProgressView` nevykreslí. Kdyby dlaždice přestala fungovat, stačí smazat `.vanishing(…)` v `MainCountdown`.
+>
+> Stejným trikem, jen obráceně (výplň roste a progress bar končí u pravého okraje obsahu), naskočí na konci intervalu místo odpočtu `IntervalEndedView` – libovolný statický SwiftUI obsah (`.appearing(…)`). Na zařízení ověřené zatím jen zmizení.
 
 Pokusy o obcházení tohohle omezení skončily takto:
 
@@ -761,25 +774,34 @@ Pokusy o obcházení tohohle omezení skončily takto:
 - **Dopočet z rozvrhu ve widgetu** (widget si sám spočítá, který interval běží) funguje jen ve chvíli, kdy systém widget skutečně překreslí – a to si řídí sám. Aktualizace stavu překreslení negarantuje. Ze stejného důvodu selhalo i přepnutí na „hotovo" přes `staleDate`.
 - **Rozpočet aktualizací**: ActivityKit z pozadí přebytečné aktualizace zahazuje. V logu je to vidět jako nepoměr mezi „update odeslán" a systémovým „Updating content for activity".
 
-Zbylo tedy jediné poctivé řešení: ukazovat výhradně to, co platí i po hodině bez jediné aktualizace.
+Odpočet celého tréninku proto na dlaždici zůstává vždy – jako jediný údaj platí i po hodině bez jediné aktualizace.
 
 > [!danger] `Text(timerInterval:)` a `.fixedSize()`
-> Kdyby se někdy odpočet do dlaždice vracel: systémový odpočet si velikost řídí sám a s `.fixedSize()` se **celá dlaždice přestane vykreslovat**. Zůstane viset poslední snímek, nikde se nic nehlásí a vypadá to jako zaseknutý timer. Totéž platí pro `ProgressView(timerInterval:)`.
+> Systémový odpočet si velikost řídí sám a s `.fixedSize()` se **celá dlaždice přestane vykreslovat**. Zůstane viset poslední snímek, nikde se nic nehlásí a vypadá to jako zaseknutý timer. Totéž platí pro `ProgressView(timerInterval:)`. Šířka se omezuje jen přes `.frame(maxWidth:)`.
 
 ### Stav aktivity (`TimerActivityAttributes.ContentState`)
 
-Jediné pole: `phase` (`.running` / `.paused`). `TimerActivityAttributes` nemá žádné vlastnosti – ani název timeru.
+| Pole | Význam |
+|---|---|
+| `phase` | `.running` / `.paused` |
+| `intervalName` | název aktuálního intervalu |
+| `intervalStart` / `intervalEnd` | aktuální interval posunutý o pauzy; `intervalEnd` je zároveň `staleDate` (jen za běhu) |
+| `start` | začátek tréninku posunutý o pauzy (`teď − uplynulý čas`) |
+| `end` | konec tréninku; `nil` = nekonečný počet kol |
+| `pausedAt` | okamžik pauzy, na kterém se odpočet zastaví |
 
-Konec tréninku se do stavu nedává schválně. Šlo by ho poslat jako absolutní datum a přes `staleDate` nechat dlaždici přepnout na „hotovo", ale v praxi se to překreslení nespolehlivě dostavovalo – systém si okamžik renderu řídí sám. Dlaždice, která tvrdí „běží" u dávno doběhnutého tréninku, je pořád lepší než ta, která se zasekne na půl cesty.
+Počítá je `TimerViewModel.makeLiveActivityState()` z enginu: uplynulý čas tréninku = dokončená kola + intervaly před aktivním + odběhnutá část aktivního intervalu. `TimerActivityAttributes` nemá žádné vlastnosti – ani název timeru.
+
+Controller porovnává stavy s tolerancí čtvrt sekundy (`isSamePlan`): data se počítají z `Date()`, takže třeba návrat do popředí vyrobí stav lišící se o milisekundy a ten za update nestojí. Přechod intervalu změní `intervalEnd`, takže se pošle vždy.
 
 ### Životní cyklus
 
 | Okamžik | Co se stane |
 |---|---|
 | Start timeru | `Activity.request` – aktivita běží po celou dobu tréninku |
-| Pauza / obnovení | `Activity.update` s novou fází |
+| Pauza / obnovení / přechod intervalu / skip | `Activity.update` s novým plánem (přechod jen pokud aplikace žije) |
 | Konec tréninku (aplikace žije) | `finish()` – aktivita zmizí |
-| Konec tréninku (aplikace uspaná) | Dlaždice zůstane viset; zmizí, jakmile uživatel otevře aplikaci |
+| Konec tréninku (aplikace uspaná) | Odpočet doběhne na 0:00 a dlaždice zůstane viset; zmizí, jakmile uživatel otevře aplikaci |
 | Reset / otevření nastavení | `finish()` – aktivita zmizí okamžitě |
 | Start aplikace | `endOrphanedActivities()` – uklidí aktivity po pádu nebo force quit |
 

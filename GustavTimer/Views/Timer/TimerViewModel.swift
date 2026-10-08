@@ -413,10 +413,53 @@ extension TimerViewModel {
         }
     }
 
-    /// Převede stav enginu na to málo, co Live Activity potřebuje.
-    /// Vědomě nic, co by zestárlo: žádný interval, kolo, odpočet ani konec tréninku.
+    /// Převede stav enginu na absolutní data pro Live Activity: aktuální interval
+    /// a začátek a konec celého tréninku. Odpočty z nich kreslí systém sám.
+    ///
+    /// Interval platí jen do svého konce – další přechod pošle `onScheduleChange`,
+    /// pokud aplikace ještě žije. Proto je konec intervalu zároveň `staleDate`
+    /// a dlaždice má celý trénink jako zálohu, která platí vždy.
     private func makeLiveActivityState() -> TimerActivityAttributes.ContentState {
-        TimerActivityAttributes.ContentState(phase: engine.isRunning ? .running : .paused)
+        let now = Date()
+        let intervals = engine.intervals
+        let durations = intervals.map(\.duration)
+        let roundLength = durations.reduce(.zero, +)
+        let index = min(engine.activeTimerIndex, max(intervals.count - 1, 0))
+        let current = durations.indices.contains(index) ? durations[index] : .zero
+
+        // Odběhnutá část aktivního intervalu a celého tréninku:
+        // dokončená kola + intervaly před aktivním + část aktivního intervalu.
+        let intervalElapsed = max(current - engine.remainingTime, .zero)
+        let elapsed = roundLength * max(engine.finishedRounds - 1, 0)
+            + durations[..<min(index, durations.count)].reduce(.zero, +)
+            + intervalElapsed
+
+        // Úvodní odpočet 3-2-1 posouvá začátky do budoucnosti – systémové
+        // odpočty do té doby stojí na plné délce.
+        let leadIn = engine.isCountingDown ? TimeInterval(engine.countdownValue) : 0
+        let intervalStart = now.addingTimeInterval(leadIn - intervalElapsed.timeInterval)
+        let start = now.addingTimeInterval(leadIn - elapsed.timeInterval)
+        let end = engine.rounds > 0
+            ? start.addingTimeInterval((roundLength * engine.rounds).timeInterval)
+            : nil
+
+        let name = intervals.indices.contains(index) ? intervals[index].name : ""
+
+        return TimerActivityAttributes.ContentState(
+            phase: engine.isRunning ? .running : .paused,
+            intervalName: name,
+            intervalStart: intervalStart,
+            intervalEnd: intervalStart.addingTimeInterval(current.timeInterval),
+            start: start,
+            end: end,
+            pausedAt: engine.isRunning ? nil : now
+        )
+    }
+}
+
+private extension Duration {
+    var timeInterval: TimeInterval {
+        Double(components.seconds) + Double(components.attoseconds) / 1e18
     }
 }
 

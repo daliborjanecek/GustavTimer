@@ -8,10 +8,13 @@
 //
 //  1. Aktivita se zakládá při startu timeru a končí s ním (reset, doběhnutí,
 //     odchod do nastavení). Mezitím se jen aktualizuje.
-//  2. Posílá se výhradně při změně plánu – přechod intervalu, kolo, pauza.
-//     Nikdy ne každou sekundu: odpočet si systém vykreslí sám z `intervalEnd`
-//     a časté updaty ActivityKit stejně přiškrtí.
-//  3. Stejný stav se neposílá dvakrát (ContentState je Hashable).
+//  2. Posílá se výhradně při změně plánu – start, pauza, přechod intervalu,
+//     skip, návrat z pozadí. Nikdy ne každou sekundu: odpočty si systém vykreslí
+//     sám z absolutních dat a časté updaty ActivityKit stejně přiškrtí.
+//  3. Stejný plán se neposílá dvakrát. Data se počítají z `Date()`, takže dva
+//     stavy téhož plánu se liší o milisekundy – porovnává se s tolerancí.
+//  4. `staleDate` = konec aktuálního intervalu. Když aplikace spí a přechod
+//     nepošle, dlaždice se od té chvíle přepne na čas celého tréninku.
 //
 
 import Foundation
@@ -40,13 +43,13 @@ final class TimerLiveActivityController {
         // Uživatel může mít Live Activities vypnuté v nastavení aplikace.
         guard isAvailable else { return }
 
-        // Stav je natolik hubený, že se mění jen při startu, pauze a konci –
-        // porovnání celého obsahu tedy stačí.
-        guard state != lastState else { return }
+        // Posun dat o pár milisekund (tik smyčky, návrat do popředí)
+        // za update nestojí.
+        if let lastState, lastState.isSamePlan(as: state) { return }
         lastState = state
 
         if let activity {
-            let content = ActivityContent(state: state, staleDate: nil)
+            let content = ActivityContent(state: state, staleDate: Self.staleDate(for: state))
             Task { await activity.update(content) }
         } else {
             start(state: state)
@@ -87,7 +90,7 @@ final class TimerLiveActivityController {
         do {
             activity = try Activity.request(
                 attributes: TimerActivityAttributes(),
-                content: ActivityContent(state: state, staleDate: nil),
+                content: ActivityContent(state: state, staleDate: Self.staleDate(for: state)),
                 pushType: nil
             )
         } catch {
@@ -96,6 +99,33 @@ final class TimerLiveActivityController {
         }
     }
 
-    // `staleDate` se záměrně nenastavuje: dlaždice neukazuje nic, co by mohlo
-    // zestárnout, takže není co označovat za neaktuální.
+    /// Aktuální interval přestane platit svým koncem. Pozastavený timer
+    /// nezestárne nikdy – odpočet stojí a aplikace ho rozběhne sama.
+    private static func staleDate(for state: TimerActivityAttributes.ContentState) -> Date? {
+        state.phase == .running ? state.intervalEnd : nil
+    }
+}
+
+private extension TimerActivityAttributes.ContentState {
+
+    /// Odchylka, pod kterou se dva stavy považují za stejný plán.
+    /// Zobrazuje se na celé sekundy, takže čtvrt sekundy nikdo nepozná.
+    static let tolerance: TimeInterval = 0.25
+
+    func isSamePlan(as other: Self) -> Bool {
+        phase == other.phase
+            && (pausedAt == nil) == (other.pausedAt == nil)
+            && intervalName == other.intervalName
+            && abs(intervalEnd.timeIntervalSince(other.intervalEnd)) < Self.tolerance
+            && abs(start.timeIntervalSince(other.start)) < Self.tolerance
+            && Self.close(end, other.end)
+    }
+
+    private static func close(_ lhs: Date?, _ rhs: Date?) -> Bool {
+        switch (lhs, rhs) {
+        case (nil, nil): true
+        case let (lhs?, rhs?): abs(lhs.timeIntervalSince(rhs)) < tolerance
+        default: false
+        }
+    }
 }
