@@ -23,8 +23,8 @@
 //
 //      @AppStorage("portraitTimeDisplayFormat") var format: TimeDisplayFormat = .seconds
 //
-//  Na iPhone si uživatel formát přepíná swipem přes odpočet, pro každou
-//  orientaci zvlášť:
+//  Na iPhone si uživatel formát přepíná swipem přes odpočet (stránkovaný
+//  TabView), pro každou orientaci zvlášť:
 //      - Portrait  → .seconds (výchozí, velké číslo) ↔ .minutesSeconds
 //      - Landscape → .minutesSecondsHundredths (výchozí, přesný čas
 //                    pro závodníky) ↔ .seconds

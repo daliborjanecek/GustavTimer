@@ -104,7 +104,7 @@ private extension TimerView {
             
             Spacer()
             
-            counterDisplay(format: $portraitFormat, minutesFormat: .minutesSeconds)
+            counterDisplay(format: $portraitFormat, formats: [.seconds, .minutesSeconds])
             
             Spacer()
             
@@ -124,7 +124,7 @@ private extension TimerView {
             
             Spacer()
             
-            counterDisplay(format: $landscapeFormat, minutesFormat: .minutesSecondsHundredths)
+            counterDisplay(format: $landscapeFormat, formats: [.minutesSecondsHundredths, .seconds])
             
             Spacer()
         }
@@ -176,27 +176,27 @@ private extension TimerView {
         return "\(currentTimer.name) (\(viewModel.finishedRounds)\(rounds))"
     }
     
-    /// Velký odpočet. Vodorovný swipe přes něj přepíná mezi celými sekundami
-    /// a minutovým formátem dané orientace – volba se pamatuje pro každou
-    /// orientaci zvlášť.
+    /// Velký odpočet jako stránkovaný `TabView` – každá stránka je jeden formát
+    /// času a swipe mezi nimi listuje s animací jako mezi taby. Vybraná stránka
+    /// se pamatuje pro každou orientaci zvlášť; první v `formats` je výchozí.
     ///
-    /// Tap spustí/zastaví timer, dvojtap přeskočí interval. Swipe je
-    /// `DragGesture` s minimální vzdáleností, takže tapy nepřebije.
-    func counterDisplay(format: Binding<TimeDisplayFormat>, minutesFormat: TimeDisplayFormat) -> some View {
-        Text(viewModel.formattedCurrentTime(timeDisplayFormat: format.wrappedValue))
-            .font(.timerCounter)
-            .minimumScaleFactor(0.01)
-            .foregroundColor(Color.gustavVolt)
-            .contentShape(Rectangle())
-            .playbackTaps(onTap: viewModel.startStopTimer, onDoubleTap: skipIfRunning)
-            .gesture(
-                DragGesture(minimumDistance: 30)
-                    .onEnded { value in
-                        guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                        format.wrappedValue = format.wrappedValue == .seconds ? minutesFormat : .seconds
-                    }
-            )
-            .sensoryFeedback(.selection, trigger: format.wrappedValue)
+    /// Tap spustí/zastaví timer, dvojtap přeskočí interval. Stránka zabírá celé
+    /// volné místo, takže na tapy reaguje i okolí čísla.
+    func counterDisplay(format: Binding<TimeDisplayFormat>, formats: [TimeDisplayFormat]) -> some View {
+        TabView(selection: format) {
+            ForEach(formats, id: \.self) { pageFormat in
+                Text(viewModel.formattedCurrentTime(timeDisplayFormat: pageFormat))
+                    .font(.timerCounter)
+                    .minimumScaleFactor(0.01)
+                    .foregroundColor(Color.gustavVolt)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .playbackTaps(onTap: viewModel.startStopTimer, onDoubleTap: skipIfRunning)
+                    .tag(pageFormat)
+            }
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .sensoryFeedback(.selection, trigger: format.wrappedValue)
     }
     
     var horizontalControlButtons: some View {

@@ -306,12 +306,12 @@ let merged = link.applied(to: mainTimer.settings)   // sdílený odkaz
 
 - **`ProgressArrayView`** – řada `ProgressBar` segmentů, šířka každého dle `timeRatio` (poměr délky intervalu k celému kolu). Aktivní segment ukazuje `progress`, dokončené jsou plné, budoucí prázdné.
 - **Header** – název aktuálního intervalu + `finishedRounds/rounds` (u smyčky bez jmenovatele). Vedle animované ikony stavu (smyčka / vibrace / zvuk) přes `GustavAnimationView` (Lottie) a tlačítko **EDIT** → otevře Settings.
-- **Odpočet** – `Text` s fontem `.timerCounter` (MartianMono-Bold, 800 pt, `minimumScaleFactor 0.01`), barva `gustavVolt`. **Vodorovný swipe** přes odpočet přepíná formát mezi celými sekundami (`.seconds`, výchozí) a minutami:sekundami (`.minutesSeconds`). Přepnutí potvrdí haptika `.selection`. **Tap** na odpočet spustí/zastaví timer, **dvojtap** přeskočí interval (jen za běhu, stejně jako tlačítko Skip). Jednoduchý tap čeká, jestli nepřijde druhý, takže reaguje se zpožděním asi 0,3 s.
+- **Odpočet** – `Text` s fontem `.timerCounter` (MartianMono-Bold, 800 pt, `minimumScaleFactor 0.01`), barva `gustavVolt`. Odpočet je stránkovaný `TabView` (`.page`, bez teček) – **swipe** listuje s animací mezi celými sekundami (`.seconds`, výchozí stránka) a minutami:sekundami (`.minutesSeconds`). Přepnutí potvrdí haptika `.selection`. **Tap** na odpočet spustí/zastaví timer, **dvojtap** přeskočí interval (jen za běhu, stejně jako tlačítko Skip). Jednoduchý tap čeká, jestli nepřijde druhý, takže reaguje se zpožděním asi 0,3 s.
 - **Tlačítka** – `startStopButton` + `secondaryButton`.
 
 ### Rozložení – Landscape
 
-Zjednodušší – **jen velký odpočet** uprostřed, výchozí ve formátu `minutesSecondsHundredths` (přesnost na setiny pro závodníky). **Swipe** přes odpočet ho přepne na celé sekundy a zpět, **tap kdekoli** = start/stop, **dvojtap** = skip (swipe je `DragGesture` s minimální vzdáleností, tapy tedy nepřebije). Progress bar a header jsou skryté.
+Zjednodušší – **jen velký odpočet** uprostřed, výchozí ve formátu `minutesSecondsHundredths` (přesnost na setiny pro závodníky). **Swipe** přes odpočet listuje stejně jako na výšku na druhou stránku s celými sekundami, **tap kdekoli** = start/stop, **dvojtap** = skip. Progress bar a header jsou skryté.
 
 > Formát se pamatuje pro každou orientaci zvlášť (`portraitTimeDisplayFormat`, `landscapeTimeDisplayFormat`).
 
