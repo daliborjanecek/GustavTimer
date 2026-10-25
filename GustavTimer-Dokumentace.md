@@ -34,7 +34,7 @@ aktualizovano: 2026-05-30
 16. [[#16 · Konfigurace (AppConfig)]]
 17. [[#17 · Přehled klíčů UserDefaults]]
 18. [[#18 · Mapa souborů]]
-19. [[#19 · Live Activity]]
+19. [[#19 · Běh na pozadí]]
 20. [[#20 · Poznámky k implementaci a TODO]]
 
 ---
@@ -183,10 +183,6 @@ stateDiagram-v2
 - **`progress`** – pokrok intervalu `0.0–1.0` (počítáno z milisekund kvůli plynulé animaci).
 - **`timeRatio(for:)`** – poměr délky intervalu vůči celému kolu (pro šířku segmentů v progress baru).
 - **`formattedCurrentTime(format:)`** – formátovaný čas dle `TimeDisplayFormat`.
-
-### Změny plánu (`onScheduleChange`)
-
-Callback **`onScheduleChange`** se pálí pokaždé, když se změní běh timeru – start, stop, reset, skip, přechod intervalu, kolo, začátek i konec úvodního odpočtu. Na rozdíl od `onFeedback(.intervalTransition)` se volá až po dokončení přechodu, takže engine je v konzistentním stavu. Používá ho `TimerViewModel` k aktualizaci Live Activity.
 
 ### Události (`TimerFeedback`)
 
@@ -665,7 +661,7 @@ GustavTimer/
 ├── AppConfig.swift               # Konstanty, presety, URL, pozadí
 ├── AppPreferences.swift          # Nastavení zařízení (@AppStorage) + klíče UserDefaults
 ├── SettingsMigration.swift       # Jednorázový přesun nastavení do SwiftData
-├── Info.plist                    # URL scheme, NSSupportsLiveActivities
+├── Info.plist                    # URL scheme
 ├── PrivacyInfo.xcprivacy         # Privacy manifest
 ├── Localizable.xcstrings         # Lokalizace (en, cs)
 │
@@ -678,8 +674,7 @@ GustavTimer/
 │   └── SoundModel+Title.swift    # iOS lokalizované názvy zvuků
 │
 ├── Managers/
-│   ├── SoundManager.swift        # AVAudioPlayer singleton
-│   └── TimerLiveActivityController.swift  # Obsluha ActivityKitu
+│   └── SoundManager.swift        # AVAudioPlayer singleton
 │
 ├── Views/
 │   ├── Timer/
@@ -724,94 +719,26 @@ Shared/                            # ⭐ Čistá logika sdílitelná s watchOS
 ├── IntervalData.swift             # Model intervalu
 ├── SoundModel.swift               # Enum zvuků
 ├── TimeDisplayFormat.swift        # Formát zobrazení času
-├── SharedTimerLink.swift          # Parsování a generování sdílených odkazů
-└── TimerActivityAttributes.swift  # Stav Live Activity (app + widget)
-
-GustavTimerWidget/                 # Widget extension (Live Activity)
-├── GustavTimerWidgetBundle.swift  # @main
-├── TimerLiveActivity.swift        # Zamykací obrazovka + Dynamic Island
-├── WidgetTheme.swift              # Barvy a fonty bez závislosti na GustavUI
-├── Fonts/ *.ttf                   # Vlastní kopie fontů (UIAppFonts)
-├── Assets.xcassets                # AccentColor, WidgetBackground
-└── Info.plist                     # NSExtension + UIAppFonts
+└── SharedTimerLink.swift          # Parsování a generování sdílených odkazů
 ```
 
 ---
 
-## 19 · Live Activity
+## 19 · Běh na pozadí
 
-`Shared/TimerActivityAttributes.swift` + `Managers/TimerLiveActivityController.swift` + target **GustavTimerWidget**
+`TimerViewModel.handleScenePhase(_:)` + `TimerEngine.syncToWallClock()`
 
-### Co dlaždice ukazuje
-
-Hlavní číslo je **odpočet aktuálního intervalu** s jeho názvem, pod ním drobně čas celého tréninku. Progress bar dlaždice nemá:
-
-| Stav | Nadpis | Hlavní odpočet | Drobný řádek |
-|---|---|---|---|
-| Běží | název intervalu | zbývající čas intervalu (m:ss), na konci intervalu ho nahradí `IntervalEndedView` | Time left / Elapsed celého tréninku |
-| Pozastaveno | název intervalu | zastavený na okamžiku pauzy | zastavený |
-| Stale (interval vypršel, aplikace spí) | RUNNING | zbývající / uplynulý čas tréninku | Time left / Elapsed |
-
-Všechny odpočty kreslí systém sám (`Text(timerInterval:pauseTime:)`) z absolutních dat. Během úvodního odpočtu 3-2-1 leží začátky v budoucnosti a odpočty do té doby stojí na plné délce.
-
-> [!danger] Jen `Text(timerInterval:)`
-> V Live Activity sám přepočítává jen `Text(timerInterval:)` / `Text(date, style: .timer)` a `ProgressView(timerInterval:)`. Live Activity nemá `TimelineProvider`. Zobrazení jen v sekundách („17 s“) přes zdroj času z iOS 18 `Text(.dateRange(endingAt:), format: Date.ComponentsFormatStyle(…))` bylo vyzkoušeno – **po pár sekundách se zastaví, a to i v Dynamic Islandu na odemčeném telefonu** (nejde tedy o ztlumení always-on displeje). Vestavěný `SystemFormatStyle.Timer` čisté sekundy neumí: s `maxFieldCount: 1` ukazuje „17 sekund“, ale od minuty výš „1 minuta“. Vlastní formát ani vlastní `TimeDataSource` napsat nejde. Odpočet intervalu je proto ve formátu m:ss.
-
-### Odpočet intervalu a uspaná aplikace
-
-Live Activity se sama nepřekresluje a aktualizaci jí umí poslat jen běžící aplikace (nebo push ze serveru). Aplikace ale na pozadí neběží – systém ji během chvíle uspí. Přechod na další interval tedy dlaždici dorazí jen tehdy, když aplikace ještě žije (popředí, prvních pár sekund na pozadí).
-
-Proto je konec aktuálního intervalu zároveň `staleDate` aktivity. Když ho systém vyhodnotí, dlaždice dostane `isStale == true` a hlavní číslo převezme čas celého tréninku, který platí vždy. **Toto přepnutí ale systém negarantuje** (viz níže) – pokud k němu nedojde, odpočet intervalu zůstane stát na 0:00, dokud uživatel neotevře aplikaci. Drobný řádek s časem tréninku běží správně v obou případech.
-
-> [!warning] Experiment: zmizení odpočtu na konci intervalu
-> Aby po konci intervalu nezůstalo viset 0:00, odpočet intervalu je maskovaný `ProgressView(timerInterval:)`, který se ke konci intervalu vyprázdní (progress bar široký 200 000 bodů, trojí maska kvůli poloprůhledné dráze). Šířka musí být pevná přes `.frame(width:)` – při roztažení přes `scaleEffect(x:)` se zakulacené konce progress baru protáhnou na tisíce bodů a jejich špička viditelně ořízne obsah. Postup není nikde zdokumentovaný a na Macu ho ověřit nejde – `ImageRenderer` `ProgressView` nevykreslí. Kdyby dlaždice přestala fungovat, stačí smazat `.vanishing(…)` v `MainCountdown`.
->
-> Stejným trikem, jen obráceně (výplň roste a progress bar končí u pravého okraje obsahu), naskočí na konci intervalu místo odpočtu `IntervalEndedView` – libovolný statický SwiftUI obsah (`.appearing(…)`). Na zařízení ověřené zatím jen zmizení.
-
-Pokusy o obcházení tohohle omezení skončily takto:
-
-- **Tichá audio smyčka** (background mód `audio`) aplikaci na pozadí sice udržela naživu a odpočet i přepínání intervalů fungovaly, ale ne spolehlivě napříč zařízeními. Bylo odstraněno.
-- **Dopočet z rozvrhu ve widgetu** (widget si sám spočítá, který interval běží) funguje jen ve chvíli, kdy systém widget skutečně překreslí – a to si řídí sám. Aktualizace stavu překreslení negarantuje. Ze stejného důvodu selhalo i přepnutí na „hotovo" přes `staleDate`.
-- **Rozpočet aktualizací**: ActivityKit z pozadí přebytečné aktualizace zahazuje. V logu je to vidět jako nepoměr mezi „update odeslán" a systémovým „Updating content for activity".
-
-Odpočet celého tréninku proto na dlaždici zůstává vždy – jako jediný údaj platí i po hodině bez jediné aktualizace.
-
-> [!danger] `Text(timerInterval:)` a `.fixedSize()`
-> Systémový odpočet si velikost řídí sám a s `.fixedSize()` se **celá dlaždice přestane vykreslovat**. Zůstane viset poslední snímek, nikde se nic nehlásí a vypadá to jako zaseknutý timer. Totéž platí pro `ProgressView(timerInterval:)`. Šířka se omezuje jen přes `.frame(maxWidth:)`.
-
-### Stav aktivity (`TimerActivityAttributes.ContentState`)
-
-| Pole | Význam |
-|---|---|
-| `phase` | `.running` / `.paused` |
-| `intervalName` | název aktuálního intervalu |
-| `intervalStart` / `intervalEnd` | aktuální interval posunutý o pauzy; `intervalEnd` je zároveň `staleDate` (jen za běhu) |
-| `start` | začátek tréninku posunutý o pauzy (`teď − uplynulý čas`) |
-| `end` | konec tréninku; `nil` = nekonečný počet kol |
-| `pausedAt` | okamžik pauzy, na kterém se odpočet zastaví |
-
-Počítá je `TimerViewModel.makeLiveActivityState()` z enginu: uplynulý čas tréninku = dokončená kola + intervaly před aktivním + odběhnutá část aktivního intervalu. `TimerActivityAttributes` nemá žádné vlastnosti – ani název timeru.
-
-Controller porovnává stavy s tolerancí čtvrt sekundy (`isSamePlan`): data se počítají z `Date()`, takže třeba návrat do popředí vyrobí stav lišící se o milisekundy a ten za update nestojí. Přechod intervalu změní `intervalEnd`, takže se pošle vždy.
-
-### Životní cyklus
+Aplikace na pozadí neběží – systém ji během chvíle uspí. Engine proto odečítá skutečně uplynulý čas měřený `ContinuousClock`, ne počet tiků, a po návratu ho umí dohnat.
 
 | Okamžik | Co se stane |
 |---|---|
-| Start timeru | `Activity.request` – aktivita běží po celou dobu tréninku |
-| Pauza / obnovení / přechod intervalu / skip | `Activity.update` s novým plánem (přechod jen pokud aplikace žije) |
-| Konec tréninku (aplikace žije) | `finish()` – aktivita zmizí |
-| Konec tréninku (aplikace uspaná) | Odpočet doběhne na 0:00 a dlaždice zůstane viset; zmizí, jakmile uživatel otevře aplikaci |
-| Reset / otevření nastavení | `finish()` – aktivita zmizí okamžitě |
-| Start aplikace | `endOrphanedActivities()` – uklidí aktivity po pádu nebo force quit |
+| Odchod na pozadí | `engine.setTickInterval(.milliseconds(50))` – hrubší tik šetří baterii, přesnost to neovlivní |
+| Návrat do popředí | `engine.setTickInterval(.milliseconds(10))` + `engine.syncToWallClock()` |
 
-### Návrat do popředí
+`TimerView` posílá `scenePhase` do `TimerViewModel.handleScenePhase(_:)`. Při návratu `syncToWallClock()` dopočítá čas strávený mimo – engine v jednom kroku přeskočí všechny intervaly a kola, která mezitím měla proběhnout (tiše, bez záplavy pípání). **Timer tedy po návratu ukazuje správný stav bez ohledu na to, jak dlouho byla aplikace pryč.**
 
-`TimerView` posílá `scenePhase` do `TimerViewModel.handleScenePhase(_:)`. Při návratu zavolá `engine.syncToWallClock()`, který dopočítá čas strávený mimo – engine v jednom kroku přeskočí všechny intervaly a kola, která mezitím měla proběhnout (tiše, bez záplavy pípání). **Timer tedy po návratu ukazuje správný stav bez ohledu na to, jak dlouho byla aplikace pryč.**
-
-### Widget bez závislostí
-
-`GustavTimerWidget` záměrně nezávisí na balíčku GustavUI – veze si vlastní kopii fontů (`UIAppFonts` v Info.plist) a barvy má jako konstanty ve `WidgetTheme.swift`. `Bundle.module` u SwiftPM balíčku končí při chybějícím resource bundlu tvrdým `fatalError` a pád extension znamená to samé jako zamrzlá dlaždice: zůstane viset poslední snímek.
+> [!note] Live Activity byla odstraněna
+> Na větvi `live-activity` byla vyzkoušená Live Activity (target `GustavTimerWidget`) – nejdřív s odpočtem intervalu a celého tréninku (commit `43ef6d8`), pak jako statická grafika. Uspaná aplikace dlaždici neumí aktualizovat, takže cokoli proměnlivého na ní zamrzlo. Nakonec byla celá odstraněna a zůstalo jen dorovnání času po návratu. Podrobnosti jsou v historii té větve.
 
 ---
 

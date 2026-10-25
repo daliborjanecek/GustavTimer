@@ -68,11 +68,6 @@ class TimerViewModel: ObservableObject {
     private var modelContext: ModelContext?
     private var cancellables = Set<AnyCancellable>()
 
-    /// Timer právě doběhl a Live Activity dobíhá se závěrečným snímkem.
-    /// Reset, který po doběhnutí následuje, ji už nesmí přepsat ani sundat.
-    private var isFinishingSession = false
-
-
     // MARK: - Forwarded properties z engine
 
     /// Pole intervalů – proxy na engine.intervals
@@ -95,12 +90,6 @@ class TimerViewModel: ObservableObject {
     init() {
         setupEngineCallbacks()
         bindEngineChanges()
-
-        // Aktivita, která přežila vynucené ukončení aplikace, by na zamykací
-        // obrazovce zůstala viset s dávno neplatným odpočtem.
-        Task { @MainActor in
-            TimerLiveActivityController.shared.endOrphanedActivities()
-        }
     }
 
     // MARK: - Propojení s engine
@@ -135,8 +124,6 @@ class TimerViewModel: ObservableObject {
             case .timerEnd:
                 self.vibrateEnd()
                 self.playSound()
-                self.isFinishingSession = true
-                Task { @MainActor in TimerLiveActivityController.shared.finish() }
                 self.completedTimerCount += 1
                 if self.completedTimerCount % AppConfig.reviewPromptInterval == 0 {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
@@ -152,22 +139,14 @@ class TimerViewModel: ObservableObject {
             }
         }
 
-        engine.onStart = { [weak self] in
-            guard let self else { return }
+        engine.onStart = {
             UIApplication.shared.isIdleTimerDisabled = true
-            self.isFinishingSession = false
         }
 
         engine.onStop = { [weak self] in
             guard let self else { return }
             UIApplication.shared.isIdleTimerDisabled = false
             self.stopCounter += 1
-        }
-
-        // Plán běhu se mění řádově jednou za interval – přesně tehdy má smysl
-        // poslat nový stav do Live Activity.
-        engine.onScheduleChange = { [weak self] in
-            self?.refreshLiveActivity()
         }
     }
 
@@ -355,7 +334,7 @@ class TimerViewModel: ObservableObject {
     }
 }
 
-// MARK: - Live Activity a běh na pozadí
+// MARK: - Běh na pozadí
 extension TimerViewModel {
 
     /// Reakce na přesun aplikace mezi popředím a pozadím.
@@ -365,9 +344,9 @@ extension TimerViewModel {
     ///             viewModel.handleScenePhase(phase)
     ///         }
     ///
-    /// Na pozadí odpočet vidí uživatel v Live Activity, tik smyčky se zhrubí
-    /// (přesnost to neovlivní, ta se počítá z hodin). Po návratu engine dopočítá
-    /// čas strávený mimo, takže timer naváže přesně tam, kde reálně je.
+    /// Na pozadí se tik smyčky zhrubí (přesnost to neovlivní, ta se počítá
+    /// z hodin). Po návratu engine dopočítá čas strávený mimo, takže timer
+    /// naváže přesně tam, kde reálně je.
     func handleScenePhase(_ phase: ScenePhase) {
         switch phase {
         case .background:
@@ -384,7 +363,6 @@ extension TimerViewModel {
         // Na pozadí aplikaci systém během chvíle uspí. Než k tomu dojde, stačí
         // hrubší tik – na přesnost to vliv nemá, ta se počítá z hodin.
         engine.setTickInterval(.milliseconds(50))
-        refreshLiveActivity()
     }
 
     private func enterForeground() {
@@ -392,74 +370,6 @@ extension TimerViewModel {
         // Kdyby aplikaci systém přece jen uspal (přerušené audio, úsporný režim),
         // tohle je místo, kde se odpočet srovná s realitou.
         engine.syncToWallClock()
-        refreshLiveActivity()
-    }
-
-    /// Pošle do Live Activity aktuální plán běhu. Volá se z `engine.onScheduleChange`,
-    /// tedy při startu, pauze, přechodu intervalu, kole a resetu.
-    func refreshLiveActivity() {
-        guard !isFinishingSession else { return }
-
-        // Timer stojí na začátku (po resetu nebo před prvním startem) – aktivita
-        // by ukazovala odpočet, který nikam neběží.
-        guard engine.isRunning || engine.finishedRounds > 0 else {
-            Task { @MainActor in TimerLiveActivityController.shared.finish() }
-            return
-        }
-
-        let state = makeLiveActivityState()
-        Task { @MainActor in
-            TimerLiveActivityController.shared.sync(state: state)
-        }
-    }
-
-    /// Převede stav enginu na absolutní data pro Live Activity: aktuální interval
-    /// a začátek a konec celého tréninku. Odpočty z nich kreslí systém sám.
-    ///
-    /// Interval platí jen do svého konce – další přechod pošle `onScheduleChange`,
-    /// pokud aplikace ještě žije. Proto je konec intervalu zároveň `staleDate`
-    /// a dlaždice má celý trénink jako zálohu, která platí vždy.
-    private func makeLiveActivityState() -> TimerActivityAttributes.ContentState {
-        let now = Date()
-        let intervals = engine.intervals
-        let durations = intervals.map(\.duration)
-        let roundLength = durations.reduce(.zero, +)
-        let index = min(engine.activeTimerIndex, max(intervals.count - 1, 0))
-        let current = durations.indices.contains(index) ? durations[index] : .zero
-
-        // Odběhnutá část aktivního intervalu a celého tréninku:
-        // dokončená kola + intervaly před aktivním + část aktivního intervalu.
-        let intervalElapsed = max(current - engine.remainingTime, .zero)
-        let elapsed = roundLength * max(engine.finishedRounds - 1, 0)
-            + durations[..<min(index, durations.count)].reduce(.zero, +)
-            + intervalElapsed
-
-        // Úvodní odpočet 3-2-1 posouvá začátky do budoucnosti – systémové
-        // odpočty do té doby stojí na plné délce.
-        let leadIn = engine.isCountingDown ? TimeInterval(engine.countdownValue) : 0
-        let intervalStart = now.addingTimeInterval(leadIn - intervalElapsed.timeInterval)
-        let start = now.addingTimeInterval(leadIn - elapsed.timeInterval)
-        let end = engine.rounds > 0
-            ? start.addingTimeInterval((roundLength * engine.rounds).timeInterval)
-            : nil
-
-        let name = intervals.indices.contains(index) ? intervals[index].name : ""
-
-        return TimerActivityAttributes.ContentState(
-            phase: engine.isRunning ? .running : .paused,
-            intervalName: name,
-            intervalStart: intervalStart,
-            intervalEnd: intervalStart.addingTimeInterval(current.timeInterval),
-            start: start,
-            end: end,
-            pausedAt: engine.isRunning ? nil : now
-        )
-    }
-}
-
-private extension Duration {
-    var timeInterval: TimeInterval {
-        Double(components.seconds) + Double(components.attoseconds) / 1e18
     }
 }
 

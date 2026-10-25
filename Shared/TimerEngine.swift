@@ -261,18 +261,6 @@ class TimerEngine: ObservableObject {
     ///     }
     var onStop: (() -> Void)?
 
-    /// Volá se pokaždé, když se změní *plán* běhu – tedy přechod intervalu, kolo
-    /// nebo stav běhu (start/stop/reset/skip). Netiká každých pár milisekund,
-    /// takže je vhodný pro věci mimo UI: Live Activity, notifikace, widgety.
-    ///
-    ///     engine.onScheduleChange = { [weak self] in
-    ///         self?.liveActivity.refresh()
-    ///     }
-    ///
-    /// Callback se vždy volá až *po* dokončení změny, takže engine je v konzistentním
-    /// stavu (na rozdíl od onFeedback(.intervalTransition), který se pálí uprostřed přechodu).
-    var onScheduleChange: (() -> Void)?
-
     // MARK: - Privátní
 
     /// Reference na asynchronní Task, který provádí tikání.
@@ -407,7 +395,6 @@ class TimerEngine: ObservableObject {
         isRunning = true
         lastTickInstant = clock.now
         onStart?()
-        onScheduleChange?()
 
         timerTask?.cancel()
         timerTask = Task { [weak self] in
@@ -418,7 +405,6 @@ class TimerEngine: ObservableObject {
                 await MainActor.run {
                     self.isCountingDown = true
                     self.countdownValue = self.countdownDuration
-                    self.onScheduleChange?()
                 }
                 for value in stride(from: self.countdownDuration, through: 1, by: -1) {
                     guard !Task.isCancelled && self.isRunning else { return }
@@ -432,7 +418,6 @@ class TimerEngine: ObservableObject {
                 await MainActor.run {
                     self.isCountingDown = false
                     self.onFeedback?(.countdownEnd)
-                    self.onScheduleChange?()
                 }
             }
 
@@ -489,7 +474,6 @@ class TimerEngine: ObservableObject {
     func syncToWallClock() {
         guard isRunning, !isCountingDown else { return }
         tickElapsedTime(silent: true)
-        onScheduleChange?()
     }
 
     /// Nastaví, jak často se probouzí tick smyčka.
@@ -516,7 +500,6 @@ class TimerEngine: ObservableObject {
         timerTask = nil
         lastTickInstant = nil
         onStop?()
-        onScheduleChange?()
     }
 
     /// Zastaví timer a vrátí vše na začátek (první interval, první kolo).
@@ -534,7 +517,6 @@ class TimerEngine: ObservableObject {
         if !intervals.isEmpty {
             remainingTime = intervals[0].duration
         }
-        onScheduleChange?()
     }
 
     /// Přeskočí aktuální interval – nastaví remainingTime na nulu,
@@ -544,7 +526,6 @@ class TimerEngine: ObservableObject {
     ///     engine.skipCurrentInterval()
     func skipCurrentInterval() {
         remainingTime = .zero
-        onScheduleChange?()
     }
 
     // MARK: - Správa intervalů
@@ -694,7 +675,6 @@ class TimerEngine: ObservableObject {
     private func tick(_ elapsed: Duration, silent: Bool = false) {
         var remainingElapsed = elapsed
         var transitions = 0
-        var didSwitch = false
 
         while remainingElapsed > .zero && isRunning {
             // Nikdy neodečteme víc, než kolik zbývá v aktuálním intervalu –
@@ -706,7 +686,6 @@ class TimerEngine: ObservableObject {
             guard remainingTime <= .zero else { break }
 
             switchToNextInterval(silent: silent)
-            didSwitch = true
 
             // timerEnd resetuje engine a zastaví běh – zbytek času zahodíme.
             guard isRunning else { return }
@@ -716,10 +695,6 @@ class TimerEngine: ObservableObject {
                 // Pojistka: samé nulové intervaly by jinak točily nekonečnou smyčku.
                 break
             }
-        }
-
-        if didSwitch {
-            onScheduleChange?()
         }
 
         guard !silent else { return }

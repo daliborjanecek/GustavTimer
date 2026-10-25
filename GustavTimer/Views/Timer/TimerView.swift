@@ -77,8 +77,7 @@ struct TimerView: View {
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
-            // Odchod na pozadí předá odpočet Live Activity, návrat ho zase
-            // srovná s reálným časem.
+            // Návrat z pozadí srovná odpočet s reálným časem.
             viewModel.handleScenePhase(newPhase)
         }
         .onOpenURL { url in
