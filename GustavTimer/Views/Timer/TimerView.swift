@@ -131,9 +131,8 @@ private extension TimerView {
         //        .ignoresSafeArea(edges: .bottom)
         .statusBar(hidden: true)
         .persistentSystemOverlays(.hidden)
-        .onTapGesture {
-            viewModel.startStopTimer()
-        }
+        // Na šířku nejsou tlačítka – timer se ovládá jen tapy.
+        .playbackTaps(onTap: viewModel.startStopTimer, onDoubleTap: skipIfRunning)
     }
 }
 
@@ -181,14 +180,15 @@ private extension TimerView {
     /// a minutovým formátem dané orientace – volba se pamatuje pro každou
     /// orientaci zvlášť.
     ///
-    /// Swipe je `DragGesture` s minimální vzdáleností, takže v landscape
-    /// nepřebije tap na start/stop.
+    /// Tap spustí/zastaví timer, dvojtap přeskočí interval. Swipe je
+    /// `DragGesture` s minimální vzdáleností, takže tapy nepřebije.
     func counterDisplay(format: Binding<TimeDisplayFormat>, minutesFormat: TimeDisplayFormat) -> some View {
         Text(viewModel.formattedCurrentTime(timeDisplayFormat: format.wrappedValue))
             .font(.timerCounter)
             .minimumScaleFactor(0.01)
             .foregroundColor(Color.gustavVolt)
             .contentShape(Rectangle())
+            .playbackTaps(onTap: viewModel.startStopTimer, onDoubleTap: skipIfRunning)
             .gesture(
                 DragGesture(minimumDistance: 30)
                     .onEnded { value in
@@ -327,12 +327,30 @@ private extension TimerView {
         }
     }
 
+    /// Dvojtap na odpočtu přeskočí interval jen za běhu – stejně jako tlačítko,
+    /// které se na skip mění až po startu. Stojící timer by skip „uschoval“
+    /// a interval by po startu zmizel.
+    func skipIfRunning() {
+        guard viewModel.isTimerRunning else { return }
+        viewModel.skipLap()
+    }
+
     func setupViewModel() {
         viewModel.setModelContext(context)
         viewModel.showWhatsNew()
         viewModel.onReviewRequested = {
             requestReview()
         }
+    }
+}
+
+private extension View {
+    /// Tap = start/stop, dvojtap = skip. Dvojtap musí být deklarovaný první,
+    /// jinak by ho SwiftUI nikdy nerozpoznalo – jednoduchý tap proto čeká,
+    /// jestli nepřijde druhý, a spustí se se zpožděním asi 0,3 s.
+    func playbackTaps(onTap: @escaping () -> Void, onDoubleTap: @escaping () -> Void) -> some View {
+        onTapGesture(count: 2, perform: onDoubleTap)
+            .onTapGesture(perform: onTap)
     }
 }
 
