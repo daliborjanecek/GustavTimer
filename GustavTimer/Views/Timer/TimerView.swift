@@ -21,6 +21,8 @@ struct TimerView: View {
     @Query(sort: \TimerData.id, order: .reverse) private var timerData: [TimerData]
     @StateObject var viewModel = TimerViewModel()
     @State private var orientation = UIDeviceOrientation.unknown
+    @AppStorage(AppPreferences.Key.portraitTimeDisplayFormat) private var portraitFormat: TimeDisplayFormat = .seconds
+    @AppStorage(AppPreferences.Key.landscapeTimeDisplayFormat) private var landscapeFormat: TimeDisplayFormat = .minutesSecondsHundredths
 
     
     var body: some View {
@@ -102,7 +104,7 @@ private extension TimerView {
             
             Spacer()
             
-            counterDisplay(timeDisplayFormat: .seconds)
+            counterDisplay(format: $portraitFormat, minutesFormat: .minutesSeconds)
             
             Spacer()
             
@@ -122,7 +124,7 @@ private extension TimerView {
             
             Spacer()
             
-            counterDisplay(timeDisplayFormat: .minutesSecondsHundredths)
+            counterDisplay(format: $landscapeFormat, minutesFormat: .minutesSecondsHundredths)
             
             Spacer()
         }
@@ -175,11 +177,26 @@ private extension TimerView {
         return "\(currentTimer.name) (\(viewModel.finishedRounds)\(rounds))"
     }
     
-    func counterDisplay(timeDisplayFormat: TimeDisplayFormat) -> some View {
-        Text(viewModel.formattedCurrentTime(timeDisplayFormat: timeDisplayFormat))
+    /// Velký odpočet. Vodorovný swipe přes něj přepíná mezi celými sekundami
+    /// a minutovým formátem dané orientace – volba se pamatuje pro každou
+    /// orientaci zvlášť.
+    ///
+    /// Swipe je `DragGesture` s minimální vzdáleností, takže v landscape
+    /// nepřebije tap na start/stop.
+    func counterDisplay(format: Binding<TimeDisplayFormat>, minutesFormat: TimeDisplayFormat) -> some View {
+        Text(viewModel.formattedCurrentTime(timeDisplayFormat: format.wrappedValue))
             .font(.timerCounter)
             .minimumScaleFactor(0.01)
             .foregroundColor(Color.gustavVolt)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 30)
+                    .onEnded { value in
+                        guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                        format.wrappedValue = format.wrappedValue == .seconds ? minutesFormat : .seconds
+                    }
+            )
+            .sensoryFeedback(.selection, trigger: format.wrappedValue)
     }
     
     var horizontalControlButtons: some View {

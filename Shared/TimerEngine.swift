@@ -610,17 +610,22 @@ class TimerEngine: ObservableObject {
     ///     engine.formattedCurrentTime(format: .seconds)
     ///     // → "45"
     ///
+    ///     // Minuty:sekundy (stejné celé sekundy, rozepsané na minuty)
+    ///     engine.formattedCurrentTime(format: .minutesSeconds)
+    ///     // → "0:45"  nebo  "2:00"
+    ///
     ///     // Minuty:sekundy.setiny (landscape, přesné měření)
     ///     engine.formattedCurrentTime(format: .minutesSecondsHundredths)
-    ///     // → "0:45.32"  nebo  "2:00.05"
+    ///     // → "45.32"  nebo  "2:00.05"
     func formattedCurrentTime(format: TimeDisplayFormat) -> String {
         switch format {
         case .seconds:
             guard activeTimerIndex < intervals.count else { return "0" }
-            let components = remainingTime.components
-            let ceilSeconds = components.attoseconds > 0 ? components.seconds + 1 : components.seconds
-            let maxSeconds = intervals[activeTimerIndex].duration.components.seconds
-            return "\(min(Int(ceilSeconds), Int(maxSeconds)))"
+            return "\(displayedWholeSeconds)"
+        case .minutesSeconds:
+            guard activeTimerIndex < intervals.count else { return "0:00" }
+            let total = displayedWholeSeconds
+            return String(format: "%d:%02d", total / 60, total % 60)
         case .minutesSecondsHundredths:
             let components = remainingTime.components
             let minutes = Int(components.seconds) / 60
@@ -633,6 +638,16 @@ class TimerEngine: ObservableObject {
                 return String(format: "%d.%02d", seconds, tenths)
             }
         }
+    }
+
+    /// Zbývající celé sekundy zaokrouhlené nahoru – odpočet ukazuje „45“,
+    /// dokud nezbývá 44 a méně. Omezeno délkou intervalu, aby se na startu
+    /// neobjevilo o sekundu víc. Volat jen s platným `activeTimerIndex`.
+    private var displayedWholeSeconds: Int {
+        let components = remainingTime.components
+        let ceilSeconds = components.attoseconds > 0 ? components.seconds + 1 : components.seconds
+        let maxSeconds = intervals[activeTimerIndex].duration.components.seconds
+        return min(Int(ceilSeconds), Int(maxSeconds))
     }
 
     // MARK: - Výpočet poměrů pro progress bary

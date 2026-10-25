@@ -298,7 +298,7 @@ let merged = link.applied(to: mainTimer.settings)   // sdílený odkaz
 │  ▓▓▓▓▓ ░░░░  (ProgressArray) │  ← segmenty intervalů
 │  Work (3/8)          ⟳🔊 EDIT │  ← header: název + kolo + ikony + nastavení
 │                              │
-│            45                │  ← velký odpočet (TimeDisplayFormat.seconds)
+│            45                │  ← velký odpočet (swipe: 45 ↔ 0:45)
 │                              │
 │   [ START ]   [ ⟲ reset ]    │  ← ovládací tlačítka
 └─────────────────────────────┘
@@ -306,12 +306,14 @@ let merged = link.applied(to: mainTimer.settings)   // sdílený odkaz
 
 - **`ProgressArrayView`** – řada `ProgressBar` segmentů, šířka každého dle `timeRatio` (poměr délky intervalu k celému kolu). Aktivní segment ukazuje `progress`, dokončené jsou plné, budoucí prázdné.
 - **Header** – název aktuálního intervalu + `finishedRounds/rounds` (u smyčky bez jmenovatele). Vedle animované ikony stavu (smyčka / vibrace / zvuk) přes `GustavAnimationView` (Lottie) a tlačítko **EDIT** → otevře Settings.
-- **Odpočet** – `Text` s fontem `.timerCounter` (MartianMono-Bold, 800 pt, `minimumScaleFactor 0.01`), barva `gustavVolt`.
+- **Odpočet** – `Text` s fontem `.timerCounter` (MartianMono-Bold, 800 pt, `minimumScaleFactor 0.01`), barva `gustavVolt`. **Vodorovný swipe** přes odpočet přepíná formát mezi celými sekundami (`.seconds`, výchozí) a minutami:sekundami (`.minutesSeconds`). Přepnutí potvrdí haptika `.selection`.
 - **Tlačítka** – `startStopButton` + `secondaryButton`.
 
 ### Rozložení – Landscape
 
-Zjednodušší – **jen velký odpočet** uprostřed, ve formátu `minutesSecondsHundredths` (přesnost na setiny pro závodníky). **Tap kdekoli** = start/stop. Progress bar a header jsou skryté.
+Zjednodušší – **jen velký odpočet** uprostřed, výchozí ve formátu `minutesSecondsHundredths` (přesnost na setiny pro závodníky). **Swipe** přes odpočet ho přepne na celé sekundy a zpět, **tap kdekoli** = start/stop (swipe je `DragGesture` s minimální vzdáleností, tap tedy nepřebije). Progress bar a header jsou skryté.
+
+> Formát se pamatuje pro každou orientaci zvlášť (`portraitTimeDisplayFormat`, `landscapeTimeDisplayFormat`).
 
 > Orientace se sleduje přes `UIDevice.orientationDidChangeNotification`.
 
@@ -635,7 +637,8 @@ Dále drží: `backgroundImages` (10), `bannerImages` (6 challenge videí), `sou
 | Klíč | Typ | Default | Význam |
 |---|---|---|---|
 | `bgIndex` | Int | 0 | Vybrané pozadí (`-1` = vlastní fotka) |
-| `timeDisplayFormat` | enum | seconds | Formát času |
+| `portraitTimeDisplayFormat` | enum | seconds | Formát odpočtu na výšku (`seconds` / `minutesSeconds`), přepíná se swipem |
+| `landscapeTimeDisplayFormat` | enum | minutesSecondsHundredths | Formát odpočtu na šířku (`minutesSecondsHundredths` / `seconds`), přepíná se swipem |
 | `lastSelectedSound` | enum | beep | Poslední vybraný zvuk (pro přepínač ztlumení) |
 | `completedTimerCount` | Int | 0 | Počet dokončených tréninků (review prompt) |
 | `stopCounter` | Int | 0 | Počítadlo zastavení |

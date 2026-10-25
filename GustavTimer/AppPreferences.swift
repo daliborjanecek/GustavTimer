@@ -22,8 +22,11 @@ final class AppPreferences: ObservableObject {
     /// Vybrané pozadí. `-1` = vlastní fotka uživatele.
     @AppStorage(Key.backgroundIndex) var backgroundIndex: Int = 0
 
-    /// Formát zobrazení zbývajícího času.
-    @AppStorage(Key.timeDisplayFormat) var timeDisplayFormat: TimeDisplayFormat = .seconds
+    /// Formát odpočtu na výšku. Přepíná se swipem přes odpočet.
+    @AppStorage(Key.portraitTimeDisplayFormat) var portraitTimeDisplayFormat: TimeDisplayFormat = .seconds
+
+    /// Formát odpočtu na šířku. Přepíná se swipem přes odpočet.
+    @AppStorage(Key.landscapeTimeDisplayFormat) var landscapeTimeDisplayFormat: TimeDisplayFormat = .minutesSecondsHundredths
 
     /// Poslední vybraný zvuk. Nastavení zařízení ve smyslu „jaký zvuk mám rád“ –
     /// slouží jen k tomu, aby přepínač ztlumení v `SoundSettingsView` uměl
@@ -34,7 +37,10 @@ final class AppPreferences: ObservableObject {
     /// napříč šesti soubory a `"isSoundEnabled"` se vyskytovalo čtyřikrát.
     enum Key {
         static let backgroundIndex = "bgIndex"
-        static let timeDisplayFormat = "timeDisplayFormat"
+        /// Nové klíče místo historického `"timeDisplayFormat"` – ten patřil
+        /// dávno odstraněné volbě v nastavení a mohla v něm zůstat stará hodnota.
+        static let portraitTimeDisplayFormat = "portraitTimeDisplayFormat"
+        static let landscapeTimeDisplayFormat = "landscapeTimeDisplayFormat"
         static let lastSelectedSound = "lastSelectedSound"
         static let completedTimerCount = "completedTimerCount"
         static let stopCounter = "stopCounter"
