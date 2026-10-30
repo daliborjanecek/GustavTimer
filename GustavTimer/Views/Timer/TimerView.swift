@@ -21,6 +21,8 @@ struct TimerView: View {
     @Query(sort: \TimerData.id, order: .reverse) private var timerData: [TimerData]
     @StateObject var viewModel = TimerViewModel()
     @State private var orientation = UIDeviceOrientation.unknown
+    @AppStorage(AppPreferences.Key.portraitTimeDisplayFormat) private var portraitFormat: TimeDisplayFormat = .seconds
+    @AppStorage(AppPreferences.Key.landscapeTimeDisplayFormat) private var landscapeFormat: TimeDisplayFormat = .minutesSecondsHundredths
 
     
     var body: some View {
@@ -102,7 +104,7 @@ private extension TimerView {
             
             Spacer()
             
-            counterDisplay(timeDisplayFormat: .seconds)
+            counterDisplay(format: $portraitFormat, formats: [.seconds, .minutesSeconds])
             
             Spacer()
             
@@ -122,16 +124,15 @@ private extension TimerView {
             
             Spacer()
             
-            counterDisplay(timeDisplayFormat: .minutesSecondsHundredths)
+            counterDisplay(format: $landscapeFormat, formats: [.minutesSecondsHundredths, .seconds])
             
             Spacer()
         }
         //        .ignoresSafeArea(edges: .bottom)
         .statusBar(hidden: true)
         .persistentSystemOverlays(.hidden)
-        .onTapGesture {
-            viewModel.startStopTimer()
-        }
+        // Na šířku nejsou tlačítka – timer se ovládá jen tapy.
+        .playbackTaps(onTap: viewModel.startStopTimer, onDoubleTap: skipIfRunning)
     }
 }
 
@@ -175,11 +176,27 @@ private extension TimerView {
         return "\(currentTimer.name) (\(viewModel.finishedRounds)\(rounds))"
     }
     
-    func counterDisplay(timeDisplayFormat: TimeDisplayFormat) -> some View {
-        Text(viewModel.formattedCurrentTime(timeDisplayFormat: timeDisplayFormat))
-            .font(.timerCounter)
-            .minimumScaleFactor(0.01)
-            .foregroundColor(Color.gustavVolt)
+    /// Velký odpočet jako stránkovaný `TabView` – každá stránka je jeden formát
+    /// času a swipe mezi nimi listuje s animací jako mezi taby. Vybraná stránka
+    /// se pamatuje pro každou orientaci zvlášť; první v `formats` je výchozí.
+    ///
+    /// Tap spustí/zastaví timer, dvojtap přeskočí interval. Stránka zabírá celé
+    /// volné místo, takže na tapy reaguje i okolí čísla.
+    func counterDisplay(format: Binding<TimeDisplayFormat>, formats: [TimeDisplayFormat]) -> some View {
+        TabView(selection: format) {
+            ForEach(formats, id: \.self) { pageFormat in
+                Text(viewModel.formattedCurrentTime(timeDisplayFormat: pageFormat))
+                    .font(.timerCounter)
+                    .minimumScaleFactor(0.01)
+                    .foregroundColor(Color.gustavVolt)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .playbackTaps(onTap: viewModel.startStopTimer, onDoubleTap: skipIfRunning)
+                    .tag(pageFormat)
+            }
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .sensoryFeedback(.selection, trigger: format.wrappedValue)
     }
     
     var horizontalControlButtons: some View {
@@ -310,12 +327,30 @@ private extension TimerView {
         }
     }
 
+    /// Dvojtap na odpočtu přeskočí interval jen za běhu – stejně jako tlačítko,
+    /// které se na skip mění až po startu. Stojící timer by skip „uschoval“
+    /// a interval by po startu zmizel.
+    func skipIfRunning() {
+        guard viewModel.isTimerRunning else { return }
+        viewModel.skipLap()
+    }
+
     func setupViewModel() {
         viewModel.setModelContext(context)
         viewModel.showWhatsNew()
         viewModel.onReviewRequested = {
             requestReview()
         }
+    }
+}
+
+private extension View {
+    /// Tap = start/stop, dvojtap = skip. Dvojtap musí být deklarovaný první,
+    /// jinak by ho SwiftUI nikdy nerozpoznalo – jednoduchý tap proto čeká,
+    /// jestli nepřijde druhý, a spustí se se zpožděním asi 0,3 s.
+    func playbackTaps(onTap: @escaping () -> Void, onDoubleTap: @escaping () -> Void) -> some View {
+        onTapGesture(count: 2, perform: onDoubleTap)
+            .onTapGesture(perform: onTap)
     }
 }
 

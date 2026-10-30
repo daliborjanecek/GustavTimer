@@ -15,6 +15,8 @@ Intervalový časovač pro iPhone navržený pro sport a trénink. Umožňuje se
 - **Skip & Reset** – přeskočení aktuálního intervalu nebo návrat na začátek
 - **Always-on display** – během běhu se displej nevypíná
 - **Přesný návrat z pozadí** – po přepnutí do jiné aplikace nebo zamčení telefonu odpočet po návratu naváže přesně tam, kde reálně je
+- **Formát odpočtu** – swipem přes odpočet se přepíná mezi sekundami a minutami:sekundami, zvlášť na výšku i na šířku
+- **Ovládání odpočtem** – tap na odpočet = start/stop, dvojtap = přeskočení intervalu (na výšku i na šířku)
 - **Landscape režim** – velký odpočet s přesností na setiny sekundy, tap kdekoliv = start/stop
 
 ### Zpětná vazba
