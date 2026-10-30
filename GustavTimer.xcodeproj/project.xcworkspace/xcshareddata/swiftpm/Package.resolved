@@ -1,6 +1,24 @@
 {
-  "originHash" : "116b7745fb1af4d296c72d2b70b23a5bc5d6d15236d146d04c0f82cdfbb374d5",
+  "originHash" : "2376a8346227cad0557e29cdc29ef81e5c9c12c843274776b844b6cb05fe26e8",
   "pins" : [
+    {
+      "identity" : "gustavui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/daliborjanecek/GustavUI.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "6e9f6df60fed716f041d50592984b30fa53c9209"
+      }
+    },
+    {
+      "identity" : "lottie-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/airbnb/lottie-ios.git",
+      "state" : {
+        "revision" : "f4db77d7feacba0c2360b84a40c38a6ce8ff399d",
+        "version" : "4.6.1"
+      }
+    },
     {
       "identity" : "rive-ios",
       "kind" : "remoteSourceControl",

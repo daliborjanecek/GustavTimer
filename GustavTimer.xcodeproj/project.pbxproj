@@ -19,7 +19,6 @@
 		CF107C5A2EDE295A00A172E8 /* bell.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CF107C592EDE295A00A172E8 /* bell.mp3 */; };
 		CF107C5C2EDE29BE00A172E8 /* bubble.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CF107C5B2EDE29BE00A172E8 /* bubble.mp3 */; };
 		CF10D0562E73371F00F84454 /* RoundsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF10D0552E73371800F84454 /* RoundsSettingsView.swift */; };
-		CF17ADD82F083A6B00A92841 /* GustavUI in Frameworks */ = {isa = PBXBuildFile; productRef = CF17ADD72F083A6B00A92841 /* GustavUI */; };
 		CF21843429F052590060706C /* GustavTimerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21843329F052590060706C /* GustavTimerApp.swift */; };
 		CF21843629F052590060706C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21843529F052590060706C /* ContentView.swift */; };
 		CF21843829F0525E0060706C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CF21843729F0525E0060706C /* Assets.xcassets */; };
@@ -43,6 +42,9 @@
 		CF7BCED72BB881C900A65EF1 /* CustomImageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF7BCED62BB881C900A65EF1 /* CustomImageModel.swift */; };
 		CF8438982F12BF3E0033EE39 /* ob_favourites.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = CF8438962F12BF3E0033EE39 /* ob_favourites.mp4 */; };
 		CF8438992F12BF3E0033EE39 /* ob_timer.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = CF8438972F12BF3E0033EE39 /* ob_timer.mp4 */; };
+		CF882DA63095139400894C1E /* GustavUI in Frameworks */ = {isa = PBXBuildFile; productRef = CF882DA53095139400894C1E /* GustavUI */; };
+		CF882DA83095139400894C1E /* GustavUIAnimations in Frameworks */ = {isa = PBXBuildFile; productRef = CF882DA73095139400894C1E /* GustavUIAnimations */; };
+		CF882DAA3095139400894C1E /* GustavUICore in Frameworks */ = {isa = PBXBuildFile; productRef = CF882DA93095139400894C1E /* GustavUICore */; };
 		CF8E14672D17404900155BE8 /* VideoPlayerFullscreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8E14662D17403900155BE8 /* VideoPlayerFullscreen.swift */; };
 		CF93EB012C5E679700A98ABD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CF93EB002C5E679700A98ABD /* PrivacyInfo.xcprivacy */; };
 		CF9922AD2C8F84C9004186DF /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF9922AC2C8F84C9004186DF /* AppConfig.swift */; };
@@ -157,7 +159,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CF17ADD82F083A6B00A92841 /* GustavUI in Frameworks */,
+				CF882DA63095139400894C1E /* GustavUI in Frameworks */,
+				CF882DAA3095139400894C1E /* GustavUICore in Frameworks */,
+				CF882DA83095139400894C1E /* GustavUIAnimations in Frameworks */,
 				CFDE17AE2F48A646006BEF5D /* TelemetryDeck in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -412,6 +416,11 @@
 			dependencies = (
 			);
 			name = GustavTimer;
+			packageProductDependencies = (
+				CF882DA53095139400894C1E /* GustavUI */,
+				CF882DA73095139400894C1E /* GustavUIAnimations */,
+				CF882DA93095139400894C1E /* GustavUICore */,
+			);
 			productName = GustavTimer;
 			productReference = CF21843029F052590060706C /* GustavTimer.app */;
 			productType = "com.apple.product-type.application";
@@ -466,6 +475,7 @@
 			packageReferences = (
 				CF8C07C52E3E64100083ED1D /* XCRemoteSwiftPackageReference "rive-ios" */,
 				CFDE17AA2F48A646006BEF5D /* XCRemoteSwiftPackageReference "SwiftSDK" */,
+				CF882DA43095139400894C1E /* XCRemoteSwiftPackageReference "GustavUI" */,
 			);
 			productRefGroup = CF21843129F052590060706C /* Products */;
 			projectDirPath = "";
@@ -855,6 +865,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		CF882DA43095139400894C1E /* XCRemoteSwiftPackageReference "GustavUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/daliborjanecek/GustavUI.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		CF8C07C52E3E64100083ED1D /* XCRemoteSwiftPackageReference "rive-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/rive-app/rive-ios.git";
@@ -874,9 +892,20 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		CF17ADD72F083A6B00A92841 /* GustavUI */ = {
+		CF882DA53095139400894C1E /* GustavUI */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = CF882DA43095139400894C1E /* XCRemoteSwiftPackageReference "GustavUI" */;
 			productName = GustavUI;
+		};
+		CF882DA73095139400894C1E /* GustavUIAnimations */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CF882DA43095139400894C1E /* XCRemoteSwiftPackageReference "GustavUI" */;
+			productName = GustavUIAnimations;
+		};
+		CF882DA93095139400894C1E /* GustavUICore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CF882DA43095139400894C1E /* XCRemoteSwiftPackageReference "GustavUI" */;
+			productName = GustavUICore;
 		};
 		CFDE17AD2F48A646006BEF5D /* TelemetryDeck */ = {
 			isa = XCSwiftPackageProductDependency;
