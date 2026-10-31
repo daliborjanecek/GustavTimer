@@ -1765,6 +1765,23 @@
         }
       }
     },
+    "SUGGEST_FEATURE" : {
+      "comment" : "Button in the More section of settings that opens the ideas board on the website, where users can vote for features and suggest their own.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navrhni novou funkci"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggest a feature"
+          }
+        }
+      }
+    },
     "SUM_ROUND_AND_TIMER_DESCRIPTION" : {
       "localizations" : {
         "cs" : {

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import SafariServices
 import GustavUICore
 import TelemetryDeck
 
@@ -232,7 +233,10 @@ struct SettingsView: View {
     private var more: some View {
         SettingsSection(label: "MORE") {
             ButtonLink(label: "RATE", URLString: AppConfig.reviewURL)
-            
+
+            Button("SUGGEST_FEATURE", action: openIdeasBoard)
+                .foregroundStyle(Color.gustavPink)
+
             ButtonLink(label: "TRY_WEIGHTS", URLString: AppConfig.weightsURL)
             
             ButtonLink(label: "FOLLOW_INSTAGRAM", URLString: AppConfig.instagramURL)
@@ -321,6 +325,33 @@ struct SettingsView: View {
     /// Sdílený odkaz na právě rozdělaný timer. `nil`, dokud nemá jediný interval.
     private var shareURL: URL? {
         SharedTimerLink.url(settings: currentTimerData.settings, limits: AppConfig.sharedLinkLimits)
+    }
+
+    /// Nástěnka s nápady se otevírá uvnitř aplikace, aby se uživatel vrátil
+    /// rovnou do nastavení. Technické údaje v adrese web vloží do skrytých
+    /// polí formuláře, takže se u nahlášených chyb nemusí doptávat.
+    private func openIdeasBoard() {
+        guard let url = ideasBoardURL else { return }
+        TelemetryDeck.signal("ideas.opened")
+        InAppBrowser.open(url)
+    }
+
+    private var ideasBoardURL: URL? {
+        guard var components = URLComponents(string: AppConfig.ideasBoardURL) else { return nil }
+        let info = Bundle.main.infoDictionary
+        let items: [(String, String?)] = [
+            ("app", AppConfig.ideasBoardAppID),
+            ("v", info?["CFBundleShortVersionString"] as? String),
+            ("build", info?["CFBundleVersion"] as? String),
+            ("ios", UIDevice.current.systemVersion),
+            ("device", InAppBrowser.deviceModelIdentifier),
+            // Jazyk, ve kterém aplikace opravdu běží (cs/en), ne jazyk systému.
+            ("lang", Bundle.main.preferredLocalizations.first)
+        ]
+        components.queryItems = items.compactMap { name, value in
+            value.map { URLQueryItem(name: name, value: $0) }
+        }
+        return components.url
     }
 
     private func isTimerAlreadySaved() -> Bool {
@@ -511,6 +542,45 @@ private struct ButtonLink: View {
             }
         }
         .foregroundStyle(Color.gustavPink)
+    }
+}
+
+/// Webová stránka v `SFSafariViewController` uvnitř aplikace.
+///
+/// Prezentuje se přes UIKit nad nejvyšším otevřeným oknem (tady nad sheetem
+/// Settings), ne přes SwiftUI `.sheet` – Safari si tlačítkem Zavřít zavírá
+/// samo sebe a SwiftUI by se o tom nedozvědělo.
+private enum InAppBrowser {
+    @MainActor
+    static func open(_ url: URL) {
+        let scene = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+        guard var top = scene?.keyWindow?.rootViewController else {
+            UIApplication.shared.open(url)
+            return
+        }
+        while let presented = top.presentedViewController {
+            top = presented
+        }
+
+        let safari = SFSafariViewController(url: url)
+        safari.preferredControlTintColor = UIColor(Color.gustavPink)
+        safari.dismissButtonStyle = .close
+        top.present(safari, animated: true)
+    }
+
+    /// Model zařízení, např. `iPhone15,2`. Na simulátoru by `uname` vrátil
+    /// jen `arm64`, proto se tam bere simulovaný model.
+    static var deviceModelIdentifier: String {
+        if let simulated = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] {
+            return simulated
+        }
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        return withUnsafeBytes(of: &systemInfo.machine) { bytes in
+            String(decoding: bytes.prefix { $0 != 0 }, as: UTF8.self)
+        }
     }
 }
 

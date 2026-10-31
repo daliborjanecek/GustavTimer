@@ -23,7 +23,12 @@ struct AppConfig {
     static let instagramURL: String = "https://www.instagram.com/gustavtraining"
     static let youtubeChallengeURL: String = "https://youtube.com/playlist?list=PLi2Zd-0ICmgIoaWudLzSF8Jt5VKAWSvdR&si=NaYIwDYMCX9rsIFW"
     static let youtubeURL: String = "https://www.youtube.com/@Gustavtraining"
-    
+    /// Nástěnka s nápady na webu. Aplikace k adrese přidá technické údaje
+    /// (verze, iOS, zařízení, jazyk), které web vloží do formuláře.
+    static let ideasBoardURL: String = "https://gustavtraining.com/ideas/"
+    /// Označení aplikace pro nástěnku – stejný web slouží i Gustav Weights.
+    static let ideasBoardAppID: String = "timer"
+
     // Velikosti fontů
     static let largeFontSize: CGFloat = 30
     static let smallFontSize: CGFloat = 15
