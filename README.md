@@ -21,7 +21,7 @@ Intervalový časovač pro iPhone navržený pro sport a trénink. Umožňuje se
 
 ### Zpětná vazba
 - **Zvuk** – 10 zvukových témat (beep, whistle, gong, bell, bicycle, …) nebo ztlumení; přehrávání nepřeruší hudbu na pozadí
-- **Tikání** – volitelný zvukový tik každou sekundu
+- **Tikání** – vypnuto, zvukový tik každou sekundu, nebo jen v posledních 3 sekundách intervalu
 - **Haptika** – odlišné vibrace pro přechod intervalu, konec kola a konec tréninku
 
 ### Správa timerů

@@ -123,11 +123,11 @@ struct FavouriteRowView: View {
     ]
     let beepTimer = TimerSettings(
         name: "My Favourite Timer", intervals: workRest, rounds: 5,
-        sound: .beep, isVibrating: true, isTicking: false, hasCountdown: true
+        sound: .beep, isVibrating: true, ticking: .off, hasCountdown: true
     )
     let whistleTimer = TimerSettings(
         name: "My Favourite Timer", intervals: workRest, rounds: 5,
-        sound: .whistle, isVibrating: true, isTicking: false, hasCountdown: true
+        sound: .whistle, isVibrating: true, ticking: .off, hasCountdown: true
     )
 
     List {

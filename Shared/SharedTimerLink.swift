@@ -21,6 +21,10 @@
 //
 //      .../t?Work=20&Rest=10&rounds=8&_sound=bicycle&_vibe=1&_tick=0&_cd=1&_title=TABATA
 //
+//  `_tick` nese režim tikání: `0` = bez tikání, `1` = každou sekundu,
+//  `3` = jen poslední 3 sekundy intervalu. Starší verze aplikace hodnotě `3`
+//  nerozumí, takže si u ní příjemce nechá své tikání – nic se nerozbije.
+//
 //  Klíčové pravidlo: **chybějící parametr znamená „zachovej současné“**,
 //  ne „vrať na výchozí“. Díky tomu se odkaz z verze 2.2/2.3 chová přesně
 //  jako dřív – nesáhne na zvuk ani vibrace příjemce – a zároveň jde rozlišit
@@ -60,8 +64,8 @@ struct SharedTimerLink: Equatable {
     /// Vibrace z parametru `_vibe`. `nil` = odkaz je neřeší.
     let isVibrating: Bool?
 
-    /// Tikání z parametru `_tick`. `nil` = odkaz ho neřeší.
-    let isTicking: Bool?
+    /// Režim tikání z parametru `_tick`. `nil` = odkaz ho neřeší.
+    let ticking: TickingMode?
 
     /// Úvodní odpočet z parametru `_cd`. `nil` = odkaz ho neřeší.
     let hasCountdown: Bool?
@@ -72,7 +76,7 @@ struct SharedTimerLink: Equatable {
         title: String? = nil,
         sound: SharedSoundSelection? = nil,
         isVibrating: Bool? = nil,
-        isTicking: Bool? = nil,
+        ticking: TickingMode? = nil,
         hasCountdown: Bool? = nil
     ) {
         self.intervals = intervals
@@ -80,7 +84,7 @@ struct SharedTimerLink: Equatable {
         self.title = title
         self.sound = sound
         self.isVibrating = isVibrating
-        self.isTicking = isTicking
+        self.ticking = ticking
         self.hasCountdown = hasCountdown
     }
 }
@@ -153,7 +157,7 @@ extension SharedTimerLink {
     /// Haptická odezva.
     static let vibrationKey = "_vibe"
 
-    /// Tikání každou sekundu.
+    /// Režim tikání. Hodnoty viz `TickingMode.linkValue`.
     static let tickingKey = "_tick"
 
     /// Úvodní odpočet 3-2-1.
@@ -270,7 +274,7 @@ extension SharedTimerLink {
         var title: String?
         var sound: SharedSoundSelection?
         var isVibrating: Bool?
-        var isTicking: Bool?
+        var ticking: TickingMode?
         var hasCountdown: Bool?
 
         for item in items {
@@ -312,7 +316,7 @@ extension SharedTimerLink {
                     if isVibrating == nil { isVibrating = parseBool(item.value) }
 
                 case Self.tickingKey:
-                    if isTicking == nil { isTicking = parseBool(item.value) }
+                    if ticking == nil { ticking = parseTicking(item.value) }
 
                 case Self.countdownKey:
                     if hasCountdown == nil { hasCountdown = parseBool(item.value) }
@@ -356,7 +360,7 @@ extension SharedTimerLink {
             title: title,
             sound: sound,
             isVibrating: isVibrating,
-            isTicking: isTicking,
+            ticking: ticking,
             hasCountdown: hasCountdown
         )
     }
@@ -372,6 +376,21 @@ extension SharedTimerLink {
         case "0", "false", "no", "off": return false
         default:                        return nil
         }
+    }
+
+    /// Režim tikání ze sdíleného odkazu.
+    ///
+    /// Vedle vlastních hodnot (`0`, `1`, `3`) bere i booleovské tvary –
+    /// odkazy z doby, kdy tikání znalo jen zapnuto/vypnuto, tak dál fungují
+    /// a zapnuté tikání z nich znamená tikání každou sekundu, jako dřív.
+    ///
+    ///     "3"     → .finalSeconds
+    ///     "1"     → .everySecond     (stejně tak "true", "yes", "on")
+    ///     "0"     → .off             (stejně tak "false", "no", "off")
+    ///     "2"     → nil              (nesrozumitelné – zachovej současné)
+    private static func parseTicking(_ value: String?) -> TickingMode? {
+        if let mode = TickingMode(linkValue: value) { return mode }
+        return parseBool(value).map(TickingMode.init(legacyIsTicking:))
     }
 }
 
@@ -393,7 +412,7 @@ extension SharedTimerLink {
         if let title { result.name = title }
         if let sound { result.sound = sound.model }
         if let isVibrating { result.isVibrating = isVibrating }
-        if let isTicking { result.isTicking = isTicking }
+        if let ticking { result.ticking = ticking }
         if let hasCountdown { result.hasCountdown = hasCountdown }
         return result
     }
@@ -449,12 +468,12 @@ extension SharedTimerLink {
 
         guard !items.isEmpty else { return nil }
 
-        // Všechny hodnoty níž jsou holé ASCII (číslice, rawValue zvuku, 0/1),
+        // Všechny hodnoty níž jsou holé ASCII (číslice, rawValue zvuku, 0/1/3),
         // takže procentní kódování nepotřebují. Název ano – ten jde přes encode().
         items.append(URLQueryItem(name: roundsKey, value: String(settings.rounds)))
         items.append(URLQueryItem(name: soundKey, value: settings.sound?.rawValue ?? soundOffValue))
         items.append(URLQueryItem(name: vibrationKey, value: settings.isVibrating ? "1" : "0"))
-        items.append(URLQueryItem(name: tickingKey, value: settings.isTicking ? "1" : "0"))
+        items.append(URLQueryItem(name: tickingKey, value: settings.ticking.linkValue))
         items.append(URLQueryItem(name: countdownKey, value: settings.hasCountdown ? "1" : "0"))
 
         let trimmedTitle = settings.name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -473,5 +492,34 @@ extension SharedTimerLink {
 
     private static func encode(_ value: String) -> String? {
         value.addingPercentEncoding(withAllowedCharacters: queryAllowed)
+    }
+}
+
+// MARK: - Tikání v odkazu
+
+extension TickingMode {
+
+    /// Hodnota parametru `_tick`. `0` a `1` odpovídají dřívějšímu
+    /// zapnuto/vypnuto, takže odkaz bez tikání nebo s tikáním každou sekundu
+    /// vypadá stejně jako z verze, která režimy neznala.
+    ///
+    ///     .off          → "0"
+    ///     .everySecond  → "1"
+    ///     .finalSeconds → "3"   (počet tikajících sekund)
+    var linkValue: String {
+        switch self {
+        case .off:          return "0"
+        case .everySecond:  return "1"
+        case .finalSeconds: return String(Self.finalSecondsCount)
+        }
+    }
+
+    /// Opak `linkValue`. `nil` pro cokoliv, co `linkValue` nevrací.
+    init?(linkValue: String?) {
+        guard let linkValue,
+              let mode = Self.allCases.first(where: { $0.linkValue == linkValue }) else {
+            return nil
+        }
+        self = mode
     }
 }

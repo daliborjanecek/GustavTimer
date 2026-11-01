@@ -134,8 +134,8 @@ class TimerViewModel: ObservableObject {
                 self.vibrate()
             case .countdownEnd:
                 self.vibrateRound()
-            case .secondTick:
-                self.playTickSound()
+            case .secondTick(let remainingSeconds):
+                self.playTickSound(remainingSeconds: remainingSeconds)
             }
         }
 
@@ -270,12 +270,17 @@ class TimerViewModel: ObservableObject {
             // Poslední sekunda intervalu nedostane .secondTick – engine místo ní
             // pošle .intervalTransition – takže tik při ztlumeném zvuku
             // doplňujeme tady. Bez toho by tikání na přechodu vynechalo.
-            playTickSound()
+            // Přechod je „nultá“ sekunda, takže tiká v obou režimech tikání.
+            playTickSound(remainingSeconds: 0)
         }
     }
-    
-    private func playTickSound() {
-        guard settings.isTicking else { return }
+
+    /// Tik, pokud ho režim tikání pro danou sekundu odpočtu chce.
+    ///
+    ///     .everySecond  → tiká vždy
+    ///     .finalSeconds → tiká jen při 3, 2, 1 (a na přechodu při ztlumeném zvuku)
+    private func playTickSound(remainingSeconds: Int) {
+        guard settings.ticking.shouldTick(remainingSeconds: remainingSeconds) else { return }
         SoundManager.instance.playTick()
     }
 

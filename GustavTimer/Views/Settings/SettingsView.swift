@@ -207,8 +207,12 @@ struct SettingsView: View {
             Toggle("SET_COUNTDOWN", isOn: setting(\.hasCountdown))
                 .tint(Color.gustavVolt)
 
-            Toggle("SET_TICKING", isOn: setting(\.isTicking))
-                .tint(Color.gustavVolt)
+            Picker("SET_TICKING", selection: setting(\.ticking)) {
+                ForEach(TickingMode.allCases, id: \.self) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
 
             NavigationLink {
                 SoundSettingsView(selectedSound: setting(\.selectedSound))
@@ -365,7 +369,7 @@ struct SettingsView: View {
     /// Binding na jedno pole aktivního timeru. Zápis rovnou uloží kontext,
     /// aby se nastavení neztratilo, když uživatel zavře Settings swipem.
     ///
-    ///     Toggle("SET_TICKING", isOn: setting(\.isTicking))
+    ///     Toggle("HAPTICS", isOn: setting(\.isVibrating))
     private func setting<Value>(_ keyPath: ReferenceWritableKeyPath<TimerData, Value>) -> Binding<Value> {
         Binding(
             get: { currentTimerData[keyPath: keyPath] },
@@ -592,4 +596,17 @@ private enum InAppBrowser {
 #Preview("Dark") {
     SettingsView()
         .preferredColorScheme(.dark)
+}
+
+// MARK: - Tikání
+
+private extension TickingMode {
+    /// Název režimu v nabídce tikání.
+    var title: LocalizedStringKey {
+        switch self {
+        case .off:          return "TICKING_OFF"
+        case .everySecond:  return "TICKING_EVERY_SECOND"
+        case .finalSeconds: return "TICKING_FINAL_SECONDS"
+        }
+    }
 }

@@ -26,7 +26,7 @@ enum PredefinedTimer: String, CaseIterable, Identifiable {
                 rounds: -1,
                 sound: .gong,
                 isVibrating: false,
-                isTicking: false,
+                ticking: .off,
                 hasCountdown: true
             )
 
@@ -40,7 +40,7 @@ enum PredefinedTimer: String, CaseIterable, Identifiable {
                 rounds: 8,
                 sound: .bicycle,
                 isVibrating: true,
-                isTicking: false,
+                ticking: .off,
                 hasCountdown: true
             )
 
@@ -51,7 +51,7 @@ enum PredefinedTimer: String, CaseIterable, Identifiable {
                 rounds: 10,
                 sound: .whistle,
                 isVibrating: true,
-                isTicking: false,
+                ticking: .off,
                 hasCountdown: true
             )
 
@@ -65,7 +65,7 @@ enum PredefinedTimer: String, CaseIterable, Identifiable {
                 rounds: 10,
                 sound: .whistle,
                 isVibrating: true,
-                isTicking: false,
+                ticking: .off,
                 hasCountdown: true
             )
 
@@ -76,7 +76,7 @@ enum PredefinedTimer: String, CaseIterable, Identifiable {
                 rounds: 20,
                 sound: .beep,
                 isVibrating: true,
-                isTicking: false,
+                ticking: .off,
                 hasCountdown: true
             )
         }

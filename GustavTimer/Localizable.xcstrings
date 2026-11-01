@@ -1635,13 +1635,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sekundové tikání"
+            "value" : "Tikání"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Second ticking"
+            "value" : "Ticking"
           }
         }
       }
@@ -1810,6 +1810,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "One round duration is %@."
+          }
+        }
+      }
+    },
+    "TICKING_EVERY_SECOND" : {
+      "comment" : "Ticking option in Settings: tick on every second of the interval.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Každou sekundu"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every second"
+          }
+        }
+      }
+    },
+    "TICKING_FINAL_SECONDS" : {
+      "comment" : "Ticking option in Settings: tick only during the last 3 seconds of the interval.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poslední 3 sekundy"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last 3 seconds"
+          }
+        }
+      }
+    },
+    "TICKING_OFF" : {
+      "comment" : "Ticking option in Settings: no ticking.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vypnuto"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
           }
         }
       }

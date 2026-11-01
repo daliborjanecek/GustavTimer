@@ -195,7 +195,7 @@ Engine při určitých momentech zavolá `onFeedback(...)`:
 | `.timerEnd` | Poslední kolo dokončeno (engine se resetuje) | Error vibrace + zvuk + počítadlo dokončení |
 | `.countdownTick` | Každý tik úvodního odpočtu (3, 2, 1) | Lehká vibrace |
 | `.countdownEnd` | Konec úvodního odpočtu, timer startuje | Výraznější vibrace |
-| `.secondTick` | Každá změna zobrazené sekundy (1×/s) | Zvukové „tikání" |
+| `.secondTick(remainingSeconds:)` | Každá změna zobrazené sekundy (1×/s), nese zobrazenou hodnotu | Zvukové „tikání" podle `TickingMode` |
 
 ### Logika přechodů
 
@@ -236,7 +236,8 @@ Hlavní entita časovače. Ukládá se přes SwiftData.
 | `rounds` | `Int` | Počet kol (`-1` = smyčka) |
 | `selectedSound` | `SoundModel?` | Zvuk (`nil` = ztlumeno) |
 | `isVibrating` | `Bool` | Haptika |
-| `isTicking` | `Bool` | Tikání každou sekundu (default `false`) |
+| `tickingMode` | `TickingMode?` | Režim tikání (`nil` = timer uložený před zavedením režimů, odvodí se z `isTicking`). Číst/zapisovat přes `ticking` |
+| `isTicking` | `Bool` | Původní zapnuto/vypnuto tikání (default `false`); drží se v souladu s `tickingMode` |
 | `hasCountdown` | `Bool` | Úvodní odpočet 3-2-1 (default `true`) |
 | `order` | `Int` | **Klíčové pole** – řadí a rozlišuje časovače |
 | `createdAt` | `Date` | Datum vytvoření |
@@ -274,7 +275,9 @@ Je `Codable` → serializuje se pro SwiftData, sdílení odkazem i případný p
 
 ### `TimerSettings` (sdílený struct)
 
-Kompletní nastavení timeru jako hodnotový typ (`Shared/TimerSettings.swift`) – jediná definice toho, „co je timer": `name`, `intervals`, `rounds`, `sound`, `isVibrating`, `isTicking`, `hasCountdown`.
+Kompletní nastavení timeru jako hodnotový typ (`Shared/TimerSettings.swift`) – jediná definice toho, „co je timer": `name`, `intervals`, `rounds`, `sound`, `isVibrating`, `ticking`, `hasCountdown`.
+
+`ticking: TickingMode` – `.off` (bez tikání), `.everySecond` (každou sekundu), `.finalSeconds` (jen poslední 3 sekundy intervalu). Jestli tik zazní, rozhoduje `TickingMode.shouldTick(remainingSeconds:)`.
 
 `TimerData` je nad ním tenká obálka: `timerData.settings` čte i zapisuje **celé** nastavení naráz, takže nikde v aplikaci není místo, které by kopírovalo nastavení po polích (a mohlo tedy na některé zapomenout).
 
@@ -344,7 +347,7 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 | **Intervaly** | Editovatelný seznam intervalů (`IntervalRowView`): název + hodnota, drag-to-reorder, swipe-to-delete, „+ Add interval". Footer ukazuje souhrn (délka kola, příp. celkový čas) |
 | **Rounds** | `NavigationLink` → `RoundsSettingsView` (smyčka / 1–31 kol) |
 | **Favourites** | Náhled posledních 3 oblíbených + odkaz na všechny |
-| **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, Toggle Tikání, výběr Zvuku |
+| **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, menu Tikání (vypnuto / každou sekundu / poslední 3 sekundy), výběr Zvuku |
 | **Appearance** | `NavigationLink` → `BackgroundSelectorView` |
 | **More** | Odkazy: Hodnotit, Gustav Weights, Instagram, YouTube |
 
@@ -409,7 +412,7 @@ Vyhledávání mezi oblíbenými i předdefinovanými (`localizedCaseInsensitive
 `Managers/SoundManager.swift` – přehrává MP3 přes `AVAudioPlayer`.
 - Audio session: kategorie `.playback` s `.mixWithOthers` → **nepřeruší hudbu na pozadí**.
 - `playSound(soundModel:)` – přehraje vybraný zvuk při přechodu.
-- `playTick()` – přehraje `tick.mp3` (tikání každou sekundu).
+- `playTick()` – přehraje `tick.mp3` (tikání podle `TickingMode`).
 
 ### Dostupné zvuky (`SoundModel`)
 Enum (`Shared/SoundModel.swift`), každý case = MP3 v bundle:
@@ -435,11 +438,13 @@ Enum (`Shared/SoundModel.swift`), každý case = MP3 v bundle:
 flowchart LR
     A[Přechod intervalu/kola/konec] --> B{settings.sound != nil?}
     B -- ano --> C[playSound: vybraný zvuk]
-    B -- ne --> D[playTickSound]
-    E[secondTick - každou sekundu] --> F{isTicking?}
+    B -- ne --> D[playTickSound - zbývá 0 s]
+    E[secondTick - zbývá N s] --> F{ticking.shouldTick N?}
     F -- ano --> G[playTick: tick.mp3]
     F -- ne --> H[ticho]
 ```
+
+`shouldTick`: `.off` nikdy, `.everySecond` vždy, `.finalSeconds` jen při N ≤ 3 (tedy 3, 2, 1 a při ztlumeném zvuku i na přechodu).
 
 ### Haptika
 Podmíněno `isVibrating`:
@@ -489,10 +494,10 @@ Aplikace reaguje na URL scheme **`gustavtimerapp://`** (registrováno v `Info.pl
 | `_title` | text, max 64 znaků | Název timeru |
 | `_sound` | `beep`, `gong`, … nebo `off` | Zvuk přechodu, `off` = ticho |
 | `_vibe` | `1` / `0` | Vibrace |
-| `_tick` | `1` / `0` | Tikání každou sekundu |
+| `_tick` | `0` / `1` / `3` | Tikání: `0` vypnuto, `1` každou sekundu, `3` poslední 3 sekundy |
 | `_cd` | `1` / `0` | Úvodní odpočet 3-2-1 |
 
-Booleany berou i `true/false`, `yes/no`, `on/off` (odkazy se píšou i ručně); generátor zapisuje `1`/`0`. U každého klíče vyhrává **první výskyt**, nesrozumitelná hodnota se ignoruje.
+Booleany (včetně `_tick`) berou i `true/false`, `yes/no`, `on/off` (odkazy se píšou i ručně); generátor zapisuje `1`/`0` (u `_tick` i `3`). Starší verze aplikace `_tick=3` nerozumí a nechají si vlastní tikání. U každého klíče vyhrává **první výskyt**, nesrozumitelná hodnota se ignoruje.
 
 > [!important] Chybějící parametr = zachovej současné
 > Na tomhle pravidle stojí celá zpětná kompatibilita. Odkaz z verze 2.2/2.3 neobsahuje `_sound` ani `_vibe`, takže **nesáhne na nastavení příjemce** – chová se přesně jako dřív. Nové odkazy nesou všechno explicitně.
