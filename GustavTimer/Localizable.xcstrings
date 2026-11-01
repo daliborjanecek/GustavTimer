@@ -1837,13 +1837,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Poslední 3 sekundy"
+            "value" : "Před koncem intervalu"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Last 3 seconds"
+            "value" : "Before interval ends"
           }
         }
       }

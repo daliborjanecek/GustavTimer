@@ -347,7 +347,7 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 | **Intervaly** | Editovatelný seznam intervalů (`IntervalRowView`): název + hodnota, drag-to-reorder, swipe-to-delete, „+ Add interval". Footer ukazuje souhrn (délka kola, příp. celkový čas) |
 | **Rounds** | `NavigationLink` → `RoundsSettingsView` (smyčka / 1–31 kol) |
 | **Favourites** | Náhled posledních 3 oblíbených + odkaz na všechny |
-| **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, menu Tikání (vypnuto / každou sekundu / poslední 3 sekundy), výběr Zvuku |
+| **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, menu Tikání (vypnuto / každou sekundu / před koncem intervalu – poslední 3 s), výběr Zvuku |
 | **Appearance** | `NavigationLink` → `BackgroundSelectorView` |
 | **More** | Odkazy: Hodnotit, Gustav Weights, Instagram, YouTube |
 
