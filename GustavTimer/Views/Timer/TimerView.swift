@@ -94,6 +94,11 @@ struct TimerView: View {
             // dvě větve, které se můžou rozejít.
             viewModel.handleDeepLink(url: url)
         }
+        .onReceive(NotificationCenter.default.publisher(for: AppLinkRouter.internalLinkNotification)) { notification in
+            // Odkaz na timer z banneru v nastavení – viz AppLinkRouter.
+            guard let url = notification.object as? URL else { return }
+            viewModel.handleDeepLink(url: url, fromApp: true)
+        }
     }
 }
 

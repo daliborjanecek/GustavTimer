@@ -25,12 +25,13 @@ struct GustavTimerApp: App {
         config.defaultParameters = {
             let defaults = UserDefaults.standard
             let background = defaults.integer(forKey: AppPreferences.Key.backgroundIndex)
+            let isRemoteBackground = !(defaults.string(forKey: AppPreferences.Key.remoteBackgroundID) ?? "").isEmpty
             return [
                 "portrait_format": defaults.string(forKey: AppPreferences.Key.portraitTimeDisplayFormat)
                     ?? TimeDisplayFormat.seconds.rawValue,
                 "landscape_format": defaults.string(forKey: AppPreferences.Key.landscapeTimeDisplayFormat)
                     ?? TimeDisplayFormat.minutesSecondsHundredths.rawValue,
-                "background": background == -1 ? "custom" : "preset"
+                "background": isRemoteBackground ? "remote" : (background == -1 ? "custom" : "preset")
             ]
         }
         TelemetryDeck.initialize(config: config)

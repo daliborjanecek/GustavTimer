@@ -23,6 +23,7 @@ enum AppSheet: Identifiable {
 
 struct ContentView: View {
     @Environment(\.modelContext) var context
+    @Environment(\.scenePhase) private var scenePhase
     
     @State private var activeSheet: AppSheet?
     @AppStorage(AppPreferences.Key.lastOnboardingVersion) private var lastOnboardingVersion: Int = 0
@@ -44,6 +45,13 @@ struct ContentView: View {
                 initializeDataIfNeeded()
                 SettingsMigration.runIfNeeded(context: context)
                 showOnboardingIfNeeded()
+            }
+            // Spuštění i návrat do popředí: přepočítat platnost staženého
+            // obsahu a případně ho na pozadí aktualizovat (nejvýš 1× za 24 h).
+            .onChange(of: scenePhase, initial: true) { _, phase in
+                if phase == .active {
+                    RemoteContentManager.shared.handleBecameActive()
+                }
             }
     }
     

@@ -36,6 +36,7 @@ aktualizovano: 2026-05-30
 18. [[#18 · Mapa souborů]]
 19. [[#19 · Běh na pozadí]]
 20. [[#20 · Poznámky k implementaci a TODO]]
+21. [[#21 · Vzdálený obsah (API)]]
 
 ---
 
@@ -343,13 +344,14 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 
 | Sekce | Obsah |
 |---|---|
-| **Banner** | Náhodný obrázek z měsíční výzvy (CHALLENGE) → otevře YouTube video |
+| **Banner** | `SettingsBannerView`: platné bannery z API (víc = `TabView` s automatickým přepínáním), jinak náhodný vestavěný obrázek z výzvy (CHALLENGE) → YouTube video. Viz [[#21 · Vzdálený obsah (API)]] |
 | **Intervaly** | Editovatelný seznam intervalů (`IntervalRowView`): název + hodnota, drag-to-reorder, swipe-to-delete, „+ Add interval". Footer ukazuje souhrn (délka kola, příp. celkový čas) |
 | **Rounds** | `NavigationLink` → `RoundsSettingsView` (smyčka / 1–31 kol) |
 | **Favourites** | Náhled posledních 3 oblíbených + odkaz na všechny |
 | **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, menu Tikání (vypnuto / každou sekundu / před koncem intervalu – poslední 3 s), výběr Zvuku |
 | **Appearance** | `NavigationLink` → `BackgroundSelectorView` |
-| **More** | Odkazy: Hodnotit, Gustav Weights, Instagram, YouTube |
+| **More** | Odkazy z API, pak Hodnotit a Navrhni funkci. Vestavěné Gustav Weights, Instagram a YouTube jen když z API žádný platný odkaz není |
+| *(jen DEBUG)* | Číslo verze – 5× klepnout = vývojářské menu vzdáleného obsahu |
 
 ### Toolbar
 
@@ -465,6 +467,7 @@ Per-timer volba `TimerData.hasCountdown` (Toggle „Úvodní odpočet" v Setting
 - Všechna pozadí jsou **černobílá** (`.grayscale(1.0)`) s tmavým overlayem (`Color.black.opacity(0.3)`) – aby vynikl odpočet.
 - Uživatel může vybrat **vlastní fotku** z knihovny (`PhotosPicker`) – uloží se jako `CustomImageModel` do SwiftData. Aktuálně se drží **jedna** vlastní fotka (při výběru nové se staré smažou).
 - Výběr se ukládá do `@AppStorage("bgIndex")`. Hodnota **`-1`** = vlastní fotka, `0..9` = vestavěný obrázek.
+- **Stažená pozadí** z API jsou ve výběru před vestavěnými. Pamatují se podle ID v `remoteBackgroundID` (index by se se změnou API posunul), `bgIndex` je přitom `0`. Když vybrané vzdálené pozadí přestane platit nebo zmizí z API, `RemoteContentManager` smaže `remoteBackgroundID` a zůstane vestavěné pozadí 0. Viz [[#21 · Vzdálený obsah (API)]].
 
 ---
 
@@ -559,7 +562,7 @@ Inicializace v `GustavTimerApp.init()` (App ID `E2CAE467-…`). Všechny signál
 
 **Parametry nastavení** (u signálů o tréninku, v tabulce jako *nastavení*): `interval_pattern` (`30/15`), `interval_count`, `rounds` (číslo / `loop`), `round_seconds`, `total_duration` (`<1m`, `1-5m`, `5-15m`, `15-30m`, `30-60m`, `60m+`, `loop`), `sound` (název / `mute`), `haptics`, `ticking`, `countdown`.
 
-**Výchozí parametry** u každého signálu (`config.defaultParameters`): `portrait_format`, `landscape_format`, `background` (`preset` / `custom`).
+**Výchozí parametry** u každého signálu (`config.defaultParameters`): `portrait_format`, `landscape_format`, `background` (`preset` / `custom` / `remote`).
 
 ### Trénink
 
@@ -581,7 +584,7 @@ Trychtýř: `timer.started` (`is_resume=false`) → `timer.completed`, nebo `tim
 | `timer.saved` | Uložení mezi oblíbené | *nastavení*, `screen` (`settings` / `favourites`) |
 | `timer.shared` | Dokončené sdílení odkazu na timer | `origin` (`settings` / `favourite` / `preset`), `channel` (`messages`, `whatsapp`, `copy`…), `interval_pattern`, u presetů `timer_name` |
 | `timer.share_cancelled` | Zavřený share sheet bez sdílení | `origin`, `interval_pattern`, u presetů `timer_name` |
-| `timer.link_opened` | Otevření sdíleného odkazu | `source` (`utm_source`, jinak `unknown`), `link_type` (`universal` / `scheme`), `loaded`, případně `campaign`, `interval_pattern`, `has_settings` |
+| `timer.link_opened` | Otevření sdíleného odkazu | `source` (`utm_source`, jinak `unknown`), `link_type` (`universal` / `scheme` / `in_app` = z banneru v aplikaci, nepočítá se jako akvizice), `loaded`, případně `campaign`, `interval_pattern`, `has_settings` |
 
 Share sheet (`TimerShareSheet`) zapíše zvolený kanál do odesílaného odkazu jako `utm_source=<kanál>`. Parser `utm_*` ignoruje, takže na timer nemá vliv, ale `timer.link_opened` u příjemce pak ví, kudy odkaz přišel. Odkazy ze starších verzí kanál nenesou (`source = unknown`).
 
@@ -591,10 +594,10 @@ Share sheet (`TimerShareSheet`) zapíše zvolený kanál do odesílaného odkazu
 
 | Signál | Kdy | Parametry |
 |---|---|---|
-| `settings.changed` | Změna volby | `setting` (`haptics`, `countdown`, `ticking`, `rounds`, `sound_enabled`, `background`, `interval_added`, `interval_removed`), `value` |
+| `settings.changed` | Změna volby | `setting` (`haptics`, `countdown`, `ticking`, `rounds`, `sound_enabled`, `background` – index / `custom` / `remote`, `interval_added`, `interval_removed`), `value` |
 | `timer.sound_selected` | Výběr zvuku | `sound` |
 | `settings.display_format_changed` | Swipe formátu odpočtu | `orientation`, `format` |
-| `link.opened` | Odkaz ven z nastavení | `target` (`rate`, `weights`, `instagram`, `youtube`, `banner`) |
+| `link.opened` | Odkaz z nastavení | `target` (`rate`, `weights`, `instagram`, `youtube`, `banner`, `remote_link`); u banneru `banner_source` (`builtin` / `remote`), `banner_id`, `banner_type`; u odkazu z API `link_id` |
 | `ideas.opened` | Otevření nástěnky nápadů | – |
 | `whatsnew.shown` | Zobrazení „Co je nového“ | `version` |
 | `TelemetryDeck.Activation.onboardingCompleted` | Zavření onboardingu (tlačítkem i swipem) | – |
@@ -664,7 +667,7 @@ Vlastní rodiny **Martian Grotesk** (Std/Cn varianty) a **Martian Mono** (Regula
 | `roundsOptions` | 1…31 | Nabídka počtu kol |
 | `defaultTimer` | order 0, „Gustav Timer", smyčka | Výchozí časovač |
 
-Dále drží: `backgroundImages` (10), `bannerImages` (6 challenge videí), `soundThemes`, `defaultTimer` (`TimerSettings`), `mainTimerOrder`, `sharedLinkLimits` a všechny **URL** (review, weights, Instagram, YouTube, YouTube challenge playlist).
+Dále drží: `remoteContentURL` (endpoint API vzdáleného obsahu), `defaultBackgroundIndex` (0 – kam se přepne prošlé vzdálené pozadí), `backgroundImages` (10), `bannerImages` (6 challenge videí), `soundThemes`, `defaultTimer` (`TimerSettings`), `mainTimerOrder`, `sharedLinkLimits` a všechny **URL** (review, weights, Instagram, YouTube, YouTube challenge playlist).
 
 ---
 
@@ -689,6 +692,9 @@ Dále drží: `backgroundImages` (10), `bannerImages` (6 challenge videí), `sou
 | `deeplinkLoadedTitle` | String | "" | Název z `_title` posledního odkazu |
 | `lastAcknowledgedDeeplinkToken` | Int | 0 | Token, jehož alert už uživatel viděl |
 | `didMigrateTimerSettingsToSwiftData` | Bool | false | Proběhla migrace nastavení |
+| `remoteBackgroundID` | String | "" | ID vybraného pozadí z API (prázdné = platí `bgIndex`) |
+| `remoteContentLastSuccess` | Double | – | Čas poslední úspěšné synchronizace API (pravidlo 24 h) |
+| `remoteContentLastAttempt` / `…LastResult` / `…LastError` | Double / Bool / String | – | Diagnostika posledního pokusu (debug menu) |
 
 **Zrušené klíče** (maže je `SettingsMigration`): `rounds`, `isVibrating`, `isTicking`, `isSoundEnabled`, `selectedSound`, `selectedBackgroundIndex`, `activeTimerId`, `startedFromDeeplink`.
 
@@ -717,8 +723,15 @@ GustavTimer/
 │   ├── BannerImageModel.swift    # Challenge banner + URL
 │   └── SoundModel+Title.swift    # iOS lokalizované názvy zvuků
 │
+├── RemoteContent/
+│   ├── RemoteContent.swift       # Model API, ověření, jazyk a platnost (čisté funkce)
+│   ├── RemoteContentManager.swift # Stažení, uložení, aktivace, výběr pozadí
+│   ├── SettingsBannerView.swift  # Banner v nastavení (API / vestavěný)
+│   └── RemoteContentDebugView.swift # Vývojářské menu (jen DEBUG)
+│
 ├── Managers/
 │   ├── Analytics.swift           # Signály TelemetryDeck a jejich parametry
+│   ├── AppLinkRouter.swift       # Otevření URL z obsahu (odkaz na timer interně)
 │   ├── SoundManager.swift        # AVAudioPlayer singleton
 │   └── TimerShareSheet.swift     # Share sheet odkazu na timer
 │
@@ -799,6 +812,62 @@ Aplikace na pozadí neběží – systém ji během chvíle uspí. Engine proto 
 > - Footer s `DEEPLINK_LOADED` má v kódu `// TODO: stylizovat jako banner/toast`.
 > - Landscape režim záměrně skrývá progress bar a header (zakomentováno v `landscapeTimerView`).
 > - Zastaralý `.github/copilot-instructions.md` popisuje **starou** architekturu (GustavViewModel, EditSheetView, max 5 timerů, UserDefaults JSON) – **neodpovídá** současnému stavu (SwiftData, TimerEngine, max 10). Tato dokumentace vychází z aktuálního kódu.
+
+---
+
+## 21 · Vzdálený obsah (API)
+
+Bannery, odkazy v nastavení a stažená pozadí se spravují na webu. Aplikace si stahuje JSON z `AppConfig.remoteContentURL` (`https://www.gustavtraining.com/wp-json/gustav-timer/v1/content`) a vždy jede z poslední **uložené** konfigurace. Síť ji jen na pozadí aktualizuje, takže se nikde nečeká ani nezobrazuje loading.
+
+```json
+{ "schemaVersion": 1, "generatedAt": "2026-11-09T17:30:00Z",
+  "banners":     [{ "id", "imageUrl", "url", "type", "language", "startAt", "endAt" }],
+  "links":       [{ "id", "label", "url", "language", "startAt", "endAt" }],
+  "backgrounds": [{ "id", "imageUrl", "language", "startAt", "endAt" }] }
+```
+
+### Soubory
+
+| Soubor | Co dělá |
+|---|---|
+| `RemoteContent/RemoteContent.swift` | Model, `RemoteContentConfig.decode` (verze, povinná pole, unikátní ID, URL), filtrování podle jazyka a platnosti, plán synchronizace. Čisté funkce |
+| `RemoteContent/RemoteContentManager.swift` | `@MainActor` singleton: synchronizace, ukládání, obrázky, výběr pozadí, diagnostika, debug akce |
+| `RemoteContent/SettingsBannerView.swift` | Banner v nastavení |
+| `RemoteContent/RemoteContentDebugView.swift` | Vývojářské menu, celé v `#if DEBUG` |
+| `Managers/AppLinkRouter.swift` | Otevření URL z banneru a odkazů |
+| `GustavTimerTests/RemoteContentTests.swift` | Dekódování, filtrování a synchronizace s podvrženou sítí |
+
+### Synchronizace
+
+- Spouští ji `ContentView` při spuštění a při každém návratu do popředí (`handleBecameActive`). Po úspěchu se nejdřív za **24 h**, po neúspěchu znovu při dalším otevření.
+- Postup: stáhnout JSON → ověřit → stáhnout chybějící obrázky (všech položek, kterým ještě neskončila platnost, bez ohledu na jazyk) → **teprve pak** atomicky zapsat `config.json`, přepnout konfiguraci, smazat nepotřebné obrázky a zapsat čas úspěchu.
+- Jakákoli chyba (síť, HTTP, neplatný JSON, jiná `schemaVersion`, obrázek, který není obrázek) celou aktualizaci zahodí a zůstane dosavadní konfigurace. Obrázky stažené během neúspěšného pokusu zůstanou a příště se už nestahují.
+- Neznámá pole se ignorují, neznámý `type` banneru = banner bez ikony.
+- Soubory: `Application Support/RemoteContent/config.json` (původní JSON) a `images/<SHA-256 URL>.<přípona>`. Název souboru je z celé URL včetně `?v=…`, takže nová verze obrázku = nový soubor. Složka je vyřazená ze zálohy.
+
+### Jazyk a platnost
+
+- `language` je dvoupísmenný kód (`cs`, `en`), `null` = všechny jazyky. Porovnává se s jazykem, ve kterém aplikace běží (`Bundle.main.preferredLocalizations`).
+- `startAt` / `endAt` jsou UTC, včetně, `null` = bez omezení. Vyhodnocuje se lokálně, i offline.
+- `RemoteContentManager.refresh()` přepočítá platnost a naplánuje další přepočet na nejbližší začátek nebo konec platnosti. Změna se tak projeví i bez nové synchronizace a bez restartu.
+
+### Zobrazení
+
+| Obsah | Pravidlo |
+|---|---|
+| Bannery | Platné stažené bannery v pořadí z API, jinak vestavěný banner. Pevný poměr 16:9 jako vestavěné bannery, obrázek s jiným poměrem se ořízne na středu (doporučeno 1920×1080). Víc bannerů = `TabView` s přepínáním po 5 s, po posledním znovu první. Ikona podle `type` (`timer`, `youtube` – logo, `app`, `web`, `appstore`) |
+| Odkazy | Platné odkazy z API nahoře v sekci „Více“, pak Hodnotit a Navrhni funkci. Bez platných odkazů z API se ukážou vestavěné (Weights, Instagram, YouTube) |
+| Pozadí | Stažená pozadí před vestavěnými. Viz [[#9 · Pozadí (Background)]] |
+
+**Odkaz na timer** (`https://gustavtraining.com/t?…`) z banneru neotevírá systém (Universal Link otevřený z vlastní aplikace by skončil v Safari). `AppLinkRouter` ho pošle notifikací do `TimerView` → `TimerViewModel.handleDeepLink(url:fromApp: true)`, tedy stejnou cestou jako příchozí odkaz. Ostatní URL otevře `UIApplication.open`.
+
+### Vývojářské menu (jen DEBUG)
+
+Konec nastavení → 5× klepnout na číslo verze. Ukazuje časy posledního úspěchu a pokusu, výsledek a chybu, čas další automatické synchronizace, `schemaVersion`, `generatedAt`, počty uložených / zobrazených položek a jazyk. Akce:
+
+- **Vynutit stažení API** – stejný proces jako běžná synchronizace, bez ohledu na 24 h.
+- **Resetovat čas synchronizace** – data zůstanou, příští otevření aplikace synchronizuje.
+- **Smazat stažená data** (s potvrzením) – smaže konfiguraci i obrázky, vynuluje čas úspěchu a vybrané vzdálené pozadí přepne na vestavěné 0. Nové stažení se samo nespustí, takže jde vidět stav před první synchronizací.
 
 ---
 

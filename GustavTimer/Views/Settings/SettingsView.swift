@@ -24,6 +24,10 @@ struct SettingsView: View {
     @AppStorage(AppPreferences.Key.deeplinkLoadToken) private var deeplinkLoadToken: Int = 0
     @AppStorage(AppPreferences.Key.lastAcknowledgedDeeplinkToken) private var lastAcknowledgedDeeplinkToken: Int = 0
     @AppStorage(AppPreferences.Key.deeplinkLoadedTitle) private var deeplinkLoadedTitle: String = ""
+    @ObservedObject private var remoteContent = RemoteContentManager.shared
+    #if DEBUG
+    @State private var showDebugMenu = false
+    #endif
     
     private var currentTimerData: TimerData {
         getOrCreateTimerData()
@@ -32,7 +36,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                banner
+                SettingsBannerView()
                 timerNameView
                 intervalsView
                 roundsView
@@ -40,6 +44,9 @@ struct SettingsView: View {
                 feedback
                 appearance
                 more
+                #if DEBUG
+                debugEntry
+                #endif
 //                about
             }
             .listSectionSpacing(24)
@@ -62,34 +69,13 @@ struct SettingsView: View {
             .onChange(of: deeplinkLoadToken) { _, _ in
                 checkForNewDeeplinkLoad()
             }
+            #if DEBUG
+            .navigationDestination(isPresented: $showDebugMenu) {
+                RemoteContentDebugView()
+            }
+            #endif
         }
         .tint(Color.gustavNavigationItemsColor)
-    }
-    
-    @ViewBuilder
-    var banner: some View {
-        SettingsSection(label: AppConfig.bannerName) {
-            let rn = Int.random(in: 0..<AppConfig.bannerImages.count)
-            
-            Image(AppConfig.bannerImages[rn].imageResource)
-                .resizable()
-                .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .overlay(alignment: .bottomLeading) {
-                    Image(.youtubeLogo)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 18)
-                        .padding()
-                }
-                .onTapGesture {
-                    if let url = AppConfig.bannerImages[rn].getURL() {
-                        Analytics.send(.externalLinkOpened, parameters: ["target": "banner"])
-                        UIApplication.shared.open(url)
-                    }
-                }
-        }
     }
     
     @ViewBuilder
@@ -233,21 +219,60 @@ struct SettingsView: View {
         }
     }
     
+    /// Odkazy z API jsou nahoře, za nimi pevné položky (hodnocení, nápady).
+    /// Vestavěné odkazy (Weights, Instagram, YouTube) se ukážou, jen když
+    /// žádný platný odkaz z API není.
     @ViewBuilder
     private var more: some View {
         SettingsSection(label: "MORE") {
+            let remoteLinks = remoteContent.links
+
+            ForEach(remoteLinks) { link in
+                Button(link.label) {
+                    Analytics.send(.externalLinkOpened, parameters: ["target": "remote_link", "link_id": link.id])
+                    AppLinkRouter.open(link.url)
+                }
+                .foregroundStyle(Color.gustavPink)
+            }
+
             ButtonLink(label: "RATE", URLString: AppConfig.reviewURL, target: "rate")
 
             Button("SUGGEST_FEATURE", action: openIdeasBoard)
                 .foregroundStyle(Color.gustavPink)
 
-            ButtonLink(label: "TRY_WEIGHTS", URLString: AppConfig.weightsURL, target: "weights")
-            
-            ButtonLink(label: "FOLLOW_INSTAGRAM", URLString: AppConfig.instagramURL, target: "instagram")
-            
-            ButtonLink(label: "WATCH_ON_YOUTUBE", URLString: AppConfig.youtubeURL, target: "youtube")
+            if remoteLinks.isEmpty {
+                ButtonLink(label: "TRY_WEIGHTS", URLString: AppConfig.weightsURL, target: "weights")
+
+                ButtonLink(label: "FOLLOW_INSTAGRAM", URLString: AppConfig.instagramURL, target: "instagram")
+
+                ButtonLink(label: "WATCH_ON_YOUTUBE", URLString: AppConfig.youtubeURL, target: "youtube")
+            }
         }
     }
+
+    #if DEBUG
+    /// Číslo verze. Pětinásobné klepnutí otevře vývojářské menu – jen v DEBUG.
+    private var debugEntry: some View {
+        Section {
+            Text(verbatim: appVersionText)
+                .font(.sectionFooter)
+                .foregroundStyle(Color.gustavNeutral)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    showDebugMenu = true
+                }
+                .listRowBackground(Color.clear)
+        }
+    }
+
+    private var appVersionText: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "\(version) (\(build))"
+    }
+    #endif
     
     @ViewBuilder
     private var about: some View {

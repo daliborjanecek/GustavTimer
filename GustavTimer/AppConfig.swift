@@ -28,6 +28,8 @@ struct AppConfig {
     static let ideasBoardURL: String = "https://gustavtraining.com/ideas/"
     /// Označení aplikace pro nástěnku – stejný web slouží i Gustav Weights.
     static let ideasBoardAppID: String = "timer"
+    /// Vzdáleně spravované bannery, odkazy a pozadí – viz `RemoteContentManager`.
+    static let remoteContentURL = URL(string: "https://www.gustavtraining.com/wp-json/gustav-timer/v1/content")!
 
     // Velikosti fontů
     static let largeFontSize: CGFloat = 30
@@ -41,6 +43,8 @@ struct AppConfig {
     static let maxTimerTitle: Int = 64
     
     // Background
+    /// Pozadí, na které se přepne, když vybrané vzdálené pozadí přestane platit.
+    static let defaultBackgroundIndex: Int = 0
     static let backgroundImages: [BackgroundImageModel] = [
         BackgroundImageModel(image: "Benchpress", author: "", source: "www.unsplash.com"),
         BackgroundImageModel(image: "Boxer", author: "", source: "www.unsplash.com"),

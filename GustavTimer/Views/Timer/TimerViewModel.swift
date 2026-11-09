@@ -321,7 +321,10 @@ class TimerViewModel: ObservableObject {
     /// Vstupní bod pro obě formy odkazu – historické `gustavtimerapp://timer?...`
     /// i Universal Link `https://gustavtraining.com/t?...`. Rozpoznání i normalizaci
     /// dělá `SharedTimerLink.route`, takže existuje jediná parsovací cesta.
-    func handleDeepLink(url: URL) {
+    ///
+    /// - Parameter fromApp: odkaz otevřený z obsahu aplikace (banner) přes
+    ///   `AppLinkRouter`, ne zvenku. Nepočítá se jako akvizice.
+    func handleDeepLink(url: URL, fromApp: Bool = false) {
         switch SharedTimerLink.route(url: url) {
         case .whatsNew:
             showingWhatsNew = true
@@ -329,7 +332,7 @@ class TimerViewModel: ObservableObject {
             // Odkaz přepíše rozběhnutý trénink – započítat ho dřív, než zmizí.
             trackSessionAbandoned(reason: "link")
             let link = handleSharedTimer(items: items)
-            trackSharedLinkOpened(url: url, items: items, link: link)
+            trackSharedLinkOpened(url: url, items: items, link: link, fromApp: fromApp)
         case nil:
             print("Neznámý deep link: \(url)")
         }
@@ -341,11 +344,13 @@ class TimerViewModel: ObservableObject {
     /// ho share sheet aplikace). Odkazy ze starších verzí ho nenesou, ty prozradí
     /// `link_type` (custom schéma = verze 2.2.1) a `has_settings` (bez zvuku
     /// a vibrací = verze před 2.4). `loaded` je `false`, když odkaz neobsahoval
-    /// jediný platný interval a timer se nezměnil.
-    private func trackSharedLinkOpened(url: URL, items: [URLQueryItem], link: SharedTimerLink?) {
+    /// jediný platný interval a timer se nezměnil. Odkaz z banneru v aplikaci
+    /// má `link_type=in_app`.
+    private func trackSharedLinkOpened(url: URL, items: [URLQueryItem], link: SharedTimerLink?, fromApp: Bool) {
         let source = SharedTimerLink.trackingValue(for: SharedTimerLink.sourceKey, in: items) ?? "unknown"
+        let linkType = fromApp ? "in_app" : (url.scheme?.lowercased() == "https" ? "universal" : "scheme")
         var parameters = [
-            "link_type": url.scheme?.lowercased() == "https" ? "universal" : "scheme",
+            "link_type": linkType,
             "source": source,
             "loaded": link != nil ? "true" : "false"
         ]
@@ -360,7 +365,9 @@ class TimerViewModel: ObservableObject {
         Analytics.send(.linkOpened, parameters: parameters)
 
         if link != nil {
-            AnalyticsAcquisition.reportLinkIfEligible(channel: source)
+            if !fromApp {
+                AnalyticsAcquisition.reportLinkIfEligible(channel: source)
+            }
         } else {
             TelemetryDeck.errorOccurred(id: "link.invalid", category: .userInput)
         }

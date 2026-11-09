@@ -10,6 +10,8 @@ import SwiftData
 
 struct BackgroundImageView: View {
     @AppStorage(AppPreferences.Key.backgroundIndex) var bgIndex: Int = 0
+    @AppStorage(AppPreferences.Key.remoteBackgroundID) var remoteBackgroundID: String = ""
+    @ObservedObject private var remoteContent = RemoteContentManager.shared
     @Query var customImage: [CustomImageModel]
     
     var body: some View {
@@ -27,6 +29,11 @@ struct BackgroundImageView: View {
     }
     
     func getImage() -> Image {
+        // Vzdálené pozadí, které už neplatí, přepne RemoteContentManager na
+        // výchozí – do té doby se zobrazí vestavěné podle indexu.
+        if !remoteBackgroundID.isEmpty, let remote = remoteContent.backgroundImage(id: remoteBackgroundID) {
+            return Image(uiImage: remote)
+        }
         if AppConfig.backgroundImages.indices.contains(bgIndex) {
             return AppConfig.backgroundImages[bgIndex].getImage()
         } else {
