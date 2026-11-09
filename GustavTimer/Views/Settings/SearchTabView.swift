@@ -41,6 +41,7 @@ struct SearchTabView: View {
                         ForEach(predefinedResults) { preset in
                             FavouriteRowView(settings: preset.settings, selected: isSelected(preset.settings))
                                 .onTapGesture {
+                                    Analytics.presetSelected(preset, screen: .search)
                                     select(preset.settings)
                                 }
                         }
@@ -82,7 +83,10 @@ struct SearchTabView: View {
     /// - Parameter tracking: uložený oblíbený, kterému se má započítat použití.
     ///   Presety ho nemají – nejsou v databázi, takže není kam počítat.
     private func select(_ settings: TimerSettings, tracking timer: TimerData? = nil) {
-        timer?.selected()
+        if let timer {
+            timer.selected()
+            Analytics.favouriteSelected(timer, screen: .search)
+        }
         TimerData.mainTimer(in: context).settings = settings
         try? context.save()
     }

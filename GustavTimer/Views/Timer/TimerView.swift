@@ -78,6 +78,12 @@ struct TimerView: View {
                 present(.whatsNew)
             }
         }
+        .onChange(of: portraitFormat) { _, format in
+            trackDisplayFormat(format, orientation: "portrait")
+        }
+        .onChange(of: landscapeFormat) { _, format in
+            trackDisplayFormat(format, orientation: "landscape")
+        }
         .onChange(of: scenePhase) { _, newPhase in
             // Návrat z pozadí srovná odpočet s reálným časem.
             viewModel.handleScenePhase(newPhase)
@@ -132,7 +138,7 @@ private extension TimerView {
         .statusBar(hidden: true)
         .persistentSystemOverlays(.hidden)
         // Na šířku nejsou tlačítka – timer se ovládá jen tapy.
-        .playbackTaps(onTap: viewModel.startStopTimer, onDoubleTap: skipIfRunning)
+        .playbackTaps(onTap: { viewModel.startStopTimer(input: .landscapeTap) }, onDoubleTap: skipIfRunning)
     }
 }
 
@@ -191,7 +197,7 @@ private extension TimerView {
                     .foregroundColor(Color.gustavVolt)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .contentShape(Rectangle())
-                    .playbackTaps(onTap: viewModel.startStopTimer, onDoubleTap: skipIfRunning)
+                    .playbackTaps(onTap: { startStopByTap() }, onDoubleTap: skipIfRunning)
                     .tag(pageFormat)
             }
         }
@@ -227,12 +233,12 @@ private extension TimerView {
             CountdownStartButton(
                 countdownValue: viewModel.countdownValue,
                 countdownDuration: AppConfig.countdownDuration,
-                action: viewModel.startStopTimer
+                action: { viewModel.startStopTimer(input: .button) }
             )
         } else {
             let isBeforeFirstStart = !viewModel.isTimerRunning && viewModel.finishedRounds == 0
             ControlButton(
-                action: viewModel.startStopTimer,
+                action: { viewModel.startStopTimer(input: .button) },
                 label: isBeforeFirstStart && viewModel.hasCountdown ? "COUNTDOWN" : (viewModel.isTimerRunning ? "STOP" : "START"),
                 description: orientation.isLandscape ? nil : startButtonDescription.map { LocalizedStringKey($0) },
                 color: viewModel.isTimerRunning ? .gustavPink : .gustavVolt,
@@ -330,6 +336,19 @@ private extension TimerView {
     /// Dvojtap na odpočtu přeskočí interval jen za běhu – stejně jako tlačítko,
     /// které se na skip mění až po startu. Stojící timer by skip „uschoval“
     /// a interval by po startu zmizel.
+    /// Tap na odpočet. Odpočet je na výšku i na šířku stejný view, takže
+    /// orientaci rozliší až tady.
+    func startStopByTap() {
+        viewModel.startStopTimer(input: orientation.isLandscape ? .landscapeTap : .tap)
+    }
+
+    func trackDisplayFormat(_ format: TimeDisplayFormat, orientation: String) {
+        Analytics.send(.displayFormatChanged, parameters: [
+            "orientation": orientation,
+            "format": format.rawValue
+        ])
+    }
+
     func skipIfRunning() {
         guard viewModel.isTimerRunning else { return }
         viewModel.skipLap()

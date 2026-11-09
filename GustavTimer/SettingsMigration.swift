@@ -48,7 +48,9 @@ enum SettingsMigration {
         }
 
         // Tikání v modelu dosud neexistovalo, takže se přebírá vždy.
-        active.isTicking = defaults.bool(forKey: AppPreferences.Key.Legacy.isTicking)
+        active.ticking = TickingMode(
+            legacyIsTicking: defaults.bool(forKey: AppPreferences.Key.Legacy.isTicking)
+        )
 
         // Výběr zvuku je v modelu aktuální; respektuje se jen tvrdé vypnutí.
         if defaults.object(forKey: AppPreferences.Key.Legacy.isSoundEnabled) != nil,

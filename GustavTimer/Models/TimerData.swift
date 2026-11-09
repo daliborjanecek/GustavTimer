@@ -32,11 +32,20 @@ class TimerData {
 
     var hasCountdown: Bool = true
 
-    /// Tikání každou sekundu. Do verze 2.3 žilo v UserDefaults, takže se
+    /// Tikání každou sekundu – původní reprezentace, která znala jen
+    /// zapnuto/vypnuto. Do verze 2.3 žilo v UserDefaults, takže se
     /// neukládalo do oblíbených ani nepřenášelo odkazem. Default hodnota drží
     /// lightweight migraci schématu a zároveň odpovídá dosavadnímu chování
     /// uložených timerů (tikání jejich součástí nebylo).
+    ///
+    /// Číst a zapisovat jen přes `ticking`. Pole zůstává ve schématu, aby
+    /// z něj šlo odvodit režim timerů uložených dřív, než vznikl `tickingMode`.
     var isTicking: Bool = false
+
+    /// Režim tikání. `nil` = timer uložený před zavedením režimů –
+    /// skutečný režim se pak odvodí z `isTicking` (viz `ticking`).
+    /// Volitelný typ drží lightweight migraci schématu bez ztráty dat.
+    var tickingMode: TickingMode? = nil
 
     var intervals: [IntervalData] = [
         IntervalData(value: 30, name: "Work"),
@@ -84,7 +93,7 @@ extension TimerData {
                 rounds: rounds,
                 sound: selectedSound,
                 isVibrating: isVibrating,
-                isTicking: isTicking,
+                ticking: ticking,
                 hasCountdown: hasCountdown
             )
         }
@@ -94,8 +103,24 @@ extension TimerData {
             rounds = newValue.rounds
             selectedSound = newValue.sound
             isVibrating = newValue.isVibrating
-            isTicking = newValue.isTicking
+            ticking = newValue.ticking
             hasCountdown = newValue.hasCountdown
+        }
+    }
+
+    /// Režim tikání – jediný přístup k `tickingMode` a `isTicking`.
+    ///
+    /// Timer uložený před zavedením režimů má `tickingMode == nil`, takže se
+    /// režim odvodí ze starého příznaku: zapnuté tikání = tikání každou sekundu,
+    /// což přesně odpovídá tomu, jak se dosud choval. Zápis drží oba údaje
+    /// v souladu.
+    ///
+    ///     Picker("SET_TICKING", selection: setting(\.ticking)) { ... }
+    var ticking: TickingMode {
+        get { tickingMode ?? TickingMode(legacyIsTicking: isTicking) }
+        set {
+            tickingMode = newValue
+            isTicking = newValue != .off
         }
     }
 
@@ -108,7 +133,7 @@ extension TimerData {
             isVibrating: settings.isVibrating,
             intervals: settings.intervals
         )
-        self.isTicking = settings.isTicking
+        self.ticking = settings.ticking
         self.hasCountdown = settings.hasCountdown
     }
 

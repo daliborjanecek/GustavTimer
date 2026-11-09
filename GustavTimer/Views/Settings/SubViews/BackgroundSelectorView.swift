@@ -111,6 +111,7 @@ struct BackgroundSelectorView: View {
     
     func setBG(index: Int) {
         self.bgIndex = index
+        Analytics.settingChanged("background", value: index == -1 ? "custom" : String(index))
     }
     
     func getImage() -> Image {

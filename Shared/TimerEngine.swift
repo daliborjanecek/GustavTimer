@@ -124,7 +124,12 @@ enum TimerFeedback {
     
     /// Zapalí se při každé změně zobrazené sekundy (tj. 1× za sekundu).
     /// Typicky zvukový nebo haptický tik odpočítávání.
-    case secondTick
+    ///
+    /// `remainingSeconds` je právě zobrazená hodnota odpočtu (vždy ≥ 1 –
+    /// místo nuly přijde přechod intervalu). Podle ní si platforma rozhodne,
+    /// jestli tikat pořád, nebo jen pár sekund před koncem
+    /// (`TickingMode.shouldTick(remainingSeconds:)`).
+    case secondTick(remainingSeconds: Int)
 }
 
 // MARK: - TimerEngine
@@ -718,7 +723,7 @@ class TimerEngine: ObservableObject {
         let currentSecond = c.attoseconds > 0 ? Int(c.seconds) + 1 : Int(c.seconds)
         if currentSecond != lastSecond && currentSecond > 0 {
             lastSecond = currentSecond
-            onFeedback?(.secondTick)
+            onFeedback?(.secondTick(remainingSeconds: currentSecond))
         }
     }
 

@@ -49,6 +49,9 @@ final class AppPreferences: ObservableObject {
         static let deeplinkLoadToken = "deeplinkLoadToken"
         static let deeplinkLoadedTitle = "deeplinkLoadedTitle"
         static let lastAcknowledgedDeeplinkToken = "lastAcknowledgedDeeplinkToken"
+        /// První spuštění s analytikou akvizice – viz `AnalyticsAcquisition`.
+        static let installDate = "installDate"
+        static let acquisitionReported = "acquisitionReported"
 
         /// Klíče, které do verze 2.3 držely nastavení timeru. Po migraci se mažou –
         /// viz `SettingsMigration`.

@@ -7,7 +7,6 @@
 
 import SwiftUI
 import GustavUICore
-import TelemetryDeck
 
 struct SoundSettingsView: View {
     
@@ -23,6 +22,7 @@ struct SoundSettingsView: View {
                 Toggle(isOn: .init(get: {
                     selectedSound != nil
                 }, set: { bool in
+                    Analytics.settingChanged("sound_enabled", value: bool)
                     if bool {
                         selectedSound = lastSelectedSound
                     } else {
@@ -84,12 +84,7 @@ struct SoundSettingsView: View {
         self.selectedSound = sound
         self.lastSelectedSound = sound
 
-        TelemetryDeck.signal(
-            "timer.sound_selected",
-            parameters: [
-                "sound": sound.rawValue
-            ]
-        )
+        Analytics.send(.soundSelected, parameters: ["sound": sound.rawValue])
     }
 }
 

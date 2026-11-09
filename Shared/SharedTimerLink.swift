@@ -21,6 +21,10 @@
 //
 //      .../t?Work=20&Rest=10&rounds=8&_sound=bicycle&_vibe=1&_tick=0&_cd=1&_title=TABATA
 //
+//  `_tick` nese režim tikání: `0` = bez tikání, `1` = každou sekundu,
+//  `3` = jen poslední 3 sekundy intervalu. Starší verze aplikace hodnotě `3`
+//  nerozumí, takže si u ní příjemce nechá své tikání – nic se nerozbije.
+//
 //  Klíčové pravidlo: **chybějící parametr znamená „zachovej současné“**,
 //  ne „vrať na výchozí“. Díky tomu se odkaz z verze 2.2/2.3 chová přesně
 //  jako dřív – nesáhne na zvuk ani vibrace příjemce – a zároveň jde rozlišit
@@ -60,8 +64,8 @@ struct SharedTimerLink: Equatable {
     /// Vibrace z parametru `_vibe`. `nil` = odkaz je neřeší.
     let isVibrating: Bool?
 
-    /// Tikání z parametru `_tick`. `nil` = odkaz ho neřeší.
-    let isTicking: Bool?
+    /// Režim tikání z parametru `_tick`. `nil` = odkaz ho neřeší.
+    let ticking: TickingMode?
 
     /// Úvodní odpočet z parametru `_cd`. `nil` = odkaz ho neřeší.
     let hasCountdown: Bool?
@@ -72,7 +76,7 @@ struct SharedTimerLink: Equatable {
         title: String? = nil,
         sound: SharedSoundSelection? = nil,
         isVibrating: Bool? = nil,
-        isTicking: Bool? = nil,
+        ticking: TickingMode? = nil,
         hasCountdown: Bool? = nil
     ) {
         self.intervals = intervals
@@ -80,7 +84,7 @@ struct SharedTimerLink: Equatable {
         self.title = title
         self.sound = sound
         self.isVibrating = isVibrating
-        self.isTicking = isTicking
+        self.ticking = ticking
         self.hasCountdown = hasCountdown
     }
 }
@@ -153,7 +157,7 @@ extension SharedTimerLink {
     /// Haptická odezva.
     static let vibrationKey = "_vibe"
 
-    /// Tikání každou sekundu.
+    /// Režim tikání. Hodnoty viz `TickingMode.linkValue`.
     static let tickingKey = "_tick"
 
     /// Úvodní odpočet 3-2-1.
@@ -270,7 +274,7 @@ extension SharedTimerLink {
         var title: String?
         var sound: SharedSoundSelection?
         var isVibrating: Bool?
-        var isTicking: Bool?
+        var ticking: TickingMode?
         var hasCountdown: Bool?
 
         for item in items {
@@ -312,7 +316,7 @@ extension SharedTimerLink {
                     if isVibrating == nil { isVibrating = parseBool(item.value) }
 
                 case Self.tickingKey:
-                    if isTicking == nil { isTicking = parseBool(item.value) }
+                    if ticking == nil { ticking = parseTicking(item.value) }
 
                 case Self.countdownKey:
                     if hasCountdown == nil { hasCountdown = parseBool(item.value) }
@@ -356,7 +360,7 @@ extension SharedTimerLink {
             title: title,
             sound: sound,
             isVibrating: isVibrating,
-            isTicking: isTicking,
+            ticking: ticking,
             hasCountdown: hasCountdown
         )
     }
@@ -372,6 +376,21 @@ extension SharedTimerLink {
         case "0", "false", "no", "off": return false
         default:                        return nil
         }
+    }
+
+    /// Režim tikání ze sdíleného odkazu.
+    ///
+    /// Vedle vlastních hodnot (`0`, `1`, `3`) bere i booleovské tvary –
+    /// odkazy z doby, kdy tikání znalo jen zapnuto/vypnuto, tak dál fungují
+    /// a zapnuté tikání z nich znamená tikání každou sekundu, jako dřív.
+    ///
+    ///     "3"     → .finalSeconds
+    ///     "1"     → .everySecond     (stejně tak "true", "yes", "on")
+    ///     "0"     → .off             (stejně tak "false", "no", "off")
+    ///     "2"     → nil              (nesrozumitelné – zachovej současné)
+    private static func parseTicking(_ value: String?) -> TickingMode? {
+        if let mode = TickingMode(linkValue: value) { return mode }
+        return parseBool(value).map(TickingMode.init(legacyIsTicking:))
     }
 }
 
@@ -393,7 +412,7 @@ extension SharedTimerLink {
         if let title { result.name = title }
         if let sound { result.sound = sound.model }
         if let isVibrating { result.isVibrating = isVibrating }
-        if let isTicking { result.isTicking = isTicking }
+        if let ticking { result.ticking = ticking }
         if let hasCountdown { result.hasCountdown = hasCountdown }
         return result
     }
@@ -449,12 +468,12 @@ extension SharedTimerLink {
 
         guard !items.isEmpty else { return nil }
 
-        // Všechny hodnoty níž jsou holé ASCII (číslice, rawValue zvuku, 0/1),
+        // Všechny hodnoty níž jsou holé ASCII (číslice, rawValue zvuku, 0/1/3),
         // takže procentní kódování nepotřebují. Název ano – ten jde přes encode().
         items.append(URLQueryItem(name: roundsKey, value: String(settings.rounds)))
         items.append(URLQueryItem(name: soundKey, value: settings.sound?.rawValue ?? soundOffValue))
         items.append(URLQueryItem(name: vibrationKey, value: settings.isVibrating ? "1" : "0"))
-        items.append(URLQueryItem(name: tickingKey, value: settings.isTicking ? "1" : "0"))
+        items.append(URLQueryItem(name: tickingKey, value: settings.ticking.linkValue))
         items.append(URLQueryItem(name: countdownKey, value: settings.hasCountdown ? "1" : "0"))
 
         let trimmedTitle = settings.name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -473,5 +492,111 @@ extension SharedTimerLink {
 
     private static func encode(_ value: String) -> String? {
         value.addingPercentEncoding(withAllowedCharacters: queryAllowed)
+    }
+}
+
+// MARK: - Původ odkazu (analytika)
+
+extension SharedTimerLink {
+
+    /// Kanál, kterým odesílatel odkaz poslal. Zapisuje ho share sheet
+    /// v aplikaci podle zvolené aktivity (`whatsapp`, `messages`, `copy`…).
+    static let sourceKey = "utm_source"
+
+    /// Kampaň – aplikace ji nezapisuje, nesou ji odkazy z webu a příspěvků.
+    static let campaignKey = "utm_campaign"
+
+    /// Nejdelší hodnota trackovacího parametru, která se pošle do analytiky.
+    private static let maxTrackingValueLength = 64
+
+    /// Krátké názvy kanálů pro známé aktivity share sheetu. Porovnává se
+    /// podřetězcem bez ohledu na velikost písmen, vyhrává první shoda.
+    private static let shareChannels: [(match: String, channel: String)] = [
+        ("com.apple.UIKit.activity.Message", "messages"),
+        ("com.apple.UIKit.activity.Mail", "mail"),
+        ("com.apple.UIKit.activity.CopyToPasteboard", "copy"),
+        ("com.apple.UIKit.activity.AirDrop", "airdrop"),
+        ("com.apple.mobilenotes", "notes"),
+        ("whatsapp", "whatsapp"),
+        ("telegra", "telegram"),
+        ("messenger", "messenger"),
+        ("instagram", "instagram"),
+        ("facebook", "facebook"),
+        ("signal", "signal"),
+        ("discord", "discord"),
+        ("slack", "slack")
+    ]
+
+    /// Kanál sdílení z identifikátoru aktivity share sheetu (`UIActivity.ActivityType.rawValue`).
+    /// Neznámé aplikace zůstanou pod svým identifikátorem, ať se dají dohledat.
+    ///
+    ///     "com.apple.UIKit.activity.Message"      → "messages"
+    ///     "net.whatsapp.WhatsApp.ShareExtension"  → "whatsapp"
+    ///     "com.example.Share"                     → "com.example.Share"
+    ///     nil                                     → "unknown"
+    static func shareChannel(activityType: String?) -> String {
+        guard let activityType, !activityType.isEmpty else { return "unknown" }
+        let lower = activityType.lowercased()
+        if let known = shareChannels.first(where: { lower.contains($0.match.lowercased()) }) {
+            return known.channel
+        }
+        return activityType
+    }
+
+    /// Odkaz doplněný o kanál, kterým odchází. Parser `utm_*` přeskakuje,
+    /// takže na timer u příjemce nemá vliv – poslouží jen analytice při otevření.
+    /// Odkaz, který už kanál nese, zůstane beze změny.
+    ///
+    ///     .../t?Work=40&rounds=4  +  "whatsapp"  →  .../t?Work=40&rounds=4&utm_source=whatsapp
+    static func url(_ url: URL, taggedWith channel: String) -> URL {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let encoded = encode(channel), !encoded.isEmpty else { return url }
+
+        var items = components.percentEncodedQueryItems ?? []
+        guard !items.contains(where: { $0.name.lowercased() == sourceKey }) else { return url }
+
+        items.append(URLQueryItem(name: sourceKey, value: encoded))
+        components.percentEncodedQueryItems = items
+        return components.url ?? url
+    }
+
+    /// Hodnota trackovacího parametru z příchozího odkazu, např. `utm_source`.
+    /// `nil`, pokud ho odkaz nenese – typicky odkaz ze starší verze aplikace.
+    static func trackingValue(for key: String, in items: [URLQueryItem]) -> String? {
+        let lowerKey = key.lowercased()
+        for item in items where item.name.lowercased() == lowerKey {
+            let trimmed = (item.value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { return String(trimmed.prefix(maxTrackingValueLength)) }
+        }
+        return nil
+    }
+}
+
+// MARK: - Tikání v odkazu
+
+extension TickingMode {
+
+    /// Hodnota parametru `_tick`. `0` a `1` odpovídají dřívějšímu
+    /// zapnuto/vypnuto, takže odkaz bez tikání nebo s tikáním každou sekundu
+    /// vypadá stejně jako z verze, která režimy neznala.
+    ///
+    ///     .off          → "0"
+    ///     .everySecond  → "1"
+    ///     .finalSeconds → "3"   (počet tikajících sekund)
+    var linkValue: String {
+        switch self {
+        case .off:          return "0"
+        case .everySecond:  return "1"
+        case .finalSeconds: return String(Self.finalSecondsCount)
+        }
+    }
+
+    /// Opak `linkValue`. `nil` pro cokoliv, co `linkValue` nevrací.
+    init?(linkValue: String?) {
+        guard let linkValue,
+              let mode = Self.allCases.first(where: { $0.linkValue == linkValue }) else {
+            return nil
+        }
+        self = mode
     }
 }

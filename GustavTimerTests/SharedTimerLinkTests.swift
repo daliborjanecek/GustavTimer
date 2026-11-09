@@ -25,7 +25,7 @@ private func settings(
     name: String = "",
     sound: SoundModel? = .beep,
     isVibrating: Bool = false,
-    isTicking: Bool = false,
+    ticking: TickingMode = .off,
     hasCountdown: Bool = true
 ) -> TimerSettings {
     TimerSettings(
@@ -34,7 +34,7 @@ private func settings(
         rounds: rounds,
         sound: sound,
         isVibrating: isVibrating,
-        isTicking: isTicking,
+        ticking: ticking,
         hasCountdown: hasCountdown
     )
 }
@@ -406,7 +406,7 @@ private let distinctiveSettings = TimerSettings(
     rounds: 7,
     sound: .gong,
     isVibrating: true,
-    isTicking: true,
+    ticking: .everySecond,
     hasCountdown: false
 )
 
@@ -418,7 +418,7 @@ func legacyLinkPreservesSettings() throws {
 
     #expect(result.sound == .gong)
     #expect(result.isVibrating == true)
-    #expect(result.isTicking == true)
+    #expect(result.ticking == .everySecond)
     #expect(result.hasCountdown == false)
     #expect(result.name == "MŮJ TIMER")
 
@@ -439,7 +439,7 @@ func newParametersOverride() throws {
 
     #expect(result.sound == .whistle)
     #expect(result.isVibrating == false)
-    #expect(result.isTicking == false)
+    #expect(result.ticking == .off)
     #expect(result.hasCountdown == true)
     #expect(result.name == "TABATA")
 }
@@ -487,7 +487,70 @@ func nonsenseBooleanIsIgnored(_ query: String) throws {
 func firstOccurrenceWinsForSettings() throws {
     let link = try #require(parse("https://gustavtraining.com/t?Work=40&_sound=gong&_sound=bell&_tick=1&_tick=0"))
     #expect(link.sound == .sound(.gong))
-    #expect(link.isTicking == true)
+    #expect(link.ticking == .everySecond)
+}
+
+// MARK: - Režim tikání
+
+@Test("_tick nese režim tikání", arguments: [
+    ("_tick=0", TickingMode.off),
+    ("_tick=1", TickingMode.everySecond),
+    ("_tick=3", TickingMode.finalSeconds)
+])
+func tickingModeIsParsed(_ query: String, _ expected: TickingMode) throws {
+    let link = try #require(parse("https://gustavtraining.com/t?Work=40&\(query)"))
+    #expect(link.ticking == expected)
+    #expect(link.applied(to: distinctiveSettings).ticking == expected)
+}
+
+@Test("_tick bere i booleovské tvary z doby zapnuto/vypnuto", arguments: [
+    ("_tick=true", TickingMode.everySecond), ("_tick=on", TickingMode.everySecond),
+    ("_tick=false", TickingMode.off), ("_tick=no", TickingMode.off)
+])
+func tickingAcceptsBooleanForms(_ query: String, _ expected: TickingMode) throws {
+    let link = try #require(parse("https://gustavtraining.com/t?Work=40&\(query)"))
+    #expect(link.ticking == expected)
+}
+
+@Test("Nesrozumitelný _tick se tváří, jako by v odkazu nebyl", arguments: [
+    "_tick=2", "_tick=4", "_tick=mozna", "_tick="
+])
+func nonsenseTickingIsIgnored(_ query: String) throws {
+    let link = try #require(parse("https://gustavtraining.com/t?Work=40&\(query)"))
+    #expect(link.ticking == nil)
+    #expect(link.applied(to: distinctiveSettings).ticking == .everySecond)
+}
+
+@Test("Generátor zapíše režim tikání do _tick", arguments: [
+    (TickingMode.off, "0"),
+    (TickingMode.everySecond, "1"),
+    (TickingMode.finalSeconds, "3")
+])
+func tickingModeIsGenerated(_ mode: TickingMode, _ value: String) throws {
+    let url = try #require(SharedTimerLink.url(settings: settings(
+        [IntervalData(value: 40, name: "Work")],
+        ticking: mode
+    )))
+    #expect(url.absoluteString == "https://gustavtraining.com/t?Work=40&rounds=-1&_sound=beep&_vibe=0&_tick=\(value)&_cd=1")
+}
+
+@Test("Tikání každou sekundu tiká vždy, vypnuté nikdy", arguments: [0, 1, 3, 4, 59, 600])
+func everySecondAndOffTicking(_ remainingSeconds: Int) {
+    #expect(TickingMode.everySecond.shouldTick(remainingSeconds: remainingSeconds))
+    #expect(!TickingMode.off.shouldTick(remainingSeconds: remainingSeconds))
+}
+
+@Test("Poslední 3 sekundy tikají jen při 3, 2, 1 a na přechodu", arguments: [
+    (600, false), (10, false), (4, false), (3, true), (2, true), (1, true), (0, true)
+])
+func finalSecondsTicking(_ remainingSeconds: Int, _ expected: Bool) {
+    #expect(TickingMode.finalSeconds.shouldTick(remainingSeconds: remainingSeconds) == expected)
+}
+
+@Test("Dřívější zapnuté tikání odpovídá tikání každou sekundu")
+func legacyTickingFlagMapsToMode() {
+    #expect(TickingMode(legacyIsTicking: true) == .everySecond)
+    #expect(TickingMode(legacyIsTicking: false) == .off)
 }
 
 @Test("Neznámý rezervovaný klíč se ignoruje a nevytvoří interval")
@@ -507,7 +570,7 @@ func roundTripPreservesAllSettings() throws {
         rounds: 4,
         sound: .whistle,
         isVibrating: true,
-        isTicking: true,
+        ticking: .finalSeconds,
         hasCountdown: false
     )
 
@@ -553,4 +616,53 @@ func intervalNamedLikeNewReservedKey() throws {
     // …a skutečné parametry zůstaly nedotčené.
     #expect(link.sound == .sound(.bell))
     #expect(link.hasCountdown == true)
+}
+
+// MARK: - Původ odkazu (analytika)
+
+@Test("Kanál sdílení z aktivity share sheetu", arguments: [
+    ("com.apple.UIKit.activity.Message", "messages"),
+    ("com.apple.UIKit.activity.CopyToPasteboard", "copy"),
+    ("net.whatsapp.WhatsApp.ShareExtension", "whatsapp"),
+    ("com.facebook.Messenger.ShareExtension", "messenger"),
+    ("ph.telegra.Telegraph.Share", "telegram"),
+    ("com.example.Share", "com.example.Share")
+])
+func shareChannelFromActivity(activityType: String, channel: String) {
+    #expect(SharedTimerLink.shareChannel(activityType: activityType) == channel)
+}
+
+@Test("Bez aktivity je kanál neznámý")
+func shareChannelWithoutActivity() {
+    #expect(SharedTimerLink.shareChannel(activityType: nil) == "unknown")
+}
+
+@Test("Označený odkaz nese kanál a timer se nezmění")
+func taggedLinkKeepsTimer() throws {
+    let original = settings([IntervalData(value: 40, name: "Work")], rounds: 4, name: "THE COMEBACK")
+    let url = try #require(SharedTimerLink.url(settings: original))
+    let tagged = SharedTimerLink.url(url, taggedWith: "whatsapp")
+
+    #expect(tagged.absoluteString == url.absoluteString + "&utm_source=whatsapp")
+    #expect(parse(tagged.absoluteString) == parse(url.absoluteString))
+}
+
+@Test("Odkaz, který už kanál nese, se znovu neoznačí")
+func alreadyTaggedLinkStaysUnchanged() throws {
+    let url = try #require(URL(string: "https://gustavtraining.com/t?Work=40&rounds=4&utm_source=web"))
+    #expect(SharedTimerLink.url(url, taggedWith: "copy") == url)
+}
+
+@Test("Kanál a kampaň se dají přečíst z příchozího odkazu")
+func trackingValuesFromIncomingLink() throws {
+    let url = try #require(URL(string: "https://gustavtraining.com/t?Work=40&UTM_SOURCE=instagram&utm_campaign=&utm_campaign=jaro"))
+    guard case .sharedTimer(let items)? = SharedTimerLink.route(url: url) else {
+        Issue.record("Odkaz se nerozpoznal")
+        return
+    }
+
+    #expect(SharedTimerLink.trackingValue(for: SharedTimerLink.sourceKey, in: items) == "instagram")
+    // Prázdná hodnota se přeskočí, vyhraje první neprázdná.
+    #expect(SharedTimerLink.trackingValue(for: SharedTimerLink.campaignKey, in: items) == "jaro")
+    #expect(SharedTimerLink.trackingValue(for: "utm_medium", in: items) == nil)
 }

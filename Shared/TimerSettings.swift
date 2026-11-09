@@ -51,8 +51,8 @@ struct TimerSettings: Equatable, Codable, Sendable {
     /// Haptická odezva při přechodu intervalu, konci kola a konci timeru.
     var isVibrating: Bool
 
-    /// Tikání při každé uplynulé sekundě.
-    var isTicking: Bool
+    /// Kdy timer tiká – vůbec, každou sekundu, nebo jen před koncem intervalu.
+    var ticking: TickingMode
 
     /// Odpočet 3-2-1 před prvním kolem.
     var hasCountdown: Bool
@@ -63,7 +63,7 @@ struct TimerSettings: Equatable, Codable, Sendable {
         rounds: Int,
         sound: SoundModel?,
         isVibrating: Bool,
-        isTicking: Bool,
+        ticking: TickingMode,
         hasCountdown: Bool
     ) {
         self.name = name
@@ -71,7 +71,7 @@ struct TimerSettings: Equatable, Codable, Sendable {
         self.rounds = rounds
         self.sound = sound
         self.isVibrating = isVibrating
-        self.isTicking = isTicking
+        self.ticking = ticking
         self.hasCountdown = hasCountdown
     }
 
@@ -85,7 +85,7 @@ struct TimerSettings: Equatable, Codable, Sendable {
         rounds: -1,
         sound: .beep,
         isVibrating: false,
-        isTicking: false,
+        ticking: .off,
         hasCountdown: true
     )
 
@@ -105,5 +105,48 @@ struct TimerSettings: Equatable, Codable, Sendable {
         lhs.name = ""
         rhs.name = ""
         return lhs == rhs
+    }
+}
+
+// MARK: - Tikání
+
+/// Režim tikání (`tick.mp3`) během intervalu.
+///
+///     .off           – ticho
+///     .everySecond   – tik při každé uplynulé sekundě
+///     .finalSeconds  – tik jen v posledních třech sekundách intervalu (3, 2, 1)
+///
+/// O tom, jestli tik zazní, rozhoduje `shouldTick(remainingSeconds:)` – engine
+/// jen hlásí změnu zobrazené sekundy, platformní vrstva se ptá tady.
+enum TickingMode: String, Codable, CaseIterable, Sendable {
+    case off
+    case everySecond
+    case finalSeconds
+
+    /// Kolik posledních sekund intervalu tiká režim `.finalSeconds`.
+    static let finalSecondsCount = 3
+
+    /// Má zaznít tik, když odpočet intervalu právě ukázal `remainingSeconds`?
+    ///
+    ///     TickingMode.finalSeconds.shouldTick(remainingSeconds: 4)  // false
+    ///     TickingMode.finalSeconds.shouldTick(remainingSeconds: 3)  // true
+    ///     TickingMode.everySecond.shouldTick(remainingSeconds: 42)  // true
+    ///
+    /// Přechod intervalu odpovídá `remainingSeconds == 0`.
+    func shouldTick(remainingSeconds: Int) -> Bool {
+        switch self {
+        case .off:
+            return false
+        case .everySecond:
+            return true
+        case .finalSeconds:
+            return remainingSeconds <= Self.finalSecondsCount
+        }
+    }
+
+    /// Převod z dřívějšího `isTicking: Bool`, který znal jen zapnuto/vypnuto.
+    /// Zapnuté tikání tikalo každou sekundu.
+    init(legacyIsTicking: Bool) {
+        self = legacyIsTicking ? .everySecond : .off
     }
 }

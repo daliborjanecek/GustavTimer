@@ -8,6 +8,7 @@
 import SwiftUI
 import StoreKit
 import SwiftData
+import TelemetryDeck
 
 /// Modály nad timerem. SwiftUI umí na jednom view prezentovat jen jeden sheet
 /// naráz, takže je držíme v jediném stavu – dřív se onboarding a „co je nového“
@@ -36,6 +37,9 @@ struct ContentView: View {
                     OnboardingView()
                 }
             }
+            .onChange(of: activeSheet) { oldValue, newValue in
+                trackSheetChange(from: oldValue, to: newValue)
+            }
             .onAppear {
                 initializeDataIfNeeded()
                 SettingsMigration.runIfNeeded(context: context)
@@ -54,6 +58,18 @@ struct ContentView: View {
         guard lastOnboardingVersion != AppConfig.onboardingVersion else { return }
         lastOnboardingVersion = AppConfig.onboardingVersion
         activeSheet = .onboarding
+    }
+
+    /// „Co je nového“ se počítá při zobrazení, onboarding při zavření.
+    /// Onboarding nemá vlastní callback na dokončení (je ze sdíleného
+    /// GustavUI), takže zavření tlačítkem i swipem se bere jako dokončení.
+    private func trackSheetChange(from oldValue: AppSheet?, to newValue: AppSheet?) {
+        if newValue == .whatsNew {
+            Analytics.send(.whatsNewShown, parameters: ["version": String(AppConfig.version)])
+        }
+        if oldValue == .onboarding, newValue != .onboarding {
+            TelemetryDeck.onboardingCompleted()
+        }
     }
 }
 

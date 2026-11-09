@@ -195,7 +195,7 @@ Engine při určitých momentech zavolá `onFeedback(...)`:
 | `.timerEnd` | Poslední kolo dokončeno (engine se resetuje) | Error vibrace + zvuk + počítadlo dokončení |
 | `.countdownTick` | Každý tik úvodního odpočtu (3, 2, 1) | Lehká vibrace |
 | `.countdownEnd` | Konec úvodního odpočtu, timer startuje | Výraznější vibrace |
-| `.secondTick` | Každá změna zobrazené sekundy (1×/s) | Zvukové „tikání" |
+| `.secondTick(remainingSeconds:)` | Každá změna zobrazené sekundy (1×/s), nese zobrazenou hodnotu | Zvukové „tikání" podle `TickingMode` |
 
 ### Logika přechodů
 
@@ -236,7 +236,8 @@ Hlavní entita časovače. Ukládá se přes SwiftData.
 | `rounds` | `Int` | Počet kol (`-1` = smyčka) |
 | `selectedSound` | `SoundModel?` | Zvuk (`nil` = ztlumeno) |
 | `isVibrating` | `Bool` | Haptika |
-| `isTicking` | `Bool` | Tikání každou sekundu (default `false`) |
+| `tickingMode` | `TickingMode?` | Režim tikání (`nil` = timer uložený před zavedením režimů, odvodí se z `isTicking`). Číst/zapisovat přes `ticking` |
+| `isTicking` | `Bool` | Původní zapnuto/vypnuto tikání (default `false`); drží se v souladu s `tickingMode` |
 | `hasCountdown` | `Bool` | Úvodní odpočet 3-2-1 (default `true`) |
 | `order` | `Int` | **Klíčové pole** – řadí a rozlišuje časovače |
 | `createdAt` | `Date` | Datum vytvoření |
@@ -274,7 +275,9 @@ Je `Codable` → serializuje se pro SwiftData, sdílení odkazem i případný p
 
 ### `TimerSettings` (sdílený struct)
 
-Kompletní nastavení timeru jako hodnotový typ (`Shared/TimerSettings.swift`) – jediná definice toho, „co je timer": `name`, `intervals`, `rounds`, `sound`, `isVibrating`, `isTicking`, `hasCountdown`.
+Kompletní nastavení timeru jako hodnotový typ (`Shared/TimerSettings.swift`) – jediná definice toho, „co je timer": `name`, `intervals`, `rounds`, `sound`, `isVibrating`, `ticking`, `hasCountdown`.
+
+`ticking: TickingMode` – `.off` (bez tikání), `.everySecond` (každou sekundu), `.finalSeconds` (jen poslední 3 sekundy intervalu). Jestli tik zazní, rozhoduje `TickingMode.shouldTick(remainingSeconds:)`.
 
 `TimerData` je nad ním tenká obálka: `timerData.settings` čte i zapisuje **celé** nastavení naráz, takže nikde v aplikaci není místo, které by kopírovalo nastavení po polích (a mohlo tedy na některé zapomenout).
 
@@ -344,7 +347,7 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 | **Intervaly** | Editovatelný seznam intervalů (`IntervalRowView`): název + hodnota, drag-to-reorder, swipe-to-delete, „+ Add interval". Footer ukazuje souhrn (délka kola, příp. celkový čas) |
 | **Rounds** | `NavigationLink` → `RoundsSettingsView` (smyčka / 1–31 kol) |
 | **Favourites** | Náhled posledních 3 oblíbených + odkaz na všechny |
-| **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, Toggle Tikání, výběr Zvuku |
+| **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, menu Tikání (vypnuto / každou sekundu / před koncem intervalu – poslední 3 s), výběr Zvuku |
 | **Appearance** | `NavigationLink` → `BackgroundSelectorView` |
 | **More** | Odkazy: Hodnotit, Gustav Weights, Instagram, YouTube |
 
@@ -409,7 +412,7 @@ Vyhledávání mezi oblíbenými i předdefinovanými (`localizedCaseInsensitive
 `Managers/SoundManager.swift` – přehrává MP3 přes `AVAudioPlayer`.
 - Audio session: kategorie `.playback` s `.mixWithOthers` → **nepřeruší hudbu na pozadí**.
 - `playSound(soundModel:)` – přehraje vybraný zvuk při přechodu.
-- `playTick()` – přehraje `tick.mp3` (tikání každou sekundu).
+- `playTick()` – přehraje `tick.mp3` (tikání podle `TickingMode`).
 
 ### Dostupné zvuky (`SoundModel`)
 Enum (`Shared/SoundModel.swift`), každý case = MP3 v bundle:
@@ -435,11 +438,13 @@ Enum (`Shared/SoundModel.swift`), každý case = MP3 v bundle:
 flowchart LR
     A[Přechod intervalu/kola/konec] --> B{settings.sound != nil?}
     B -- ano --> C[playSound: vybraný zvuk]
-    B -- ne --> D[playTickSound]
-    E[secondTick - každou sekundu] --> F{isTicking?}
+    B -- ne --> D[playTickSound - zbývá 0 s]
+    E[secondTick - zbývá N s] --> F{ticking.shouldTick N?}
     F -- ano --> G[playTick: tick.mp3]
     F -- ne --> H[ticho]
 ```
+
+`shouldTick`: `.off` nikdy, `.everySecond` vždy, `.finalSeconds` jen při N ≤ 3 (tedy 3, 2, 1 a při ztlumeném zvuku i na přechodu).
 
 ### Haptika
 Podmíněno `isVibrating`:
@@ -489,10 +494,10 @@ Aplikace reaguje na URL scheme **`gustavtimerapp://`** (registrováno v `Info.pl
 | `_title` | text, max 64 znaků | Název timeru |
 | `_sound` | `beep`, `gong`, … nebo `off` | Zvuk přechodu, `off` = ticho |
 | `_vibe` | `1` / `0` | Vibrace |
-| `_tick` | `1` / `0` | Tikání každou sekundu |
+| `_tick` | `0` / `1` / `3` | Tikání: `0` vypnuto, `1` každou sekundu, `3` poslední 3 sekundy |
 | `_cd` | `1` / `0` | Úvodní odpočet 3-2-1 |
 
-Booleany berou i `true/false`, `yes/no`, `on/off` (odkazy se píšou i ručně); generátor zapisuje `1`/`0`. U každého klíče vyhrává **první výskyt**, nesrozumitelná hodnota se ignoruje.
+Booleany (včetně `_tick`) berou i `true/false`, `yes/no`, `on/off` (odkazy se píšou i ručně); generátor zapisuje `1`/`0` (u `_tick` i `3`). Starší verze aplikace `_tick=3` nerozumí a nechají si vlastní tikání. U každého klíče vyhrává **první výskyt**, nesrozumitelná hodnota se ignoruje.
 
 > [!important] Chybějící parametr = zachovej současné
 > Na tomhle pravidle stojí celá zpětná kompatibilita. Odkaz z verze 2.2/2.3 neobsahuje `_sound` ani `_vibe`, takže **nesáhne na nastavení příjemce** – chová se přesně jako dřív. Nové odkazy nesou všechno explicitně.
@@ -550,16 +555,52 @@ gustavtimerapp://whatsnew
 
 ## 13 · Analytika (TelemetryDeck)
 
-Inicializace v `GustavTimerApp.init()` (App ID `E2CAE467-…`). Posílané signály:
+Inicializace v `GustavTimerApp.init()` (App ID `E2CAE467-…`). Všechny signály jdou přes `Analytics` (`Managers/Analytics.swift`): názvy jsou v `AnalyticsSignal`, parametry skládají čisté funkce testované v `AnalyticsTests`. Uživatelem psané názvy (timer, intervaly) se nikdy neposílají, název jde jen u presetů.
+
+**Parametry nastavení** (u signálů o tréninku, v tabulce jako *nastavení*): `interval_pattern` (`30/15`), `interval_count`, `rounds` (číslo / `loop`), `round_seconds`, `total_duration` (`<1m`, `1-5m`, `5-15m`, `15-30m`, `30-60m`, `60m+`, `loop`), `sound` (název / `mute`), `haptics`, `ticking`, `countdown`.
+
+**Výchozí parametry** u každého signálu (`config.defaultParameters`): `portrait_format`, `landscape_format`, `background` (`preset` / `custom`).
+
+### Trénink
+
+Trychtýř: `timer.started` (`is_resume=false`) → `timer.completed`, nebo `timer.stopped`. Pauza a pokračování trénink nekončí. Stav drží `TimerViewModel` (`WorkoutSession`).
 
 | Signál | Kdy | Parametry |
 |---|---|---|
-| `timer.started` | Spuštění timeru | `interval_pattern` (např. `30/15`) |
-| `timer.saved` | Uložení mezi oblíbené | `interval_pattern` |
-| `timer.preloadselected` | Výběr předdefinovaného | `timer_name`, `interval_pattern` |
-| `timer.sound_selected` | Výběr zvuku | `sound` |
+| `timer.started` | Každé spuštění, i po pauze | *nastavení*, `input` (`button` / `tap` / `landscape_tap`), `is_resume`, `timer_origin` (`preset` / `favourite` / `link` / `custom`), u presetu `preset` |
+| `timer.completed` | Trénink doběhl | *nastavení*, `completed_count`, `timer_origin`, `preset`; `floatValue` = reálná doba od prvního startu včetně pauz (s). Navíc `TelemetryDeck.coreFeatureUsed("timer_completed")` |
+| `timer.stopped` | Rozběhnutý trénink skončil resetem | *nastavení*, `reason` (`reset` / `settings` / `link`), `round`, `elapsed` (skupina), `progress_pct` (po 10 %, `loop`), `timer_origin`, `preset`; `floatValue` = odcvičené sekundy |
+| `review.requested` | Žádost o hodnocení (každý 5. dokončený trénink) | `completed_count` |
 
-> Privacy manifest (`PrivacyInfo.xcprivacy`) deklaruje pouze přístup k `UserDefaults` (důvod `CA92.1`).
+### Výběr, ukládání a sdílení
+
+| Signál | Kdy | Parametry |
+|---|---|---|
+| `timer.preloadselected` | Výběr presetu v oblíbených nebo ve vyhledávání | `timer_name`, `preset`, `interval_pattern`, `screen` (`favourites` / `search`) |
+| `timer.favourite_selected` | Výběr uloženého oblíbeného | `interval_pattern`, `use_count`, `screen` (`favourites` / `search` / `settings`) |
+| `timer.saved` | Uložení mezi oblíbené | *nastavení*, `screen` (`settings` / `favourites`) |
+| `timer.shared` | Dokončené sdílení odkazu na timer | `origin` (`settings` / `favourite` / `preset`), `channel` (`messages`, `whatsapp`, `copy`…), `interval_pattern`, u presetů `timer_name` |
+| `timer.share_cancelled` | Zavřený share sheet bez sdílení | `origin`, `interval_pattern`, u presetů `timer_name` |
+| `timer.link_opened` | Otevření sdíleného odkazu | `source` (`utm_source`, jinak `unknown`), `link_type` (`universal` / `scheme`), `loaded`, případně `campaign`, `interval_pattern`, `has_settings` |
+
+Share sheet (`TimerShareSheet`) zapíše zvolený kanál do odesílaného odkazu jako `utm_source=<kanál>`. Parser `utm_*` ignoruje, takže na timer nemá vliv, ale `timer.link_opened` u příjemce pak ví, kudy odkaz přišel. Odkazy ze starších verzí kanál nenesou (`source = unknown`).
+
+**Akvizice odkazem:** první platný odkaz do 24 hodin od první spuštění pošle `TelemetryDeck.acquiredUser(channel: source)` (`AnalyticsAcquisition`). Odkaz instalaci z App Storu nepřežije, takže se počítají uživatelé, kteří na něj po instalaci klepnou znovu. Instalace bez odkazu hlásí TelemetryDeck sám (`newInstallDetected`).
+
+### Nastavení a aplikace
+
+| Signál | Kdy | Parametry |
+|---|---|---|
+| `settings.changed` | Změna volby | `setting` (`haptics`, `countdown`, `ticking`, `rounds`, `sound_enabled`, `background`, `interval_added`, `interval_removed`), `value` |
+| `timer.sound_selected` | Výběr zvuku | `sound` |
+| `settings.display_format_changed` | Swipe formátu odpočtu | `orientation`, `format` |
+| `link.opened` | Odkaz ven z nastavení | `target` (`rate`, `weights`, `instagram`, `youtube`, `banner`) |
+| `ideas.opened` | Otevření nástěnky nápadů | – |
+| `whatsnew.shown` | Zobrazení „Co je nového“ | `version` |
+| `TelemetryDeck.Activation.onboardingCompleted` | Zavření onboardingu (tlačítkem i swipem) | – |
+| `TelemetryDeck.Error.occurred` | `link.invalid` (odkaz bez platného intervalu), `timer.persist_failed` (selhalo uložení SwiftData) | `TelemetryDeck.Error.id`, kategorie |
+
+> Privacy manifest (`PrivacyInfo.xcprivacy`) deklaruje pouze přístup k `UserDefaults` (důvod `CA92.1`). Sběr dat (Product Interaction, Device ID, nepropojené s identitou, bez trackingu) deklaruje vlastní manifest SDK TelemetryDeck, Xcode ho do privacy reportu aplikace připojí sám.
 
 ---
 
@@ -677,7 +718,9 @@ GustavTimer/
 │   └── SoundModel+Title.swift    # iOS lokalizované názvy zvuků
 │
 ├── Managers/
-│   └── SoundManager.swift        # AVAudioPlayer singleton
+│   ├── Analytics.swift           # Signály TelemetryDeck a jejich parametry
+│   ├── SoundManager.swift        # AVAudioPlayer singleton
+│   └── TimerShareSheet.swift     # Share sheet odkazu na timer
 │
 ├── Views/
 │   ├── Timer/
