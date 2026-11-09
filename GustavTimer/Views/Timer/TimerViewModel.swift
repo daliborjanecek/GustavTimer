@@ -308,10 +308,35 @@ class TimerViewModel: ObservableObject {
         case .whatsNew:
             showingWhatsNew = true
         case .sharedTimer(let items):
-            handleSharedTimer(items: items)
+            let link = handleSharedTimer(items: items)
+            trackSharedLinkOpened(url: url, items: items, link: link)
         case nil:
             print("Neznámý deep link: \(url)")
         }
+    }
+
+    /// `timer.link_opened` – otevření sdíleného odkazu.
+    ///
+    /// `source` je kanál, kterým odkaz odesílatel poslal (`utm_source`, zapisuje
+    /// ho share sheet aplikace). Odkazy ze starších verzí ho nenesou, ty prozradí
+    /// `link_type` (custom schéma = verze 2.2.1) a `has_settings` (bez zvuku
+    /// a vibrací = verze před 2.4). `loaded` je `false`, když odkaz neobsahoval
+    /// jediný platný interval a timer se nezměnil.
+    private func trackSharedLinkOpened(url: URL, items: [URLQueryItem], link: SharedTimerLink?) {
+        var parameters = [
+            "link_type": url.scheme?.lowercased() == "https" ? "universal" : "scheme",
+            "source": SharedTimerLink.trackingValue(for: SharedTimerLink.sourceKey, in: items) ?? "unknown",
+            "loaded": link != nil ? "true" : "false"
+        ]
+        if let campaign = SharedTimerLink.trackingValue(for: SharedTimerLink.campaignKey, in: items) {
+            parameters["campaign"] = campaign
+        }
+        if let link {
+            parameters["interval_pattern"] = link.intervals.map { String($0.value) }.joined(separator: "/")
+            parameters["has_settings"] = link.sound != nil ? "true" : "false"
+        }
+
+        TelemetryDeck.signal("timer.link_opened", parameters: parameters)
     }
 
     /// Načte sdílený timer z query parametrů.
@@ -321,8 +346,11 @@ class TimerViewModel: ObservableObject {
     /// vrátí `nil` a metoda nesáhne na nic – stávající timer, počet kol ani
     /// uložená data se nezmění a nastavení se neotevře. Jednotlivé neplatné
     /// parametry se ignorují, celý odkaz kvůli nim nepadá.
-    func handleSharedTimer(items: [URLQueryItem]) {
-        guard let link = SharedTimerLink.parse(items: items, limits: AppConfig.sharedLinkLimits) else { return }
+    ///
+    /// - Returns: načtený odkaz, nebo `nil`, když se timer nezměnil.
+    @discardableResult
+    func handleSharedTimer(items: [URLQueryItem]) -> SharedTimerLink? {
+        guard let link = SharedTimerLink.parse(items: items, limits: AppConfig.sharedLinkLimits) else { return nil }
 
         // Odkaz přebije jen to, co skutečně nese. Odkaz z verze 2.2/2.3
         // neobsahuje zvuk ani vibrace, takže si uživatel nechá svoje.
@@ -336,6 +364,7 @@ class TimerViewModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.showingSheet = true
         }
+        return link
     }
 }
 

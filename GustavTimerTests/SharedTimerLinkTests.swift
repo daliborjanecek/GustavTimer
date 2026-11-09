@@ -617,3 +617,52 @@ func intervalNamedLikeNewReservedKey() throws {
     #expect(link.sound == .sound(.bell))
     #expect(link.hasCountdown == true)
 }
+
+// MARK: - Původ odkazu (analytika)
+
+@Test("Kanál sdílení z aktivity share sheetu", arguments: [
+    ("com.apple.UIKit.activity.Message", "messages"),
+    ("com.apple.UIKit.activity.CopyToPasteboard", "copy"),
+    ("net.whatsapp.WhatsApp.ShareExtension", "whatsapp"),
+    ("com.facebook.Messenger.ShareExtension", "messenger"),
+    ("ph.telegra.Telegraph.Share", "telegram"),
+    ("com.example.Share", "com.example.Share")
+])
+func shareChannelFromActivity(activityType: String, channel: String) {
+    #expect(SharedTimerLink.shareChannel(activityType: activityType) == channel)
+}
+
+@Test("Bez aktivity je kanál neznámý")
+func shareChannelWithoutActivity() {
+    #expect(SharedTimerLink.shareChannel(activityType: nil) == "unknown")
+}
+
+@Test("Označený odkaz nese kanál a timer se nezmění")
+func taggedLinkKeepsTimer() throws {
+    let original = settings([IntervalData(value: 40, name: "Work")], rounds: 4, name: "THE COMEBACK")
+    let url = try #require(SharedTimerLink.url(settings: original))
+    let tagged = SharedTimerLink.url(url, taggedWith: "whatsapp")
+
+    #expect(tagged.absoluteString == url.absoluteString + "&utm_source=whatsapp")
+    #expect(parse(tagged.absoluteString) == parse(url.absoluteString))
+}
+
+@Test("Odkaz, který už kanál nese, se znovu neoznačí")
+func alreadyTaggedLinkStaysUnchanged() throws {
+    let url = try #require(URL(string: "https://gustavtraining.com/t?Work=40&rounds=4&utm_source=web"))
+    #expect(SharedTimerLink.url(url, taggedWith: "copy") == url)
+}
+
+@Test("Kanál a kampaň se dají přečíst z příchozího odkazu")
+func trackingValuesFromIncomingLink() throws {
+    let url = try #require(URL(string: "https://gustavtraining.com/t?Work=40&UTM_SOURCE=instagram&utm_campaign=&utm_campaign=jaro"))
+    guard case .sharedTimer(let items)? = SharedTimerLink.route(url: url) else {
+        Issue.record("Odkaz se nerozpoznal")
+        return
+    }
+
+    #expect(SharedTimerLink.trackingValue(for: SharedTimerLink.sourceKey, in: items) == "instagram")
+    // Prázdná hodnota se přeskočí, vyhraje první neprázdná.
+    #expect(SharedTimerLink.trackingValue(for: SharedTimerLink.campaignKey, in: items) == "jaro")
+    #expect(SharedTimerLink.trackingValue(for: "utm_medium", in: items) == nil)
+}

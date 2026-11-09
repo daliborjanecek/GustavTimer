@@ -563,6 +563,11 @@ Inicializace v `GustavTimerApp.init()` (App ID `E2CAE467-…`). Posílané sign�
 | `timer.saved` | Uložení mezi oblíbené | `interval_pattern` |
 | `timer.preloadselected` | Výběr předdefinovaného | `timer_name`, `interval_pattern` |
 | `timer.sound_selected` | Výběr zvuku | `sound` |
+| `timer.shared` | Dokončené sdílení odkazu na timer | `origin` (`settings` / `favourite` / `preset`), `channel` (`messages`, `whatsapp`, `copy`…), `interval_pattern`, u presetů `timer_name` |
+| `timer.share_cancelled` | Zavřený share sheet bez sdílení | `origin`, `interval_pattern`, u presetů `timer_name` |
+| `timer.link_opened` | Otevření sdíleného odkazu | `source` (`utm_source`, jinak `unknown`), `link_type` (`universal` / `scheme`), `loaded`, případně `campaign`, `interval_pattern`, `has_settings` |
+
+Share sheet (`TimerShareSheet`) zapíše zvolený kanál do odesílaného odkazu jako `utm_source=<kanál>`. Parser `utm_*` ignoruje, takže na timer nemá vliv, ale `timer.link_opened` u příjemce pak ví, kudy odkaz přišel. Odkazy ze starších verzí kanál nenesou (`source = unknown`).
 
 > Privacy manifest (`PrivacyInfo.xcprivacy`) deklaruje pouze přístup k `UserDefaults` (důvod `CA92.1`).
 

@@ -495,6 +495,83 @@ extension SharedTimerLink {
     }
 }
 
+// MARK: - Původ odkazu (analytika)
+
+extension SharedTimerLink {
+
+    /// Kanál, kterým odesílatel odkaz poslal. Zapisuje ho share sheet
+    /// v aplikaci podle zvolené aktivity (`whatsapp`, `messages`, `copy`…).
+    static let sourceKey = "utm_source"
+
+    /// Kampaň – aplikace ji nezapisuje, nesou ji odkazy z webu a příspěvků.
+    static let campaignKey = "utm_campaign"
+
+    /// Nejdelší hodnota trackovacího parametru, která se pošle do analytiky.
+    private static let maxTrackingValueLength = 64
+
+    /// Krátké názvy kanálů pro známé aktivity share sheetu. Porovnává se
+    /// podřetězcem bez ohledu na velikost písmen, vyhrává první shoda.
+    private static let shareChannels: [(match: String, channel: String)] = [
+        ("com.apple.UIKit.activity.Message", "messages"),
+        ("com.apple.UIKit.activity.Mail", "mail"),
+        ("com.apple.UIKit.activity.CopyToPasteboard", "copy"),
+        ("com.apple.UIKit.activity.AirDrop", "airdrop"),
+        ("com.apple.mobilenotes", "notes"),
+        ("whatsapp", "whatsapp"),
+        ("telegra", "telegram"),
+        ("messenger", "messenger"),
+        ("instagram", "instagram"),
+        ("facebook", "facebook"),
+        ("signal", "signal"),
+        ("discord", "discord"),
+        ("slack", "slack")
+    ]
+
+    /// Kanál sdílení z identifikátoru aktivity share sheetu (`UIActivity.ActivityType.rawValue`).
+    /// Neznámé aplikace zůstanou pod svým identifikátorem, ať se dají dohledat.
+    ///
+    ///     "com.apple.UIKit.activity.Message"      → "messages"
+    ///     "net.whatsapp.WhatsApp.ShareExtension"  → "whatsapp"
+    ///     "com.example.Share"                     → "com.example.Share"
+    ///     nil                                     → "unknown"
+    static func shareChannel(activityType: String?) -> String {
+        guard let activityType, !activityType.isEmpty else { return "unknown" }
+        let lower = activityType.lowercased()
+        if let known = shareChannels.first(where: { lower.contains($0.match.lowercased()) }) {
+            return known.channel
+        }
+        return activityType
+    }
+
+    /// Odkaz doplněný o kanál, kterým odchází. Parser `utm_*` přeskakuje,
+    /// takže na timer u příjemce nemá vliv – poslouží jen analytice při otevření.
+    /// Odkaz, který už kanál nese, zůstane beze změny.
+    ///
+    ///     .../t?Work=40&rounds=4  +  "whatsapp"  →  .../t?Work=40&rounds=4&utm_source=whatsapp
+    static func url(_ url: URL, taggedWith channel: String) -> URL {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let encoded = encode(channel), !encoded.isEmpty else { return url }
+
+        var items = components.percentEncodedQueryItems ?? []
+        guard !items.contains(where: { $0.name.lowercased() == sourceKey }) else { return url }
+
+        items.append(URLQueryItem(name: sourceKey, value: encoded))
+        components.percentEncodedQueryItems = items
+        return components.url ?? url
+    }
+
+    /// Hodnota trackovacího parametru z příchozího odkazu, např. `utm_source`.
+    /// `nil`, pokud ho odkaz nenese – typicky odkaz ze starší verze aplikace.
+    static func trackingValue(for key: String, in items: [URLQueryItem]) -> String? {
+        let lowerKey = key.lowercased()
+        for item in items where item.name.lowercased() == lowerKey {
+            let trimmed = (item.value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { return String(trimmed.prefix(maxTrackingValueLength)) }
+        }
+        return nil
+    }
+}
+
 // MARK: - Tikání v odkazu
 
 extension TickingMode {

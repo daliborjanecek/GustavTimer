@@ -295,9 +295,11 @@ struct SettingsView: View {
 
         // Sdílení rozdělaného timeru – dřív šlo sdílet jen uložený oblíbený
         // nebo preset, takže uživatel musel nejdřív ukládat.
-        if let url = shareURL {
+        if TimerShareSheet.url(for: currentTimerData.settings) != nil {
             ToolbarItem {
-                ShareLink(item: url) {
+                Button {
+                    TimerShareSheet.present(settings: currentTimerData.settings, origin: .settings)
+                } label: {
                     Image(systemName: "square.and.arrow.up")
                 }
             }
@@ -326,11 +328,6 @@ struct SettingsView: View {
         }
     }
     
-    /// Sdílený odkaz na právě rozdělaný timer. `nil`, dokud nemá jediný interval.
-    private var shareURL: URL? {
-        SharedTimerLink.url(settings: currentTimerData.settings, limits: AppConfig.sharedLinkLimits)
-    }
-
     /// Nástěnka s nápady se otevírá uvnitř aplikace, aby se uživatel vrátil
     /// rovnou do nastavení. Technické údaje v adrese web vloží do skrytých
     /// polí formuláře, takže se u nahlášených chyb nemusí doptávat.
@@ -557,15 +554,9 @@ private struct ButtonLink: View {
 private enum InAppBrowser {
     @MainActor
     static func open(_ url: URL) {
-        let scene = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first { $0.activationState == .foregroundActive }
-        guard var top = scene?.keyWindow?.rootViewController else {
+        guard let top = UIApplication.shared.topmostViewController else {
             UIApplication.shared.open(url)
             return
-        }
-        while let presented = top.presentedViewController {
-            top = presented
         }
 
         let safari = SFSafariViewController(url: url)

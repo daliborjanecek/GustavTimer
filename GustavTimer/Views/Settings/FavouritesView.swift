@@ -46,8 +46,10 @@ struct FavouritesView: View {
                             select(timer.settings, tracking: timer)
                         }
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            if let url = SharedTimerLink.url(settings: timer.settings, limits: AppConfig.sharedLinkLimits) {
-                                ShareLink(item: url) {
+                            if TimerShareSheet.url(for: timer.settings) != nil {
+                                Button {
+                                    TimerShareSheet.present(settings: timer.settings, origin: .favourite)
+                                } label: {
                                     Label("SHARE", systemImage: "square.and.arrow.up")
                                 }
                                 .tint(Color.gustavVolt)
@@ -81,8 +83,10 @@ struct FavouritesView: View {
                         select(preset.settings)
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                        if let url = SharedTimerLink.url(settings: preset.settings, limits: AppConfig.sharedLinkLimits) {
-                            ShareLink(item: url) {
+                        if TimerShareSheet.url(for: preset.settings) != nil {
+                            Button {
+                                TimerShareSheet.present(settings: preset.settings, origin: .preset)
+                            } label: {
                                 Label("SHARE", systemImage: "square.and.arrow.up")
                             }
                             .tint(Color.gustavVolt)
