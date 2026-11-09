@@ -6,7 +6,6 @@
 //
 
 import UIKit
-import TelemetryDeck
 
 /// Místo v aplikaci, odkud uživatel timer sdílí. Jde do analytiky jako `origin`.
 enum TimerShareOrigin: String {
@@ -67,7 +66,7 @@ enum TimerShareSheet {
     ) {
         var parameters = [
             "origin": origin.rawValue,
-            "interval_pattern": settings.intervals.map { String($0.value) }.joined(separator: "/")
+            "interval_pattern": Analytics.intervalPattern(settings.intervals)
         ]
         if completed {
             parameters["channel"] = SharedTimerLink.shareChannel(activityType: activityType?.rawValue)
@@ -76,7 +75,7 @@ enum TimerShareSheet {
             parameters["timer_name"] = settings.name
         }
 
-        TelemetryDeck.signal(completed ? "timer.shared" : "timer.share_cancelled", parameters: parameters)
+        Analytics.send(completed ? .timerShared : .shareCancelled, parameters: parameters)
     }
 }
 

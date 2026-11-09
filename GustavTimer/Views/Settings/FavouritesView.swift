@@ -8,7 +8,6 @@
 import SwiftUI
 import SwiftData
 import GustavUICore
-import TelemetryDeck
 
 struct FavouritesView: View {
     
@@ -79,7 +78,7 @@ struct FavouritesView: View {
             ForEach(preloadedTimers) { preset in
                 FavouriteRowView(settings: preset.settings, selected: isSelected(preset.settings), tip: preset.description[selectedTip])
                     .onTapGesture {
-                        analyticsPreloadedAction(preset.settings)
+                        Analytics.presetSelected(preset, screen: .favourites)
                         select(preset.settings)
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -187,14 +186,7 @@ struct FavouritesView: View {
         // Aktivní timer převezme pojmenování, aby se hned poznal jako uložený.
         mainTimer.name = settings.name
 
-        // Track timer save event
-        let intervalPattern = newTimer.intervals.map { String($0.value) }.joined(separator: "/")
-        TelemetryDeck.signal(
-            "timer.saved",
-            parameters: [
-                "interval_pattern": intervalPattern
-            ]
-        )
+        Analytics.timerSaved(settings, screen: .favourites)
     }
 
     /// Název z dialogu, ořezaný a omezený délkou. Vymazané pole se nebere jako
@@ -209,21 +201,12 @@ struct FavouritesView: View {
     /// - Parameter tracking: uložený oblíbený, kterému se má započítat použití.
     ///   Presety ho nemají – nejsou v databázi, takže není kam počítat.
     private func select(_ settings: TimerSettings, tracking timer: TimerData? = nil) {
-        timer?.selected()
+        if let timer {
+            timer.selected()
+            Analytics.favouriteSelected(timer, screen: .favourites)
+        }
         TimerData.mainTimer(in: context).settings = settings
         try? context.save()
-    }
-
-    private func analyticsPreloadedAction(_ settings: TimerSettings) {
-        let intervalPattern = settings.intervals.map { String($0.value) }.joined(separator: "/")
-
-        TelemetryDeck.signal(
-            "timer.preloadselected",
-            parameters: [
-                "timer_name": settings.name,
-                "interval_pattern": intervalPattern
-            ]
-        )
     }
 
     private func isSelected(_ settings: TimerSettings) -> Bool {

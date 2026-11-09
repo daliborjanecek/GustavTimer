@@ -9,7 +9,6 @@ import SwiftUI
 import SwiftData
 import SafariServices
 import GustavUICore
-import TelemetryDeck
 
 struct SettingsView: View {
     @Query(sort: \TimerData.id, order: .reverse) private var timerData: [TimerData]
@@ -86,6 +85,7 @@ struct SettingsView: View {
                 }
                 .onTapGesture {
                     if let url = AppConfig.bannerImages[rn].getURL() {
+                        Analytics.send(.externalLinkOpened, parameters: ["target": "banner"])
                         UIApplication.shared.open(url)
                     }
                 }
@@ -166,7 +166,7 @@ struct SettingsView: View {
     var roundsView: some View {
         Section {
             NavigationLink {
-                RoundsSettingsView(rounds: setting(\.rounds))
+                RoundsSettingsView(rounds: setting(\.rounds, tracking: "rounds"))
             } label: {
                 ListButton(name: "ROUNDS", value: "\(currentTimerData.rounds == -1 ? "LOOP" : String(currentTimerData.rounds))")
             }
@@ -201,13 +201,13 @@ struct SettingsView: View {
     @ViewBuilder
     private var feedback: some View {
         SettingsSection(label: "FEEDBACK", footer: "FEEDBACK_DESCRIPTION") {
-            Toggle("HAPTICS", isOn: setting(\.isVibrating))
+            Toggle("HAPTICS", isOn: setting(\.isVibrating, tracking: "haptics"))
                 .tint(Color.gustavVolt)
 
-            Toggle("SET_COUNTDOWN", isOn: setting(\.hasCountdown))
+            Toggle("SET_COUNTDOWN", isOn: setting(\.hasCountdown, tracking: "countdown"))
                 .tint(Color.gustavVolt)
 
-            Picker("SET_TICKING", selection: setting(\.ticking)) {
+            Picker("SET_TICKING", selection: setting(\.ticking, tracking: "ticking")) {
                 ForEach(TickingMode.allCases, id: \.self) { mode in
                     Text(mode.title).tag(mode)
                 }
@@ -236,16 +236,16 @@ struct SettingsView: View {
     @ViewBuilder
     private var more: some View {
         SettingsSection(label: "MORE") {
-            ButtonLink(label: "RATE", URLString: AppConfig.reviewURL)
+            ButtonLink(label: "RATE", URLString: AppConfig.reviewURL, target: "rate")
 
             Button("SUGGEST_FEATURE", action: openIdeasBoard)
                 .foregroundStyle(Color.gustavPink)
 
-            ButtonLink(label: "TRY_WEIGHTS", URLString: AppConfig.weightsURL)
+            ButtonLink(label: "TRY_WEIGHTS", URLString: AppConfig.weightsURL, target: "weights")
             
-            ButtonLink(label: "FOLLOW_INSTAGRAM", URLString: AppConfig.instagramURL)
+            ButtonLink(label: "FOLLOW_INSTAGRAM", URLString: AppConfig.instagramURL, target: "instagram")
             
-            ButtonLink(label: "WATCH_ON_YOUTUBE", URLString: AppConfig.youtubeURL)
+            ButtonLink(label: "WATCH_ON_YOUTUBE", URLString: AppConfig.youtubeURL, target: "youtube")
         }
     }
     
@@ -333,7 +333,7 @@ struct SettingsView: View {
     /// polí formuláře, takže se u nahlášených chyb nemusí doptávat.
     private func openIdeasBoard() {
         guard let url = ideasBoardURL else { return }
-        TelemetryDeck.signal("ideas.opened")
+        Analytics.send(.ideasOpened)
         InAppBrowser.open(url)
     }
 
@@ -366,13 +366,22 @@ struct SettingsView: View {
     /// Binding na jedno pole aktivního timeru. Zápis rovnou uloží kontext,
     /// aby se nastavení neztratilo, když uživatel zavře Settings swipem.
     ///
-    ///     Toggle("HAPTICS", isOn: setting(\.isVibrating))
-    private func setting<Value>(_ keyPath: ReferenceWritableKeyPath<TimerData, Value>) -> Binding<Value> {
+    ///     Toggle("HAPTICS", isOn: setting(\.isVibrating, tracking: "haptics"))
+    ///
+    /// - Parameter tracking: název volby pro `settings.changed`; `nil` = neposílat
+    ///   (zvuk má vlastní signál v `SoundSettingsView`).
+    private func setting<Value>(
+        _ keyPath: ReferenceWritableKeyPath<TimerData, Value>,
+        tracking name: String? = nil
+    ) -> Binding<Value> {
         Binding(
             get: { currentTimerData[keyPath: keyPath] },
             set: { newValue in
                 currentTimerData[keyPath: keyPath] = newValue
                 try? context.save()
+                if let name {
+                    Analytics.settingChanged(name, value: newValue)
+                }
             }
         )
     }
@@ -407,14 +416,7 @@ struct SettingsView: View {
         // Aktivní timer převezme pojmenování, aby se hned poznal jako uložený.
         mainTimer.name = settings.name
 
-        // Track timer save event
-        let intervalPattern = mainTimer.intervals.map { String($0.value) }.joined(separator: "/")
-        TelemetryDeck.signal(
-            "timer.saved",
-            parameters: [
-                "interval_pattern": intervalPattern
-            ]
-        )
+        Analytics.timerSaved(settings, screen: .settings)
     }
 
     /// Název z dialogu, ořezaný a omezený délkou. Vymazané pole se nebere jako
@@ -441,6 +443,7 @@ struct SettingsView: View {
         withAnimation(.easeInOut) {
             timerData.intervals.append(IntervalData(value: 5, name: NSLocalizedString("ROUND", comment: "") + " \(timerData.intervals.count + 1)"))
         }
+        Analytics.settingChanged("interval_added", value: timerData.intervals.count)
     }
     
     /// Odstranění intervalů podle indexu
@@ -448,6 +451,7 @@ struct SettingsView: View {
         withAnimation(.easeInOut) {
             timerData.intervals.remove(atOffsets: offsets)
         }
+        Analytics.settingChanged("interval_removed", value: timerData.intervals.count)
     }
     
     /// Přesun intervalu na novou pozici
@@ -459,6 +463,7 @@ struct SettingsView: View {
     
     private func selectTimer(timer: TimerData) {
         timer.selected()
+        Analytics.favouriteSelected(timer, screen: .settings)
         TimerData.mainTimer(in: context).settings = timer.settings
         try? context.save()
     }
@@ -535,10 +540,13 @@ private struct DismissKeyboardOnTap: UIViewRepresentable {
 private struct ButtonLink: View {
     let label: LocalizedStringKey
     let URLString: String
-    
+    /// Hodnota `target` v signálu `link.opened`.
+    let target: String
+
     var body: some View {
         Button(label) {
             if let url = URL(string: URLString) {
+                Analytics.send(.externalLinkOpened, parameters: ["target": target])
                 UIApplication.shared.open(url)
             }
         }
