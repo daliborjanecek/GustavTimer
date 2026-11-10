@@ -33,13 +33,18 @@ extension View {
 }
 
 extension View {
-    func alreadySavedAlert(
-        isPresented: Binding<Bool>
+    /// Přejmenování uloženého oblíbeného.
+    func renameTimerAlert(
+        isPresented: Binding<Bool>,
+        timerName: Binding<String>,
+        onRename: @escaping () -> Void
     ) -> some View {
-        self.alert("ALREADY_SAVED_TITLE", isPresented: isPresented) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("ALREADY_SAVED_DIALOG")
+        self.alert("RENAME_FAVOURITE", isPresented: isPresented) {
+            TextField("TIMER_NAME_PROMPT", text: timerName)
+            Button("RENAME") {
+                onRename()
+            }
+            Button("CANCEL", role: .cancel) { }
         }
     }
 }

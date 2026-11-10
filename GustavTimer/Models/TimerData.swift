@@ -32,6 +32,12 @@ class TimerData {
 
     var hasCountdown: Bool = true
 
+    /// `id` oblíbeného, ze kterého aktivní timer vznikl – jen u hlavního
+    /// timeru (`order == 0`). Podle něj se pozná, jestli jsou úpravy uložené
+    /// (`FavouriteTimers.state`). `nil` = preset, odkaz nebo nový timer.
+    /// Součástí `settings` není, takže ho kopírování nastavení nepřenese.
+    var sourceID: UUID? = nil
+
     /// Tikání každou sekundu – původní reprezentace, která znala jen
     /// zapnuto/vypnuto. Do verze 2.3 žilo v UserDefaults, takže se
     /// neukládalo do oblíbených ani nepřenášelo odkazem. Default hodnota drží

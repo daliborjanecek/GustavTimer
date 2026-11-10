@@ -16,6 +16,9 @@ struct FavouriteRowView: View {
     let settings: TimerSettings
     let selected: Bool
 
+    /// Načtený oblíbený má neuložené úpravy – u názvu se ukáže „Upraveno“.
+    var isModified: Bool = false
+
     /// Vykreslí řádek jako „aktuální timer“ – ztlumený název místo vlastního
     /// a světlý progress bar. `order` součástí nastavení není, proto se to
     /// předává zvlášť. Dnes to nikdo nenastavuje na `true`; řádek se používá
@@ -53,6 +56,14 @@ struct FavouriteRowView: View {
                                 .opacity(isMainTimer ? 0.4 : 1)
                                 .lineLimit(1)
                                 .padding(.trailing, 4)
+
+                            if isModified {
+                                Text("MODIFIED_BADGE")
+                                    .font(.sectionFooter)
+                                    .foregroundStyle(Color.gustavPink)
+                                    .lineLimit(1)
+                                    .fixedSize()
+                            }
                             
                             if !isMinimized {
                                 if settings.rounds == -1 {

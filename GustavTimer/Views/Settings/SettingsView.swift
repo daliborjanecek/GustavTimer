@@ -17,7 +17,8 @@ struct SettingsView: View {
     @State private var editMode: EditMode = .inactive
     @State private var newTimerName = ""
     @State private var showSaveAlert = false
-    @State private var showAlreadySavedAlert = false
+    @State private var renamedTimerName = ""
+    @State private var showRenameAlert = false
     @State private var cachedLastSavedTimers: [TimerData] = []
     @ObservedObject private var remoteContent = RemoteContentManager.shared
     @ObservedObject private var navigator = AppNavigator.shared
@@ -29,6 +30,16 @@ struct SettingsView: View {
     
     private var currentTimerData: TimerData {
         getOrCreateTimerData()
+    }
+
+    /// Uložené oblíbené (bez hlavního timeru).
+    private var favouriteTimers: [TimerData] {
+        timerData.filter { $0.order > AppConfig.mainTimerOrder }
+    }
+
+    /// Je aktivní timer uložený v oblíbených, a jsou uložené i jeho úpravy?
+    private var saveState: FavouriteTimers.SaveState {
+        FavouriteTimers.state(main: currentTimerData, favourites: favouriteTimers)
     }
     
     var body: some View {
@@ -52,12 +63,17 @@ struct SettingsView: View {
             .background(DismissKeyboardOnTap())
             .environment(\.editMode, $editMode)
             .saveTimerAlert(isPresented: $showSaveAlert, timerName: $newTimerName, onSave: saveTimer)
-            .alreadySavedAlert(isPresented: $showAlreadySavedAlert)
+            .renameTimerAlert(isPresented: $showRenameAlert, timerName: $renamedTimerName, onRename: renameFavourite)
             .toolbar { toolbar }
             .font(.gustavBody)
             .onAppear {
                 refreshLastSavedTimers()
                 openPendingScreen()
+            }
+            // Přibyl nebo zmizel oblíbený – výběr pořadí nemění, ten se
+            // schválně přepočítá až při dalším otevření.
+            .onChange(of: favouriteTimers.count) { _, _ in
+                refreshLastSavedTimers()
             }
             // Odkaz na obrazovku, když je nastavení už otevřené (banner nahoře).
             .onChange(of: navigator.pendingScreen) { _, _ in
@@ -80,10 +96,19 @@ struct SettingsView: View {
     
     @ViewBuilder
     var timerNameView: some View {
-        SettingsSection(label: "TIMER_NAME") {
+        SettingsSection(label: "TIMER_NAME", footer: saveStateDescription) {
             TextField("TIMER_NAME_PROMPT", text: timerNameBinding)
                 .font(.settingsIntervalName)
                 .submitLabel(.done)
+        }
+    }
+
+    /// Popis stavu uložení pod názvem timeru.
+    private var saveStateDescription: LocalizedStringKey {
+        switch saveState {
+        case .unsaved: return "STATE_UNSAVED"
+        case .saved: return "STATE_SAVED"
+        case .modified: return "STATE_MODIFIED"
         }
     }
 
@@ -165,8 +190,13 @@ struct SettingsView: View {
             let lastSavedTimers = cachedLastSavedTimers.prefix(3)
             if !lastSavedTimers.isEmpty {
                 ForEach(lastSavedTimers) { timer in
-                    let isSelected = timer.matchesWorkout(of: currentTimerData)
-                    FavouriteRowView(settings: timer.settings, selected: isSelected, isMinimized: true)
+                    let isSelected = timer.id == currentTimerData.sourceID
+                    FavouriteRowView(
+                        settings: timer.settings,
+                        selected: isSelected,
+                        isModified: isSelected && saveState.isModified,
+                        isMinimized: true
+                    )
                         .onTapGesture {
                             DispatchQueue.main.async {
                                 withAnimation {
@@ -291,18 +321,7 @@ struct SettingsView: View {
         }
 
         ToolbarItem {
-            Button {
-                if !isTimerAlreadySaved() {
-                    // Dialog startuje se stávajícím názvem, ať ho uživatel
-                    // nemusí psát znovu – stačí ho upravit nebo potvrdit.
-                    newTimerName = currentTimerData.name
-                    showSaveAlert = true
-                } else {
-                    showAlreadySavedAlert = true
-                }
-            } label: {
-                Image(systemName: isTimerAlreadySaved() ? "star.fill" : "star")
-            }
+            favouriteButton
         }
 
         // Sdílení rozdělaného timeru – dřív šlo sdílet jen uložený oblíbený
@@ -340,12 +359,73 @@ struct SettingsView: View {
         }
     }
     
-    private func isTimerAlreadySaved() -> Bool {
-        let savedTimers = timerData.filter { $0.order != AppConfig.mainTimerOrder }
-        if let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) {
-            return savedTimers.contains { $0.matchesWorkout(of: mainTimer) }
+    /// Hvězdička v toolbaru podle stavu uložení:
+    ///
+    /// - neuloženo → prázdná hvězdička, uloží timer do oblíbených,
+    /// - uloženo → plná, menu s přejmenováním a odebráním,
+    /// - upraveno → plná s tečkou, menu s uložením změn, uložením
+    ///   jako nový a vrácením uloženého.
+    @ViewBuilder
+    private var favouriteButton: some View {
+        switch saveState {
+        case .unsaved:
+            Button {
+                askForNewFavouriteName()
+            } label: {
+                Image(systemName: "star")
+            }
+
+        case .saved(let favourite):
+            Menu {
+                Button {
+                    renamedTimerName = favourite.name
+                    showRenameAlert = true
+                } label: {
+                    Label("RENAME_FAVOURITE", systemImage: "pencil")
+                }
+                Button(role: .destructive) {
+                    removeFavourite(favourite)
+                } label: {
+                    Label("REMOVE_FROM_FAVOURITES", systemImage: "star.slash")
+                }
+            } label: {
+                Image(systemName: "star.fill")
+            }
+
+        case .modified(let favourite):
+            Menu {
+                Button {
+                    saveChanges()
+                } label: {
+                    Label("SAVE_CHANGES_TO \(favourite.name)", systemImage: "square.and.arrow.down")
+                }
+                Button {
+                    askForNewFavouriteName()
+                } label: {
+                    Label("SAVE_AS_NEW", systemImage: "plus")
+                }
+                Button(role: .destructive) {
+                    revertChanges()
+                } label: {
+                    Label("REVERT_TO_SAVED", systemImage: "arrow.uturn.backward")
+                }
+            } label: {
+                Image(systemName: "star.fill")
+                    .overlay(alignment: .topTrailing) {
+                        Circle()
+                            .fill(Color.gustavPink)
+                            .frame(width: 7, height: 7)
+                            .offset(x: 3, y: -2)
+                    }
+            }
         }
-        return false
+    }
+
+    /// Dialog startuje se stávajícím názvem, ať ho uživatel nemusí psát
+    /// znovu – stačí ho upravit nebo potvrdit.
+    private func askForNewFavouriteName() {
+        newTimerName = currentTimerData.name
+        showSaveAlert = true
     }
     
     /// Binding na jedno pole aktivního timeru. Zápis rovnou uloží kontext,
@@ -376,8 +456,7 @@ struct SettingsView: View {
     }
     
     private func refreshLastSavedTimers() {
-        let saved = timerData
-            .filter { $0.order != 0 }
+        let saved = favouriteTimers
             .sorted(by: { ($0.lastUsed ?? .distantPast) > ($1.lastUsed ?? .distantPast) })
         cachedLastSavedTimers = Array(saved)
     }
@@ -391,23 +470,32 @@ struct SettingsView: View {
     }
     
     private func saveTimer() {
-        guard let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) else { return }
-
-        let newOrder = (timerData.map { $0.order }.max() ?? 0) + 1
-        var settings = mainTimer.settings
-        settings.name = resolvedTimerName(fallback: mainTimer.name)
-        context.insert(TimerData(order: newOrder, settings: settings))
-        // Aktivní timer převezme pojmenování, aby se hned poznal jako uložený.
-        mainTimer.name = settings.name
-
-        Analytics.timerSaved(settings, screen: .settings)
+        let favourite = FavouriteTimers.saveAsNew(name: newTimerName, in: context)
+        Analytics.timerSaved(favourite.settings, screen: .settings, mode: .new)
     }
 
-    /// Název z dialogu, ořezaný a omezený délkou. Vymazané pole se nebere jako
-    /// „pojmenuj to prázdně“ – v oblíbených by z toho byl bezejmenný řádek.
-    private func resolvedTimerName(fallback: String) -> String {
-        let trimmed = newTimerName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return String((trimmed.isEmpty ? fallback : trimmed).prefix(AppConfig.maxTimerTitle))
+    private func saveChanges() {
+        FavouriteTimers.saveChanges(in: context)
+        Analytics.timerSaved(currentTimerData.settings, screen: .settings, mode: .update)
+    }
+
+    private func revertChanges() {
+        withAnimation {
+            FavouriteTimers.revert(in: context)
+        }
+        Analytics.send(.timerReverted)
+    }
+
+    private func renameFavourite() {
+        guard let favourite = saveState.source else { return }
+        FavouriteTimers.rename(favourite, to: renamedTimerName, in: context)
+        Analytics.settingChanged("favourite", value: "renamed")
+    }
+
+    private func removeFavourite(_ favourite: TimerData) {
+        FavouriteTimers.remove(favourite, in: context)
+        refreshLastSavedTimers()
+        Analytics.settingChanged("favourite", value: "removed")
     }
     
     private func updateIntervalName(_ name: String, for intervalId: UUID, in timerData: TimerData) {
@@ -446,10 +534,8 @@ struct SettingsView: View {
     }
     
     private func selectTimer(timer: TimerData) {
-        timer.selected()
+        FavouriteTimers.load(timer, in: context)
         Analytics.favouriteSelected(timer, screen: .settings)
-        TimerData.mainTimer(in: context).settings = timer.settings
-        try? context.save()
     }
     
     var summaryText: String {

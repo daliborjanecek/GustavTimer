@@ -440,7 +440,8 @@ class TimerViewModel: ObservableObject {
         let merged = link.applied(to: settings)
 
         apply(merged, resetState: true)
-        persist(merged)
+        // Timer z odkazu v oblíbených není – aktivní timer se od oblíbeného odpojí.
+        persist(merged, detachingSource: true)
         lastLinkSettings = merged
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -501,10 +502,18 @@ extension TimerViewModel {
     }
 
     /// Zapíše kompletní nastavení do hlavního timeru (order == 0).
-    private func persist(_ newSettings: TimerSettings) {
+    ///
+    /// - Parameter detachingSource: nový timer odjinud (odkaz) – zapomene,
+    ///   ze kterého oblíbeného aktivní timer vznikl. Úprava intervalů ho
+    ///   nechává, ta se ukáže jako neuložená úprava oblíbeného.
+    private func persist(_ newSettings: TimerSettings, detachingSource: Bool = false) {
         guard let context = modelContext else { return }
 
-        TimerData.mainTimer(in: context).settings = newSettings
+        let main = TimerData.mainTimer(in: context)
+        main.settings = newSettings
+        if detachingSource {
+            main.sourceID = nil
+        }
         do {
             try context.save()
         } catch {

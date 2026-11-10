@@ -29,6 +29,7 @@ enum AnalyticsSignal: String {
 
     // Výběr a ukládání timeru
     case timerSaved = "timer.saved"
+    case timerReverted = "timer.reverted"
     case presetSelected = "timer.preloadselected"
     case favouriteSelected = "timer.favourite_selected"
     case soundSelected = "timer.sound_selected"
@@ -68,6 +69,14 @@ enum TimerInput: String {
     case tap
     /// Tap na odpočet na šířku, kde tlačítka nejsou.
     case landscapeTap = "landscape_tap"
+}
+
+/// Jak se timer uložil do oblíbených – parametr `mode` u `timer.saved`.
+enum TimerSaveMode: String {
+    /// Nový oblíbený.
+    case new
+    /// Úpravy zapsané do oblíbeného, ze kterého timer vznikl.
+    case update
 }
 
 /// Obrazovka, ze které uživatel vybral timer.
@@ -219,9 +228,10 @@ enum Analytics {
         ])
     }
 
-    static func timerSaved(_ settings: TimerSettings, screen: TimerSelectionScreen) {
+    static func timerSaved(_ settings: TimerSettings, screen: TimerSelectionScreen, mode: TimerSaveMode) {
         var parameters = self.parameters(for: settings)
         parameters["screen"] = screen.rawValue
+        parameters["mode"] = mode.rawValue
         send(.timerSaved, parameters: parameters)
     }
 

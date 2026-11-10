@@ -18,7 +18,6 @@ struct FavouritesView: View {
     @State var newTimerName: String = ""
     @State var showDeleteAlert: Bool = false
     @State var timerToDelete: TimerData?
-    @State var showAlreadySavedAlert: Bool = false
     @State private var editMode: EditMode = .inactive
     @State private var selectedTip: Int = Int.random(in: 0...2)
     
@@ -31,18 +30,22 @@ struct FavouritesView: View {
         .toolbar { toolbar }
         .environment(\.editMode, $editMode)
         .saveTimerAlert(isPresented: $showSaveAlert, timerName: $newTimerName, onSave: saveTimer)
-        .alreadySavedAlert(isPresented: $showAlreadySavedAlert)
     }
     
     @ViewBuilder
     private var savedTimers: some View {
         Section {
-            let savedTimers = timerData.filter { $0.order != 0 }
+            let savedTimers = favouriteTimers
             if !savedTimers.isEmpty {
                 ForEach(savedTimers) { timer in
-                    FavouriteRowView(settings: timer.settings, selected: isSelected(timer.settings))
+                    let selected = isSelected(timer)
+                    FavouriteRowView(
+                        settings: timer.settings,
+                        selected: selected,
+                        isModified: selected && isMainTimerModified
+                    )
                         .onTapGesture {
-                            select(timer.settings, tracking: timer)
+                            select(timer)
                         }
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             if TimerShareSheet.url(for: timer.settings) != nil {
@@ -76,10 +79,10 @@ struct FavouritesView: View {
         Section {
             let preloadedTimers = PredefinedTimer.allCases
             ForEach(preloadedTimers) { preset in
-                FavouriteRowView(settings: preset.settings, selected: isSelected(preset.settings), tip: preset.description[selectedTip])
+                FavouriteRowView(settings: preset.settings, selected: isSelected(preset), tip: preset.description[selectedTip])
                     .onTapGesture {
                         Analytics.presetSelected(preset, screen: .favourites)
-                        select(preset.settings)
+                        FavouriteTimers.load(preset.settings, in: context)
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
                         if TimerShareSheet.url(for: preset.settings) != nil {
@@ -120,17 +123,11 @@ struct FavouritesView: View {
         }
         
         ToolbarItem {
+            // Vždy uloží aktivní timer jako nový oblíbený. Dialog startuje se
+            // stávajícím názvem, ať ho uživatel nemusí psát znovu.
             Button {
-                let savedTimers = timerData.filter { $0.order != AppConfig.mainTimerOrder }
-                if let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }),
-                   !savedTimers.contains(where: { $0.matchesWorkout(of: mainTimer) }) {
-                    // Dialog startuje se stávajícím názvem, ať ho uživatel
-                    // nemusí psát znovu – stačí ho upravit nebo potvrdit.
-                    newTimerName = mainTimer.name
-                    showSaveAlert.toggle()
-                } else {
-                    showAlreadySavedAlert.toggle()
-                }
+                newTimerName = TimerData.mainTimer(in: context).name
+                showSaveAlert = true
             } label: {
                 Image(systemName: "plus")
             }
@@ -149,7 +146,7 @@ struct FavouritesView: View {
     
     private func moveTimer(from indices: IndexSet, to newOffset: Int) {
         // Získáme pouze uložené časovače (bez hlavního časovače)
-        let savedTimers = timerData.filter { $0.order != 0 }
+        let savedTimers = favouriteTimers
         
         // Vytvoříme kopii časovačů, se kterou můžeme pracovat
         var movedTimers = savedTimers
@@ -171,47 +168,44 @@ struct FavouritesView: View {
     
     private func deleteTimer() {
         if let timerToDelete = timerToDelete {
-            context.delete(timerToDelete)
+            FavouriteTimers.remove(timerToDelete, in: context)
         }
     }
     
     private func saveTimer() {
-        guard let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) else { return }
-
-        let newId = (timerData.map { $0.order }.max() ?? 0) + 1
-        var settings = mainTimer.settings
-        settings.name = resolvedTimerName(fallback: mainTimer.name)
-        let newTimer = TimerData(order: newId, settings: settings)
-        context.insert(newTimer)
-        // Aktivní timer převezme pojmenování, aby se hned poznal jako uložený.
-        mainTimer.name = settings.name
-
-        Analytics.timerSaved(settings, screen: .favourites)
+        let favourite = FavouriteTimers.saveAsNew(name: newTimerName, in: context)
+        Analytics.timerSaved(favourite.settings, screen: .favourites, mode: .new)
     }
 
-    /// Název z dialogu, ořezaný a omezený délkou. Vymazané pole se nebere jako
-    /// „pojmenuj to prázdně“ – v oblíbených by z toho byl bezejmenný řádek.
-    private func resolvedTimerName(fallback: String) -> String {
-        let trimmed = newTimerName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return String((trimmed.isEmpty ? fallback : trimmed).prefix(AppConfig.maxTimerTitle))
-    }
-    
-    /// Nastaví hlavní timer podle zadaného nastavení.
-    ///
-    /// - Parameter tracking: uložený oblíbený, kterému se má započítat použití.
-    ///   Presety ho nemají – nejsou v databázi, takže není kam počítat.
-    private func select(_ settings: TimerSettings, tracking timer: TimerData? = nil) {
-        if let timer {
-            timer.selected()
-            Analytics.favouriteSelected(timer, screen: .favourites)
-        }
-        TimerData.mainTimer(in: context).settings = settings
-        try? context.save()
+    private func select(_ timer: TimerData) {
+        FavouriteTimers.load(timer, in: context)
+        Analytics.favouriteSelected(timer, screen: .favourites)
     }
 
-    private func isSelected(_ settings: TimerSettings) -> Bool {
-        guard let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) else { return false }
-        return mainTimer.settings.matchesWorkout(of: settings)
+    private var mainTimer: TimerData? {
+        timerData.first { $0.order == AppConfig.mainTimerOrder }
+    }
+
+    private var favouriteTimers: [TimerData] {
+        timerData.filter { $0.order > AppConfig.mainTimerOrder }
+    }
+
+    /// Načtený oblíbený má neuložené úpravy.
+    private var isMainTimerModified: Bool {
+        guard let mainTimer else { return false }
+        return FavouriteTimers.state(main: mainTimer, favourites: favouriteTimers).isModified
+    }
+
+    /// Oblíbený je vybraný, když z něj aktivní timer vznikl – i když je upravený.
+    private func isSelected(_ timer: TimerData) -> Bool {
+        mainTimer?.sourceID == timer.id
+    }
+
+    /// Preset v databázi není, takže se pozná jen shodou tréninku – a jen
+    /// když aktivní timer nepochází z oblíbeného.
+    private func isSelected(_ preset: PredefinedTimer) -> Bool {
+        guard let mainTimer, mainTimer.sourceID == nil else { return false }
+        return mainTimer.settings.matchesWorkout(of: preset.settings)
     }
 }
 

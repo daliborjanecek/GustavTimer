@@ -57,6 +57,7 @@ struct ContentView: View {
     
     private func initializeDataIfNeeded() {
         TimerData.mainTimer(in: context)
+        FavouriteTimers.linkLegacySource(in: context)
         try? context.save()
     }
 

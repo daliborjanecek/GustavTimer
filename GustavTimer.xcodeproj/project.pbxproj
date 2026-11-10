@@ -33,6 +33,7 @@
 		CF21844229F0528C0060706C /* TimerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21844129F0528C0060706C /* TimerViewModel.swift */; };
 		CF2222D02E353EA600A90265 /* TimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF2222CF2E353EA300A90265 /* TimerView.swift */; };
 		CF2222DA2E355A8200A90265 /* TimerData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF2222D92E355A8000A90265 /* TimerData.swift */; };
+		CF10D05A2E733A1000F84454 /* FavouriteTimers.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF10D0592E733A1000F84454 /* FavouriteTimers.swift */; };
 		CF228F502E7C52B9000DEF21 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF228F4F2E7C52B5000DEF21 /* AppPreferences.swift */; };
 		CF228F542E7D7ED4000DEF21 /* SearchTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF228F532E7D7ECF000DEF21 /* SearchTabView.swift */; };
 		CFA10D022FB3E00100000002 /* Analytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10D012FB3E00100000001 /* Analytics.swift */; };
@@ -61,6 +62,7 @@
 		CF9922B12C959AC1004186DF /* ControlButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF9922B02C959AC1004186DF /* ControlButton.swift */; };
 		CFA10A022FA9B00100000002 /* SharedTimerLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10A012FA9B00100000001 /* SharedTimerLink.swift */; };
 		CFA10D042FB3E00100000004 /* AnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10D032FB3E00100000003 /* AnalyticsTests.swift */; };
+		CF10D05C2E733A1000F84454 /* FavouriteTimersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF10D05B2E733A1000F84454 /* FavouriteTimersTests.swift */; };
 		CFA10A052FA9B00100000005 /* SharedTimerLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */; };
 		CFA10B022FB0C00100000002 /* TimerSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10B012FB0C00100000001 /* TimerSettings.swift */; };
 		CFA10B042FB0C00100000004 /* SettingsMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10B032FB0C00100000003 /* SettingsMigration.swift */; };
@@ -123,6 +125,7 @@
 		CF21844129F0528C0060706C /* TimerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerViewModel.swift; sourceTree = "<group>"; };
 		CF2222CF2E353EA300A90265 /* TimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerView.swift; sourceTree = "<group>"; };
 		CF2222D92E355A8000A90265 /* TimerData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerData.swift; sourceTree = "<group>"; };
+		CF10D0592E733A1000F84454 /* FavouriteTimers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavouriteTimers.swift; sourceTree = "<group>"; };
 		CF228F4F2E7C52B5000DEF21 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
 		CF228F532E7D7ECF000DEF21 /* SearchTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTabView.swift; sourceTree = "<group>"; };
 		CFA10D012FB3E00100000001 /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
@@ -150,6 +153,7 @@
 		CFA10A012FA9B00100000001 /* SharedTimerLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTimerLink.swift; sourceTree = "<group>"; };
 		CFA10A032FA9B00100000003 /* GustavTimer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GustavTimer.entitlements; sourceTree = "<group>"; };
 		CFA10D032FB3E00100000003 /* AnalyticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsTests.swift; sourceTree = "<group>"; };
+		CF10D05B2E733A1000F84454 /* FavouriteTimersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavouriteTimersTests.swift; sourceTree = "<group>"; };
 		CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTimerLinkTests.swift; sourceTree = "<group>"; };
 		CFA10A082FA9B00100000008 /* GustavTimerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GustavTimerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CFA10B012FB0C00100000001 /* TimerSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerSettings.swift; sourceTree = "<group>"; };
@@ -357,6 +361,7 @@
 				CFFAF94E2F3DEE3C00A20D76 /* SoundModel+Title.swift */,
 				CF4977922EED67B700EE09B1 /* BannerImageModel.swift */,
 				CF2222D92E355A8000A90265 /* TimerData.swift */,
+				CF10D0592E733A1000F84454 /* FavouriteTimers.swift */,
 				CFB1394E2AE59ED900EE8B2C /* BackgroundImageModel.swift */,
 				CF7BCED62BB881C900A65EF1 /* CustomImageModel.swift */,
 			);
@@ -379,6 +384,7 @@
 			children = (
 				CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */,
 				CFA10D032FB3E00100000003 /* AnalyticsTests.swift */,
+				CF10D05B2E733A1000F84454 /* FavouriteTimersTests.swift */,
 				CFA10E0C2FB4F0010000000C /* RemoteContentTests.swift */,
 			);
 			path = GustavTimerTests;
@@ -614,6 +620,7 @@
 				CFA10E082FB4F00100000008 /* RemoteContentDebugView.swift in Sources */,
 				CFA10E0A2FB4F0010000000A /* AppLinkRouter.swift in Sources */,
 				CF2222DA2E355A8200A90265 /* TimerData.swift in Sources */,
+				CF10D05A2E733A1000F84454 /* FavouriteTimers.swift in Sources */,
 				CF228F542E7D7ED4000DEF21 /* SearchTabView.swift in Sources */,
 				CF4A94BD2F4EF11200A7B250 /* PredefinedTimer.swift in Sources */,
 			);
@@ -625,6 +632,7 @@
 			files = (
 				CFA10A052FA9B00100000005 /* SharedTimerLinkTests.swift in Sources */,
 				CFA10D042FB3E00100000004 /* AnalyticsTests.swift in Sources */,
+				CF10D05C2E733A1000F84454 /* FavouriteTimersTests.swift in Sources */,
 				CFA10E0D2FB4F0010000000D /* RemoteContentTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

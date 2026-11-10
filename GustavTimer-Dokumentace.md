@@ -244,13 +244,14 @@ Hlavní entita časovače. Ukládá se přes SwiftData.
 | `createdAt` | `Date` | Datum vytvoření |
 | `usedCount` | `Int` | Kolikrát byl použit |
 | `lastUsed` | `Date?` | Naposledy použit (řazení oblíbených) |
+| `sourceID` | `UUID?` | Jen hlavní timer: `id` oblíbeného, ze kterého vznikl (`nil` = preset, odkaz, nový). Viz [[#Uložené (Saved) timery]] |
 
 > [!important] Význam `order`
 > - **`order == 0`** → **aktivní (hlavní) časovač**, který právě běží na hlavní obrazovce. Vždy existuje právě jeden.
 > - **`order > 0`** → **uložené oblíbené** časovače (vyšší = novější).
 > - **`order < 0`** → historicky předdefinované presety. Od verze 2.4 presety `TimerData` vůbec nejsou – jsou to hodnoty `TimerSettings` v enumu `PredefinedTimer` a `TimerData` z nich vznikne, až si je uživatel uloží mezi oblíbené.
 >
-> Shodu řeší `matchesWorkout(of:)` – porovná **celé nastavení kromě názvu**. Díky tomu appka pozná, zda je aktuální časovač už uložený mezi oblíbenými (hvězdička v toolbaru). Do verze 2.3 to bylo `Equatable` porovnávající jen `intervals`, takže časovač se stejnými intervaly a jiným zvukem se tvářil jako už uložený.
+> Jestli je aktivní časovač uložený, se pozná podle `sourceID` (`FavouriteTimers.state`), ne porovnáním. `matchesWorkout(of:)` (celé nastavení kromě názvu) slouží jen k označení vybraného presetu a k analytice (`Analytics.origin`).
 
 #### `CustomImageModel` (`@Model`)
 Jednoduchý model držící `Data` vlastní fotky uživatele použité jako pozadí.
@@ -356,7 +357,11 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 ### Toolbar
 
 - **✕** zavřít (na iOS 26+ `role: .close`).
-- **☆ / ★** uložit aktuální časovač mezi oblíbené (nebo info, že už je uložený).
+- **☆ / ★** podle stavu uložení (`FavouriteTimers.SaveState`):
+  - ☆ *neuloženo* → dialog s názvem, uloží jako nový oblíbený,
+  - ★ *uloženo* → menu Přejmenovat / Odebrat z oblíbených,
+  - ★• *upraveno* (tečka) → menu Uložit změny do „X“ / Uložit jako nový… / Vrátit uložené.
+  Stav je i textem pod názvem timeru.
 - **+** přidat interval (pokud není dosaženo limitu 10).
 - **slider** přepnout edit mód (reorder/delete).
 
@@ -381,8 +386,23 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 `Views/Settings/FavouritesView.swift`
 
 ### Uložené (Saved) timery
-- Filtr `order != 0`, řazené dle `order` sestupně.
-- Tap → **vybere** časovač (zkopíruje jeho data do hlavního `order == 0`, zvýší `usedCount`, nastaví `lastUsed`).
+Všechny operace s oblíbenými jsou v `Models/FavouriteTimers.swift`.
+
+Hlavní timer (`order == 0`) je **pracovní kopie**. Načtením oblíbeného si zapamatuje jeho `id` v `sourceID`. Úpravy se do oblíbeného **nepropisují samy**, takže jednorázová úprava na jeden trénink oblíbený nepřepíše. Stav:
+
+| Stav | Kdy |
+|---|---|
+| `.unsaved` | `sourceID == nil` (preset, odkaz, nový timer) nebo zdroj mezitím smazaný |
+| `.saved(fav)` | nastavení se shoduje se zdrojem **celé, i s názvem** |
+| `.modified(fav)` | nastavení se od zdroje liší, i jen zvukem, haptikou, tikáním, odpočtem nebo názvem |
+
+- *Uložit změny* zapíše nastavení do zdroje, *Vrátit uložené* ho vezme zpět, *Uložit jako nový* založí oblíbený a přepne `sourceID` na něj.
+- Preset a odkaz `sourceID` vynulují. Úprava intervalů za běhu (`TimerViewModel.persistIntervals`) ho nechává, takže se ukáže jako úprava.
+- Instalace z doby před `sourceID`: při startu se hlavní timer propojí s oblíbeným, který se s ním shoduje úplně (`linkLegacySource`).
+
+- Filtr `order > 0`, řazené dle `order` sestupně.
+- Tap → **načte** časovač (`FavouriteTimers.load`: zkopíruje data do hlavního, nastaví `sourceID`, zvýší `usedCount`, nastaví `lastUsed`). Vybraný je ten, ze kterého hlavní timer vznikl; s neuloženými úpravami má štítek „Upraveno“.
+- **+** v toolbaru vždy uloží aktivní timer jako nový oblíbený.
 - Swipe (leading) → **ShareLink** s deep-link URL (sdílení časovače).
 - Swipe (trailing) / edit mód → smazat, drag → přeřadit (přepočítá `order`).
 - Prázdný stav → `FavouritesEmptyView`.
@@ -401,7 +421,7 @@ Z enumu `PredefinedTimer` (každý case nese `settings: TimerSettings` a tři ti
 Každý preset má 3 lokalizované **tipy** (`description[0..2]`), zobrazuje se náhodný.
 
 ### `FavouriteRowView`
-Vykresluje řádek časovače – mini progress bary jednotlivých intervalů (šířka dle poměru), název, ikony stavu (smyčka/zvuk/vibrace) a volitelný tip. Hlavní časovač (`order == 0`) má label `CURRENT_TIMER` a poloprůhledný název.
+Vykresluje řádek časovače – mini progress bary jednotlivých intervalů (šířka dle poměru), název, štítek „Upraveno“ (`isModified`), ikony stavu (smyčka/zvuk/vibrace) a volitelný tip. Hlavní časovač (`order == 0`) má label `CURRENT_TIMER` a poloprůhledný název.
 
 ### `SearchTabView`
 Vyhledávání mezi oblíbenými i předdefinovanými (`localizedCaseInsensitiveContains`).
@@ -592,7 +612,8 @@ Trychtýř: `timer.started` (`is_resume=false`) → `timer.completed`, nebo `tim
 |---|---|---|
 | `timer.preloadselected` | Výběr presetu v oblíbených nebo ve vyhledávání | `timer_name`, `preset`, `interval_pattern`, `screen` (`favourites` / `search`) |
 | `timer.favourite_selected` | Výběr uloženého oblíbeného | `interval_pattern`, `use_count`, `screen` (`favourites` / `search` / `settings`) |
-| `timer.saved` | Uložení mezi oblíbené | *nastavení*, `screen` (`settings` / `favourites`) |
+| `timer.saved` | Uložení mezi oblíbené | *nastavení*, `screen` (`settings` / `favourites`), `mode` (`new` = nový oblíbený, `update` = uložené změny načteného oblíbeného) |
+| `timer.reverted` | *Vrátit uložené* – zahozené úpravy načteného oblíbeného | – |
 | `timer.shared` | Dokončené sdílení odkazu na timer | `origin` (`settings` / `favourite` / `preset`), `channel` (`messages`, `whatsapp`, `copy`…), `interval_pattern`, u presetů `timer_name` |
 | `timer.share_cancelled` | Zavřený share sheet bez sdílení | `origin`, `interval_pattern`, u presetů `timer_name` |
 | `timer.link_opened` | Otevření sdíleného odkazu | `source` (`utm_source`, jinak `unknown`), `link_type` (`universal` / `scheme` / `in_app` = z banneru v aplikaci, nepočítá se jako akvizice), `loaded` (`false` i u odmítnutého odkazu), `prompt` (`accepted` / `declined`, `none` u neplatného odkazu – posílá se až po odpovědi), případně `campaign`, `interval_pattern`, `has_settings` |
@@ -605,7 +626,7 @@ Share sheet (`TimerShareSheet`) zapíše zvolený kanál do odesílaného odkazu
 
 | Signál | Kdy | Parametry |
 |---|---|---|
-| `settings.changed` | Změna volby | `setting` (`haptics`, `countdown`, `ticking`, `rounds`, `sound_enabled`, `background` – index / `custom` / `remote`, `interval_added`, `interval_removed`), `value` |
+| `settings.changed` | Změna volby | `setting` (`haptics`, `countdown`, `ticking`, `rounds`, `sound_enabled`, `background` – index / `custom` / `remote`, `interval_added`, `interval_removed`, `favourite` – `renamed` / `removed` z menu hvězdičky), `value` |
 | `timer.sound_selected` | Výběr zvuku | `sound` |
 | `settings.display_format_changed` | Swipe formátu odpočtu | `orientation`, `format` |
 | `link.opened` | Odkaz z nastavení | `target` (`rate`, `weights`, `instagram`, `youtube`, `banner`, `remote_link`); u banneru `banner_source` (`builtin` / `remote`), `banner_id`, `banner_type`; u odkazu z API `link_id` |
