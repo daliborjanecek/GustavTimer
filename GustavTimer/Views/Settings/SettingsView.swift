@@ -7,7 +7,6 @@
 
 import SwiftUI
 import SwiftData
-import SafariServices
 import GustavUICore
 
 struct SettingsView: View {
@@ -217,9 +216,8 @@ struct SettingsView: View {
         }
     }
     
-    /// Odkazy z API jsou nahoře, za nimi pevné položky (hodnocení, nápady).
-    /// Vestavěné odkazy (Weights, Instagram, YouTube) se ukážou, jen když
-    /// žádný platný odkaz z API není.
+    /// Odkazy z API (včetně nástěnky nápadů). Když žádný platný odkaz z API
+    /// není, ukáže se vestavěné „Ohodnoť“.
     @ViewBuilder
     private var more: some View {
         SettingsSection(label: "MORE") {
@@ -233,17 +231,8 @@ struct SettingsView: View {
                 .foregroundStyle(Color.gustavPink)
             }
 
-            ButtonLink(label: "RATE", URLString: AppConfig.reviewURL, target: "rate")
-
-            Button("SUGGEST_FEATURE", action: openIdeasBoard)
-                .foregroundStyle(Color.gustavPink)
-
             if remoteLinks.isEmpty {
-                ButtonLink(label: "TRY_WEIGHTS", URLString: AppConfig.weightsURL, target: "weights")
-
-                ButtonLink(label: "FOLLOW_INSTAGRAM", URLString: AppConfig.instagramURL, target: "instagram")
-
-                ButtonLink(label: "WATCH_ON_YOUTUBE", URLString: AppConfig.youtubeURL, target: "youtube")
+                ButtonLink(label: "RATE", URLString: AppConfig.reviewURL, target: "rate")
             }
         }
     }
@@ -351,33 +340,6 @@ struct SettingsView: View {
         }
     }
     
-    /// Nástěnka s nápady se otevírá uvnitř aplikace, aby se uživatel vrátil
-    /// rovnou do nastavení. Technické údaje v adrese web vloží do skrytých
-    /// polí formuláře, takže se u nahlášených chyb nemusí doptávat.
-    private func openIdeasBoard() {
-        guard let url = ideasBoardURL else { return }
-        Analytics.send(.ideasOpened)
-        InAppBrowser.open(url)
-    }
-
-    private var ideasBoardURL: URL? {
-        guard var components = URLComponents(string: AppConfig.ideasBoardURL) else { return nil }
-        let info = Bundle.main.infoDictionary
-        let items: [(String, String?)] = [
-            ("app", AppConfig.ideasBoardAppID),
-            ("v", info?["CFBundleShortVersionString"] as? String),
-            ("build", info?["CFBundleVersion"] as? String),
-            ("ios", UIDevice.current.systemVersion),
-            ("device", InAppBrowser.deviceModelIdentifier),
-            // Jazyk, ve kterém aplikace opravdu běží (cs/en), ne jazyk systému.
-            ("lang", Bundle.main.preferredLocalizations.first)
-        ]
-        components.queryItems = items.compactMap { name, value in
-            value.map { URLQueryItem(name: name, value: $0) }
-        }
-        return components.url
-    }
-
     private func isTimerAlreadySaved() -> Bool {
         let savedTimers = timerData.filter { $0.order != AppConfig.mainTimerOrder }
         if let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) {
@@ -573,39 +535,6 @@ private struct ButtonLink: View {
             }
         }
         .foregroundStyle(Color.gustavPink)
-    }
-}
-
-/// Webová stránka v `SFSafariViewController` uvnitř aplikace.
-///
-/// Prezentuje se přes UIKit nad nejvyšším otevřeným oknem (tady nad sheetem
-/// Settings), ne přes SwiftUI `.sheet` – Safari si tlačítkem Zavřít zavírá
-/// samo sebe a SwiftUI by se o tom nedozvědělo.
-private enum InAppBrowser {
-    @MainActor
-    static func open(_ url: URL) {
-        guard let top = UIApplication.shared.topmostViewController else {
-            UIApplication.shared.open(url)
-            return
-        }
-
-        let safari = SFSafariViewController(url: url)
-        safari.preferredControlTintColor = UIColor(Color.gustavPink)
-        safari.dismissButtonStyle = .close
-        top.present(safari, animated: true)
-    }
-
-    /// Model zařízení, např. `iPhone15,2`. Na simulátoru by `uname` vrátil
-    /// jen `arm64`, proto se tam bere simulovaný model.
-    static var deviceModelIdentifier: String {
-        if let simulated = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] {
-            return simulated
-        }
-        var systemInfo = utsname()
-        uname(&systemInfo)
-        return withUnsafeBytes(of: &systemInfo.machine) { bytes in
-            String(decoding: bytes.prefix { $0 != 0 }, as: UTF8.self)
-        }
     }
 }
 

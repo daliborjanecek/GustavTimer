@@ -19,15 +19,10 @@ struct AppConfig {
     
     // Odkazy
     static let reviewURL: String = "https://apps.apple.com/app/id6478176431?action=write-review"
-    static let weightsURL: String = "https://apps.apple.com/us/app/gustav-weights/id6483001116"
-    static let instagramURL: String = "https://www.instagram.com/gustavtraining"
-    static let youtubeChallengeURL: String = "https://youtube.com/playlist?list=PLi2Zd-0ICmgIoaWudLzSF8Jt5VKAWSvdR&si=NaYIwDYMCX9rsIFW"
-    static let youtubeURL: String = "https://www.youtube.com/@Gustavtraining"
-    /// Nástěnka s nápady na webu. Aplikace k adrese přidá technické údaje
-    /// (verze, iOS, zařízení, jazyk), které web vloží do formuláře.
-    static let ideasBoardURL: String = "https://gustavtraining.com/ideas/"
-    /// Označení aplikace pro nástěnku – stejný web slouží i Gustav Weights.
-    static let ideasBoardAppID: String = "timer"
+//    static let weightsURL: String = "https://apps.apple.com/us/app/gustav-weights/id6483001116"
+//    static let instagramURL: String = "https://www.instagram.com/gustavtraining"
+//    static let youtubeChallengeURL: String = "https://youtube.com/playlist?list=PLi2Zd-0ICmgIoaWudLzSF8Jt5VKAWSvdR&si=NaYIwDYMCX9rsIFW"
+//    static let youtubeURL: String = "https://www.youtube.com/@Gustavtraining"
     /// Vzdáleně spravované bannery, odkazy a pozadí – viz `RemoteContentManager`.
     static let remoteContentURL = URL(string: "https://www.gustavtraining.com/wp-json/gustav-timer/v1/content")!
 
@@ -60,15 +55,8 @@ struct AppConfig {
     
     static let bannerName: LocalizedStringKey = "CHALLENGE"
     static let bannerImages: [BannerImageModel] = [
-        // v 2.0.0
-        BannerImageModel(imageResource: .duckwalk, urlString: "https://youtu.be/C21zLk6bwyI"),
-        BannerImageModel(imageResource: .wallsit, urlString: "https://youtu.be/zg7vFGYauh8"),
-        BannerImageModel(imageResource: .mountainclimbers, urlString: "https://youtu.be/-LzQuHB1Bjs"),
-        
-        // update 2.2.0
-        BannerImageModel(imageResource: .legraises, urlString: "https://youtu.be/4T9a8pFtgEk"),
-        BannerImageModel(imageResource: .plank, urlString: "https://youtu.be/9ZVFN9BxauA"),
-        BannerImageModel(imageResource: .jumplunges, urlString: "https://youtu.be/HK3M9p7xAk0")
+        // v 2.4.0
+        BannerImageModel(imageResource: .gustavChallenge, urlString: "https://www.youtube.com/playlist?list=PLi2Zd-0ICmgIoaWudLzSF8Jt5VKAWSvdR")
         
     ]
     

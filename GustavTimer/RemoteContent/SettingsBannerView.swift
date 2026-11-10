@@ -34,7 +34,7 @@ private struct BuiltInBanner: View {
 
     var body: some View {
         if let banner {
-            SettingsSection(label: AppConfig.bannerName) {
+            SettingsSection {
                 banner.getImage()
                     .resizable()
                     .scaledToFit()

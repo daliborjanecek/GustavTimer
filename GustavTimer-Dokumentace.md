@@ -609,7 +609,6 @@ Share sheet (`TimerShareSheet`) zapíše zvolený kanál do odesílaného odkazu
 | `timer.sound_selected` | Výběr zvuku | `sound` |
 | `settings.display_format_changed` | Swipe formátu odpočtu | `orientation`, `format` |
 | `link.opened` | Odkaz z nastavení | `target` (`rate`, `weights`, `instagram`, `youtube`, `banner`, `remote_link`); u banneru `banner_source` (`builtin` / `remote`), `banner_id`, `banner_type`; u odkazu z API `link_id` |
-| `ideas.opened` | Otevření nástěnky nápadů | – |
 | `whatsnew.shown` | Zobrazení „Co je nového“ | `version` |
 | `TelemetryDeck.Activation.onboardingCompleted` | Zavření onboardingu (tlačítkem i swipem) | – |
 | `TelemetryDeck.Error.occurred` | `link.invalid` (odkaz bez platného intervalu), `timer.persist_failed` (selhalo uložení SwiftData) | `TelemetryDeck.Error.id`, kategorie |
