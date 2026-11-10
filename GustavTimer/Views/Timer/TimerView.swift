@@ -208,20 +208,35 @@ private extension TimerView {
     ///
     /// Tap spustí/zastaví timer, dvojtap přeskočí interval. Stránka zabírá celé
     /// volné místo, takže na tapy reaguje i okolí čísla.
+    ///
+    /// Na šířku zasahuje bezpečná zóna (výřez, zaoblené rohy) do stran, takže
+    /// stránkovaný view by končil před okrajem displeje a při swipu by byly
+    /// vidět jeho hrany. `TabView` proto sahá až k okrajům a dovnitř stránky
+    /// se bezpečná zóna vrací jen jako odsazení čísla.
     func counterDisplay(format: Binding<TimeDisplayFormat>, formats: [TimeDisplayFormat]) -> some View {
-        TabView(selection: format) {
-            ForEach(formats, id: \.self) { pageFormat in
-                Text(viewModel.formattedCurrentTime(timeDisplayFormat: pageFormat))
-                    .font(.timerCounter)
-                    .minimumScaleFactor(0.01)
-                    .foregroundColor(Color.gustavVolt)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .contentShape(Rectangle())
-                    .playbackTaps(onTap: { startStopByTap() }, onDoubleTap: skipIfRunning)
-                    .tag(pageFormat)
+        GeometryReader { geometry in
+            let insets = geometry.safeAreaInsets
+            TabView(selection: format) {
+                ForEach(formats, id: \.self) { pageFormat in
+                    Text(viewModel.formattedCurrentTime(timeDisplayFormat: pageFormat))
+                        .font(.timerCounter)
+                        .minimumScaleFactor(0.01)
+                        .foregroundColor(Color.gustavVolt)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(.leading, insets.leading)
+                        .padding(.trailing, insets.trailing)
+                        .contentShape(Rectangle())
+                        .playbackTaps(onTap: { startStopByTap() }, onDoubleTap: skipIfRunning)
+                        // Stránka si případně bezpečnou zónu nedopočítá znovu
+                        // – odsazení výše by se jinak zdvojilo.
+                        .ignoresSafeArea(edges: .horizontal)
+                        .background(PagingSafeAreaInsetFix())
+                        .tag(pageFormat)
+                }
             }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .ignoresSafeArea(edges: .horizontal)
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
         .sensoryFeedback(.selection, trigger: format.wrappedValue)
     }
     
@@ -390,6 +405,37 @@ private extension View {
     func playbackTaps(onTap: @escaping () -> Void, onDoubleTap: @escaping () -> Void) -> some View {
         onTapGesture(count: 2, perform: onDoubleTap)
             .onTapGesture(perform: onTap)
+    }
+}
+
+/// Stránkovaný `TabView` stojí na UIKitovém scroll view. Když sahá přes
+/// bezpečnou zónu (na šířku kvůli výřezu), scroll view si ji automaticky
+/// přidá do insetů obsahu. Po odpružení na první/poslední stránce se pak
+/// usadí o šířku bezpečné zóny vedle a číslo zůstane vyosené.
+///
+/// Tenhle prázdný view se vloží do stránky, najde nejbližší nadřazený
+/// scroll view a automatické insety mu vypne – bezpečnou zónu si stránka
+/// řeší sama odsazením čísla.
+private struct PagingSafeAreaInsetFix: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        FixView()
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+
+    private final class FixView: UIView {
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            isUserInteractionEnabled = false
+            var view = superview
+            while let current = view {
+                if let scrollView = current as? UIScrollView {
+                    scrollView.contentInsetAdjustmentBehavior = .never
+                    return
+                }
+                view = current.superview
+            }
+        }
     }
 }
 
