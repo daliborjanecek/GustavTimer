@@ -531,6 +531,35 @@ extension SharedTimerLink {
     }
 }
 
+// MARK: - Popis pro dotaz před načtením
+
+extension SharedTimerLink {
+
+    /// Kolik intervalů vypíše `summary`, než zbytek shrne do „+N“.
+    static let summaryIntervalCount = 4
+
+    /// Jednořádkový popis timeru pro dotaz „Načíst timer?“. Jen názvy,
+    /// délky a symboly – nic k lokalizaci.
+    ///
+    ///     Work 0:40 · Rest 0:20 · 4×
+    ///     A 0:30 · B 0:30 · C 0:30 · +3 · ∞
+    var summary: String {
+        let limit = Self.summaryIntervalCount
+        let shown = intervals.count > limit ? intervals.prefix(limit - 1) : intervals.prefix(limit)
+        var parts = shown.map { "\($0.name) \(Self.formattedDuration($0.value))" }
+        if intervals.count > shown.count {
+            parts.append("+\(intervals.count - shown.count)")
+        }
+        parts.append(rounds == -1 ? "∞" : "\(rounds)×")
+        return parts.joined(separator: " · ")
+    }
+
+    /// `40` → `0:40`, `600` → `10:00`.
+    static func formattedDuration(_ seconds: Int) -> String {
+        String(format: "%d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
 // MARK: - Původ odkazu (analytika)
 
 extension SharedTimerLink {

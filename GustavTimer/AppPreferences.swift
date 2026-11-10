@@ -47,9 +47,6 @@ final class AppPreferences: ObservableObject {
         static let stopCounter = "stopCounter"
         static let whatsNewVersion = "whatsNewVersion"
         static let lastOnboardingVersion = "lastOnboardingVersion"
-        static let deeplinkLoadToken = "deeplinkLoadToken"
-        static let deeplinkLoadedTitle = "deeplinkLoadedTitle"
-        static let lastAcknowledgedDeeplinkToken = "lastAcknowledgedDeeplinkToken"
         /// První spuštění s analytikou akvizice – viz `AnalyticsAcquisition`.
         static let installDate = "installDate"
         static let acquisitionReported = "acquisitionReported"

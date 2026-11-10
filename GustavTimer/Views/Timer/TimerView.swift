@@ -99,6 +99,15 @@ struct TimerView: View {
             guard let url = notification.object as? URL else { return }
             viewModel.handleDeepLink(url: url, fromApp: true)
         }
+        .onChange(of: viewModel.pendingSharedLink?.id) { _, id in
+            // Timer z externího odkazu se načte až po potvrzení.
+            guard id != nil, let pending = viewModel.pendingSharedLink else { return }
+            SharedLinkPrompt.present(
+                pending.link,
+                onLoad: { viewModel.confirmPendingSharedLink() },
+                onCancel: { viewModel.declinePendingSharedLink() }
+            )
+        }
         .onReceive(AppNavigator.shared.$pendingScreen) { screen in
             // Obrazovka v nastavení (gustavtimerapp://settings/…). Otevřené
             // nastavení si ji převezme samo, jinak ho tady otevřeme.

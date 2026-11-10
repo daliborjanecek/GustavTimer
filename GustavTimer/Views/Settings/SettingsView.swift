@@ -19,11 +19,7 @@ struct SettingsView: View {
     @State private var newTimerName = ""
     @State private var showSaveAlert = false
     @State private var showAlreadySavedAlert = false
-    @State private var showDeeplinkLoadedAlert = false
     @State private var cachedLastSavedTimers: [TimerData] = []
-    @AppStorage(AppPreferences.Key.deeplinkLoadToken) private var deeplinkLoadToken: Int = 0
-    @AppStorage(AppPreferences.Key.lastAcknowledgedDeeplinkToken) private var lastAcknowledgedDeeplinkToken: Int = 0
-    @AppStorage(AppPreferences.Key.deeplinkLoadedTitle) private var deeplinkLoadedTitle: String = ""
     @ObservedObject private var remoteContent = RemoteContentManager.shared
     @ObservedObject private var navigator = AppNavigator.shared
     /// Obrazovky otevřené odkazem (`AppNavigator`) nebo z menu nastavení.
@@ -58,12 +54,10 @@ struct SettingsView: View {
             .environment(\.editMode, $editMode)
             .saveTimerAlert(isPresented: $showSaveAlert, timerName: $newTimerName, onSave: saveTimer)
             .alreadySavedAlert(isPresented: $showAlreadySavedAlert)
-            .deeplinkLoadedAlert(isPresented: $showDeeplinkLoadedAlert, timerTitle: deeplinkLoadedTitle)
             .toolbar { toolbar }
             .font(.gustavBody)
             .onAppear {
                 refreshLastSavedTimers()
-                checkForNewDeeplinkLoad()
                 openPendingScreen()
             }
             // Odkaz na obrazovku, když je nastavení už otevřené (banner nahoře).
@@ -75,13 +69,6 @@ struct SettingsView: View {
                 case .background:
                     BackgroundSelectorView()
                 }
-            }
-            // Settings může zůstat otevřené přes další načtení odkazu (aplikace jen
-            // na pozadí) – onAppear se tehdy znovu nespustí, protože instance
-            // SettingsView se nemění. Token ale poroste dál, takže tohle je jediné
-            // spolehlivé místo, které takový případ zachytí.
-            .onChange(of: deeplinkLoadToken) { _, _ in
-                checkForNewDeeplinkLoad()
             }
             #if DEBUG
             .navigationDestination(isPresented: $showDebugMenu) {
@@ -440,15 +427,6 @@ struct SettingsView: View {
     private func openPendingScreen() {
         guard let screen = navigator.consume() else { return }
         path = [screen]
-    }
-
-    /// Zobrazí alert, pokud přibyl nový token oproti tomu, co už uživatel viděl.
-    /// Token roste při každém načtení sdíleného odkazu, takže na rozdíl od
-    /// boolean příznaku zůstává rozpoznatelný i při opakovaných odkazech.
-    private func checkForNewDeeplinkLoad() {
-        guard deeplinkLoadToken != lastAcknowledgedDeeplinkToken else { return }
-        lastAcknowledgedDeeplinkToken = deeplinkLoadToken
-        showDeeplinkLoadedAlert = true
     }
     
     private func saveTimer() {

@@ -297,36 +297,56 @@
         }
       }
     },
-    "DEEPLINK_LOADED" : {
-      "comment" : "Message shown in the alert when the timer was loaded from an external deeplink.",
+    "DEEPLINK_CONFIRM_LOAD" : {
+      "comment" : "Button that loads the timer from an external link.",
+      "extractionState" : "manual",
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Timer načten z externího odkazu"
+            "value" : "Načíst"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Timer loaded from external link"
+            "value" : "Load"
           }
         }
       }
     },
-    "DEEPLINK_LOADED_TITLE" : {
-      "comment" : "Title of the alert shown after a timer was set up from an external deeplink.",
+    "DEEPLINK_CONFIRM_MESSAGE" : {
+      "comment" : "Message of the alert asking whether to load a timer from an external link. %@ is the timer name and a summary of its intervals.",
+      "extractionState" : "manual",
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nový timer nastaven"
+            "value" : "%@\n\nTimer z odkazu nahradí ten současný."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "New timer set"
+            "value" : "%@\n\nThe timer from the link will replace your current one."
+          }
+        }
+      }
+    },
+    "DEEPLINK_CONFIRM_TITLE" : {
+      "comment" : "Title of the alert asking whether to load a timer from an external link.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Načíst timer?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Load timer?"
           }
         }
       }

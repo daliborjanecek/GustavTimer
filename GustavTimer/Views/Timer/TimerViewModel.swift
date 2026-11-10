@@ -37,20 +37,13 @@ class TimerViewModel: ObservableObject {
     // MARK: - iOS-specific publikované vlastnosti
     @Published var showingSheet = false
     @Published var showingWhatsNew: Bool = false
+
+    /// Timer z odkazu (zvenku i z banneru), který čeká na potvrzení uživatele.
+    /// `TimerView` na něj reaguje dotazem (`SharedLinkPrompt`) a podle
+    /// odpovědi zavolá `confirmPendingSharedLink()` nebo
+    /// `declinePendingSharedLink()`. Do té doby se timer nemění.
+    @Published private(set) var pendingSharedLink: PendingSharedLink?
     @Published var editMode = EditMode.inactive
-
-    /// Počítadlo se zvýší při každém úspěšném načtení sdíleného odkazu.
-    /// SettingsView na jeho změnu reaguje zobrazením alertu – oproti boolean
-    /// příznaku funguje spolehlivě i když je Settings pořád otevřené z předchozího
-    /// odkazu (aplikace jen na pozadí), kdy by zápis `true → true` do UserDefaults
-    /// nevyvolal žádnou pozorovatelnou změnu.
-    @AppStorage(AppPreferences.Key.deeplinkLoadToken) var deeplinkLoadToken: Int = 0
-
-    /// Název timeru z `_title` posledního načteného odkazu. Prázdný řetězec
-    /// znamená, že odkaz `_title` neobsahoval – SharedTimerLink.parse prázdný
-    /// ani jen z mezer sestávající title nikdy nevrátí, takže je to bezpečná
-    /// hodnota "chybí".
-    @AppStorage(AppPreferences.Key.deeplinkLoadedTitle) var deeplinkLoadedTitle: String = ""
 
     // MARK: Lottie animation state
     @Published var appearanceIconAnimation = LottiePlaybackMode.paused(at: .frame(0))
@@ -332,13 +325,33 @@ class TimerViewModel: ObservableObject {
             // Nastavení otevře TimerView, obrazovku v něm SettingsView.
             AppNavigator.shared.open(screen)
         case .sharedTimer(let items):
-            // Odkaz přepíše rozběhnutý trénink – započítat ho dřív, než zmizí.
-            trackSessionAbandoned(reason: "link")
-            let link = handleSharedTimer(items: items)
-            trackSharedLinkOpened(url: url, items: items, link: link, fromApp: fromApp)
+            guard let link = SharedTimerLink.parse(items: items, limits: AppConfig.sharedLinkLimits) else {
+                // Odkaz bez platného intervalu – timer se nemění, není se na co ptát.
+                trackSharedLinkOpened(url: url, items: items, link: nil, fromApp: fromApp, prompt: nil)
+                return
+            }
+            // Odkaz přepíše timer (i rozběhnutý trénink) – nejdřív se zeptat,
+            // ať přišel zvenku, nebo z banneru. Nový odkaz nahradí ten, který
+            // na odpověď ještě čeká.
+            pendingSharedLink = PendingSharedLink(url: url, items: items, link: link, fromApp: fromApp)
         case nil:
             print("Neznámý deep link: \(url)")
         }
+    }
+
+    /// Uživatel potvrdil načtení timeru z odkazu.
+    func confirmPendingSharedLink() {
+        guard let pending = pendingSharedLink else { return }
+        pendingSharedLink = nil
+        load(pending.link)
+        trackSharedLinkOpened(url: pending.url, items: pending.items, link: pending.link, fromApp: pending.fromApp, prompt: true)
+    }
+
+    /// Uživatel načtení timeru z odkazu odmítl – nic se nemění.
+    func declinePendingSharedLink() {
+        guard let pending = pendingSharedLink else { return }
+        pendingSharedLink = nil
+        trackSharedLinkOpened(url: pending.url, items: pending.items, link: pending.link, fromApp: pending.fromApp, prompt: false)
     }
 
     /// `timer.link_opened` – otevření sdíleného odkazu.
@@ -347,15 +360,21 @@ class TimerViewModel: ObservableObject {
     /// ho share sheet aplikace). Odkazy ze starších verzí ho nenesou, ty prozradí
     /// `link_type` (custom schéma = verze 2.2.1) a `has_settings` (bez zvuku
     /// a vibrací = verze před 2.4). `loaded` je `false`, když odkaz neobsahoval
-    /// jediný platný interval a timer se nezměnil. Odkaz z banneru v aplikaci
-    /// má `link_type=in_app`.
-    private func trackSharedLinkOpened(url: URL, items: [URLQueryItem], link: SharedTimerLink?, fromApp: Bool) {
+    /// jediný platný interval nebo ho uživatel odmítl načíst – timer se
+    /// nezměnil. Odkaz z banneru v aplikaci má `link_type=in_app`.
+    ///
+    /// - Parameter prompt: odpověď na dotaz před načtením – `true` načíst,
+    ///   `false` odmítnout, `nil` = dotaz nebyl (neplatný odkaz). Jde do
+    ///   parametru `prompt` (`accepted` / `declined` / `none`).
+    private func trackSharedLinkOpened(url: URL, items: [URLQueryItem], link: SharedTimerLink?, fromApp: Bool, prompt: Bool?) {
         let source = SharedTimerLink.trackingValue(for: SharedTimerLink.sourceKey, in: items) ?? "unknown"
         let linkType = fromApp ? "in_app" : (url.scheme?.lowercased() == "https" ? "universal" : "scheme")
+        let loaded = link != nil && prompt != false
         var parameters = [
             "link_type": linkType,
             "source": source,
-            "loaded": link != nil ? "true" : "false"
+            "loaded": loaded ? "true" : "false",
+            "prompt": prompt.map { $0 ? "accepted" : "declined" } ?? "none"
         ]
         if let campaign = SharedTimerLink.trackingValue(for: SharedTimerLink.campaignKey, in: items) {
             parameters["campaign"] = campaign
@@ -376,18 +395,14 @@ class TimerViewModel: ObservableObject {
         }
     }
 
-    /// Načte sdílený timer z query parametrů.
+    /// Načte timer ze sdíleného odkazu, který uživatel potvrdil, a otevře
+    /// nastavení, ať ho hned vidí.
     ///
-    /// Chování při vadném vstupu: pokud odkaz neobsahuje jediný platný interval
-    /// (nesmyslné hodnoty, jen trackovací parametry, prázdný dotaz), `parse`
-    /// vrátí `nil` a metoda nesáhne na nic – stávající timer, počet kol ani
-    /// uložená data se nezmění a nastavení se neotevře. Jednotlivé neplatné
-    /// parametry se ignorují, celý odkaz kvůli nim nepadá.
-    ///
-    /// - Returns: načtený odkaz, nebo `nil`, když se timer nezměnil.
-    @discardableResult
-    func handleSharedTimer(items: [URLQueryItem]) -> SharedTimerLink? {
-        guard let link = SharedTimerLink.parse(items: items, limits: AppConfig.sharedLinkLimits) else { return nil }
+    /// Odkaz bez jediného platného intervalu sem nedojde – `parse` vrátí
+    /// `nil` a stávající timer, počet kol ani uložená data se nezmění.
+    private func load(_ link: SharedTimerLink) {
+        // Odkaz přepíše rozběhnutý trénink – započítat ho dřív, než zmizí.
+        trackSessionAbandoned(reason: "link")
 
         // Odkaz přebije jen to, co skutečně nese. Odkaz z verze 2.2/2.3
         // neobsahuje zvuk ani vibrace, takže si uživatel nechá svoje.
@@ -397,12 +412,9 @@ class TimerViewModel: ObservableObject {
         persist(merged)
         lastLinkSettings = merged
 
-        deeplinkLoadedTitle = link.title ?? ""
-        deeplinkLoadToken += 1
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.showingSheet = true
         }
-        return link
     }
 }
 

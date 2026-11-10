@@ -4,8 +4,8 @@
 //
 //  Created by Dalibor Janeček on 23.08.2026.
 //
-//  Testuje jedinou parsovací cestu sdílených odkazů. `TimerViewModel.handleSharedTimer`
-//  je nad tímhle typem už jen tenká obálka (zápis do SwiftData a otevření nastavení),
+//  Testuje jedinou parsovací cestu sdílených odkazů. `TimerViewModel` (dotaz před načtením,
+//  zápis do SwiftData a otevření nastavení) je nad tímhle typem už jen tenká obálka,
 //  veškerá logika odkazu je tady.
 //
 
@@ -695,4 +695,27 @@ func trackingValuesFromIncomingLink() throws {
     // Prázdná hodnota se přeskočí, vyhraje první neprázdná.
     #expect(SharedTimerLink.trackingValue(for: SharedTimerLink.campaignKey, in: items) == "jaro")
     #expect(SharedTimerLink.trackingValue(for: "utm_medium", in: items) == nil)
+}
+
+// MARK: - Popis pro dotaz před načtením
+
+@Test("Popis timeru vypíše intervaly, délky a počet kol")
+func summaryListsIntervalsAndRounds() throws {
+    let link = try #require(parse("https://gustavtraining.com/t?Work=40&Rest=20&rounds=4&_title=TABATA"))
+    #expect(link.summary == "Work 0:40 · Rest 0:20 · 4×")
+}
+
+@Test("Nekonečný timer má v popisu ∞")
+func summaryShowsInfiniteRounds() throws {
+    let link = try #require(parse("https://gustavtraining.com/t?Work=600&rounds=-1"))
+    #expect(link.summary == "Work 10:00 · ∞")
+}
+
+@Test("Čtyři intervaly se vypíšou celé, víc se shrne do +N")
+func summaryCollapsesLongTimers() throws {
+    let four = try #require(parse("https://gustavtraining.com/t?A=30&B=30&C=30&D=30&rounds=1"))
+    #expect(four.summary == "A 0:30 · B 0:30 · C 0:30 · D 0:30 · 1×")
+
+    let six = try #require(parse("https://gustavtraining.com/t?A=30&B=30&C=30&D=30&E=30&F=90"))
+    #expect(six.summary == "A 0:30 · B 0:30 · C 0:30 · +3 · ∞")
 }

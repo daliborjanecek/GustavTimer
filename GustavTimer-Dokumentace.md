@@ -539,7 +539,7 @@ gustavtimerapp://settings/background              (otevře nastavení → Výbě
 Nová obrazovka = nový `case` v `AppScreen`, větev v `navigationDestination(for: AppScreen.self)` v `SettingsView` a položka v `gtimer_app_screens()` v pluginu webu. Neznámá obrazovka (odkaz pro novější verzi) se bere jako cizí odkaz.
 
 > [!tip] Sdílení
-> **ShareLink** generuje přesně takové URL na třech místech: v toolbaru `SettingsView` (právě rozdělaný timer) a swipem na řádku oblíbeného či presetu ve `FavouritesView`. Limity drží `AppConfig.sharedLinkLimits`. Po načtení z odkazu se v Settings zobrazí hláška `DEEPLINK_LOADED` (řízeno počítadlem `deeplinkLoadToken`).
+> **ShareLink** generuje přesně takové URL na třech místech: v toolbaru `SettingsView` (právě rozdělaný timer) a swipem na řádku oblíbeného či presetu ve `FavouritesView`. Limity drží `AppConfig.sharedLinkLimits`. Odkaz na timer se nenačte hned – zvenku (Universal Link, `gustavtimerapp://timer`) ani z banneru v aplikaci: aplikace se nejdřív zeptá alertem „Načíst timer?“ s názvem a popisem timeru (`SharedTimerLink.summary`, např. `Work 0:40 · Rest 0:20 · 4×`). Čekající odkaz drží `TimerViewModel.pendingSharedLink`, alert ukazuje `SharedLinkPrompt` (`AppLinkRouter.swift`) jako UIKit alert nad nejvrchnějším view controllerem, takže se objeví i nad otevřeným nastavením. Po **Načíst** se timer nahraje a otevře se nastavení, po **Zrušit** se nic nezmění (běžící trénink běží dál). Odkaz bez platného intervalu se na nic neptá. Dřívější hlášku „Nový timer nastaven“ po načtení nahradilo tohle potvrzení.
 
 ---
 
@@ -595,7 +595,7 @@ Trychtýř: `timer.started` (`is_resume=false`) → `timer.completed`, nebo `tim
 | `timer.saved` | Uložení mezi oblíbené | *nastavení*, `screen` (`settings` / `favourites`) |
 | `timer.shared` | Dokončené sdílení odkazu na timer | `origin` (`settings` / `favourite` / `preset`), `channel` (`messages`, `whatsapp`, `copy`…), `interval_pattern`, u presetů `timer_name` |
 | `timer.share_cancelled` | Zavřený share sheet bez sdílení | `origin`, `interval_pattern`, u presetů `timer_name` |
-| `timer.link_opened` | Otevření sdíleného odkazu | `source` (`utm_source`, jinak `unknown`), `link_type` (`universal` / `scheme` / `in_app` = z banneru v aplikaci, nepočítá se jako akvizice), `loaded`, případně `campaign`, `interval_pattern`, `has_settings` |
+| `timer.link_opened` | Otevření sdíleného odkazu | `source` (`utm_source`, jinak `unknown`), `link_type` (`universal` / `scheme` / `in_app` = z banneru v aplikaci, nepočítá se jako akvizice), `loaded` (`false` i u odmítnutého odkazu), `prompt` (`accepted` / `declined`, `none` u neplatného odkazu – posílá se až po odpovědi), případně `campaign`, `interval_pattern`, `has_settings` |
 
 Share sheet (`TimerShareSheet`) zapíše zvolený kanál do odesílaného odkazu jako `utm_source=<kanál>`. Parser `utm_*` ignoruje, takže na timer nemá vliv, ale `timer.link_opened` u příjemce pak ví, kudy odkaz přišel. Odkazy ze starších verzí kanál nenesou (`source = unknown`).
 
@@ -699,9 +699,6 @@ Dále drží: `remoteContentURL` (endpoint API vzdáleného obsahu), `defaultBac
 | `stopCounter` | Int | 0 | Počítadlo zastavení |
 | `whatsNewVersion` | Int | 0 | Naposledy viděný What's New |
 | `lastOnboardingVersion` | Int | 0 | Naposledy viděný onboarding |
-| `deeplinkLoadToken` | Int | 0 | Roste s každým načteným odkazem (spouští alert) |
-| `deeplinkLoadedTitle` | String | "" | Název z `_title` posledního odkazu |
-| `lastAcknowledgedDeeplinkToken` | Int | 0 | Token, jehož alert už uživatel viděl |
 | `didMigrateTimerSettingsToSwiftData` | Bool | false | Proběhla migrace nastavení |
 | `remoteBackgroundID` | String | "" | ID vybraného pozadí z API (prázdné = platí `bgIndex`) |
 | `remoteContentLastSuccess` | Double | – | Čas poslední úspěšné synchronizace API (pravidlo 24 h) |
@@ -820,7 +817,6 @@ Aplikace na pozadí neběží – systém ji během chvíle uspí. Engine proto 
 > - ~~V `ContentView` jsou nepoužívané `@AppStorage` klíče~~ – vyřešeno ve verzi 2.4, klíče maže `SettingsMigration`.
 > - **rive-ios** je mezi závislostmi, ale animace tlačítek běží na **Lottie** (přes GustavUI). Parametr `riveAnimation` v `ControlButton` je už jen spínač „je to animované tlačítko?" – samotná animace je Lottie. Pravděpodobně historická závislost.
 > - **`AppPreferences`** dnes slouží hlavně jako jmenný prostor klíčů (`AppPreferences.Key`); jako `ObservableObject` ji nikdo neinstancuje, protože nastavení timeru se přesunulo do `TimerData`. Její tři `@AppStorage` vlastnosti tak zatím nemají konzumenta – views sahají na klíče přímo.
-> - Footer s `DEEPLINK_LOADED` má v kódu `// TODO: stylizovat jako banner/toast`.
 > - Landscape režim záměrně skrývá progress bar a header (zakomentováno v `landscapeTimerView`).
 > - Zastaralý `.github/copilot-instructions.md` popisuje **starou** architekturu (GustavViewModel, EditSheetView, max 5 timerů, UserDefaults JSON) – **neodpovídá** současnému stavu (SwiftData, TimerEngine, max 10). Tato dokumentace vychází z aktuálního kódu.
 
