@@ -186,6 +186,37 @@ class TimerViewModel: ObservableObject {
         loadTimers(resetCurrentState: resetCurrentState)
     }
 
+    // MARK: - Úpravy v otevřeném nastavení
+    //
+    // Otevření nastavení rozběhnutý timer nezastaví. Zastaví ho až úprava
+    // průběhu (intervaly, kola, název) – po zavření se pak timer načte znovu
+    // od začátku. Zvuk, haptika, tikání a odpočet se převezmou za běhu.
+
+    /// Hlavní timer se změnil, zatímco je otevřené nastavení.
+    func settingsEdited(_ new: TimerSettings) {
+        if new.matchesProgram(of: settings) {
+            applyFeedback(new)
+        } else if engine.isRunning {
+            stopTimer()
+        }
+    }
+
+    /// Nastavení se zavřelo. Reset jen tehdy, když se změnil průběh.
+    func settingsClosed(_ new: TimerSettings) {
+        if new.matchesProgram(of: settings) {
+            applyFeedback(new)
+        } else {
+            reloadTimers(resetCurrentState: true)
+        }
+    }
+
+    /// Převezme zpětnou vazbu bez zásahu do odpočtu. Zvuk, haptiku a tikání
+    /// si zpětná vazba čte ze `settings`; odpočet engine řeší až při startu.
+    private func applyFeedback(_ new: TimerSettings) {
+        settings = new
+        engine.hasCountdown = new.hasCountdown
+    }
+
     // MARK: - Ovládání timeru (deleguje na engine)
 
     /// - Parameter input: čím uživatel timer ovládl, jde do `timer.started`.

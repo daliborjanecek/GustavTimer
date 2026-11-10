@@ -38,13 +38,16 @@ struct TimerView: View {
             setupViewModel()
         }
         .onChange(of: activeSheet) { oldValue, newValue in
-            if newValue == .settings {
-                // SettingsView se otevírá, zastavit časovač
-                viewModel.stopTimer()
-            } else if oldValue == .settings {
-                // SettingsView se zavřelo, znovu načti data z databáze a resetuj časovač
-                viewModel.reloadTimers(resetCurrentState: true)
+            // Otevření nastavení timer nezastaví – viz TimerViewModel.settingsEdited.
+            if oldValue == .settings, newValue != .settings {
+                viewModel.settingsClosed(TimerData.mainTimer(in: context).settings)
             }
+        }
+        .onChange(of: mainTimerSettings) { _, newSettings in
+            // Úpravy v otevřeném nastavení se do TimerData propisují hned
+            // (i bez uložení kontextu), takže tady je vidíme při každé změně.
+            guard activeSheet == .settings, let newSettings else { return }
+            viewModel.settingsEdited(newSettings)
         }
         .onAppear {
             // Nastavíme počáteční orientaci
@@ -340,6 +343,11 @@ private extension TimerView {
 // MARK: - Computed Properties
 private extension TimerView {
     
+    /// Nastavení hlavního timeru tak, jak ho právě upravuje SettingsView.
+    var mainTimerSettings: TimerSettings? {
+        timerData.first { $0.order == AppConfig.mainTimerOrder }?.settings
+    }
+
     var currentTimer: IntervalData? {
         guard viewModel.activeTimerIndex < viewModel.timers.count else { return nil }
         return viewModel.timers[viewModel.activeTimerIndex]

@@ -106,6 +106,20 @@ struct TimerSettings: Equatable, Codable, Sendable {
         rhs.name = ""
         return lhs == rhs
     }
+
+    /// Shoda průběhu – název, intervaly a počet kol.
+    ///
+    /// Zbylá pole (zvuk, haptika, tikání, odpočet) jsou jen zpětná vazba
+    /// a dají se změnit i za běhu, aniž by se rozběhnutý trénink musel
+    /// zastavit nebo resetovat. Podle téhle shody se rozhoduje, jestli úprava
+    /// v nastavení timer zastaví.
+    ///
+    ///     var quieter = settings
+    ///     quieter.sound = nil
+    ///     settings.matchesProgram(of: quieter)  // true
+    func matchesProgram(of other: TimerSettings) -> Bool {
+        name == other.name && intervals == other.intervals && rounds == other.rounds
+    }
 }
 
 // MARK: - Tikání
