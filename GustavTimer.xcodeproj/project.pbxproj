@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CFA10E022FB4F00100000002 /* RemoteContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10E012FB4F00100000001 /* RemoteContent.swift */; };
+		CFA10E042FB4F00100000004 /* RemoteContentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10E032FB4F00100000003 /* RemoteContentManager.swift */; };
+		CFA10E062FB4F00100000006 /* SettingsBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10E052FB4F00100000005 /* SettingsBannerView.swift */; };
+		CFA10E082FB4F00100000008 /* RemoteContentDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10E072FB4F00100000007 /* RemoteContentDebugView.swift */; };
+		CFA10E0A2FB4F0010000000A /* AppLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10E092FB4F00100000009 /* AppLinkRouter.swift */; };
+		CFA10E0D2FB4F0010000000D /* RemoteContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10E0C2FB4F0010000000C /* RemoteContentTests.swift */; };
 		CF01945C2C8A20D700CAC1BD /* SoundSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF01945B2C8A20D700CAC1BD /* SoundSettingsView.swift */; };
 		CF107C4A2EDE1C1400A172E8 /* whistle.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CF107C492EDE1C1400A172E8 /* whistle.mp3 */; };
 		CF107C4C2EDE211700A172E8 /* hey.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CF107C4B2EDE211700A172E8 /* hey.mp3 */; };
@@ -19,6 +25,7 @@
 		CF107C5A2EDE295A00A172E8 /* bell.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CF107C592EDE295A00A172E8 /* bell.mp3 */; };
 		CF107C5C2EDE29BE00A172E8 /* bubble.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CF107C5B2EDE29BE00A172E8 /* bubble.mp3 */; };
 		CF10D0562E73371F00F84454 /* RoundsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF10D0552E73371800F84454 /* RoundsSettingsView.swift */; };
+		CF10D0582E733A1000F84454 /* TickingSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF10D0572E733A1000F84454 /* TickingSettingsView.swift */; };
 		CF21843429F052590060706C /* GustavTimerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21843329F052590060706C /* GustavTimerApp.swift */; };
 		CF21843629F052590060706C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21843529F052590060706C /* ContentView.swift */; };
 		CF21843829F0525E0060706C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CF21843729F0525E0060706C /* Assets.xcassets */; };
@@ -89,6 +96,12 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		CFA10E012FB4F00100000001 /* RemoteContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteContent.swift; sourceTree = "<group>"; };
+		CFA10E032FB4F00100000003 /* RemoteContentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteContentManager.swift; sourceTree = "<group>"; };
+		CFA10E052FB4F00100000005 /* SettingsBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBannerView.swift; sourceTree = "<group>"; };
+		CFA10E072FB4F00100000007 /* RemoteContentDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteContentDebugView.swift; sourceTree = "<group>"; };
+		CFA10E092FB4F00100000009 /* AppLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinkRouter.swift; sourceTree = "<group>"; };
+		CFA10E0C2FB4F0010000000C /* RemoteContentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteContentTests.swift; sourceTree = "<group>"; };
 		CF01945B2C8A20D700CAC1BD /* SoundSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundSettingsView.swift; sourceTree = "<group>"; };
 		CF107C492EDE1C1400A172E8 /* whistle.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = whistle.mp3; sourceTree = "<group>"; };
 		CF107C4B2EDE211700A172E8 /* hey.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = hey.mp3; sourceTree = "<group>"; };
@@ -101,6 +114,7 @@
 		CF107C592EDE295A00A172E8 /* bell.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = bell.mp3; sourceTree = "<group>"; };
 		CF107C5B2EDE29BE00A172E8 /* bubble.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = bubble.mp3; sourceTree = "<group>"; };
 		CF10D0552E73371800F84454 /* RoundsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundsSettingsView.swift; sourceTree = "<group>"; };
+		CF10D0572E733A1000F84454 /* TickingSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickingSettingsView.swift; sourceTree = "<group>"; };
 		CF21843029F052590060706C /* GustavTimer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GustavTimer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CF21843329F052590060706C /* GustavTimerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GustavTimerApp.swift; sourceTree = "<group>"; };
 		CF21843529F052590060706C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -182,6 +196,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CFA10E0B2FB4F0010000000B /* RemoteContent */ = {
+			isa = PBXGroup;
+			children = (
+				CFA10E012FB4F00100000001 /* RemoteContent.swift */,
+				CFA10E032FB4F00100000003 /* RemoteContentManager.swift */,
+				CFA10E052FB4F00100000005 /* SettingsBannerView.swift */,
+				CFA10E072FB4F00100000007 /* RemoteContentDebugView.swift */,
+			);
+			path = RemoteContent;
+			sourceTree = "<group>";
+		};
 		CF17ADD62F083A6100A92841 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -217,6 +242,7 @@
 				CF228F4F2E7C52B5000DEF21 /* AppPreferences.swift */,
 				CFA10B032FB0C00100000003 /* SettingsMigration.swift */,
 				CF9922BA2C9766DC004186DF /* Managers */,
+				CFA10E0B2FB4F0010000000B /* RemoteContent */,
 				CF7B1B3F2C8F6BA9005D4664 /* Models */,
 				CFCE3C772C431EF400D33AE3 /* Extensions */,
 				CFCE3C702C43104100D33AE3 /* Views */,
@@ -267,6 +293,7 @@
 			children = (
 				CF7744F02E799F9A00693351 /* IntervalRowView.swift */,
 				CF10D0552E73371800F84454 /* RoundsSettingsView.swift */,
+				CF10D0572E733A1000F84454 /* TickingSettingsView.swift */,
 				CFF207D72E6CA9F300D0C369 /* FavouriteRowView.swift */,
 				CFF207D52E6CA9B300D0C369 /* FavouritesEmptyView.swift */,
 				CF01945B2C8A20D700CAC1BD /* SoundSettingsView.swift */,
@@ -342,6 +369,7 @@
 				CF279C4B2C31A8940084C43F /* SoundManager.swift */,
 				CFA10C012FB2D00100000001 /* TimerShareSheet.swift */,
 				CFA10D012FB3E00100000001 /* Analytics.swift */,
+				CFA10E092FB4F00100000009 /* AppLinkRouter.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -351,6 +379,7 @@
 			children = (
 				CFA10A042FA9B00100000004 /* SharedTimerLinkTests.swift */,
 				CFA10D032FB3E00100000003 /* AnalyticsTests.swift */,
+				CFA10E0C2FB4F0010000000C /* RemoteContentTests.swift */,
 			);
 			path = GustavTimerTests;
 			sourceTree = "<group>";
@@ -540,6 +569,7 @@
 				CF21843629F052590060706C /* ContentView.swift in Sources */,
 				CFB1394F2AE59ED900EE8B2C /* BackgroundImageModel.swift in Sources */,
 				CF10D0562E73371F00F84454 /* RoundsSettingsView.swift in Sources */,
+				CF10D0582E733A1000F84454 /* TickingSettingsView.swift in Sources */,
 				CFC3A7722AAF8B1B00BB8CC2 /* ProgressBar.swift in Sources */,
 				CFF207D82E6CA9F900D0C369 /* FavouriteRowView.swift in Sources */,
 				CF4DB2852F098208007D5692 /* Int+Extension.swift in Sources */,
@@ -578,6 +608,11 @@
 				CF279C4C2C31A8940084C43F /* SoundManager.swift in Sources */,
 				CFA10C022FB2D00100000002 /* TimerShareSheet.swift in Sources */,
 				CFA10D022FB3E00100000002 /* Analytics.swift in Sources */,
+				CFA10E022FB4F00100000002 /* RemoteContent.swift in Sources */,
+				CFA10E042FB4F00100000004 /* RemoteContentManager.swift in Sources */,
+				CFA10E062FB4F00100000006 /* SettingsBannerView.swift in Sources */,
+				CFA10E082FB4F00100000008 /* RemoteContentDebugView.swift in Sources */,
+				CFA10E0A2FB4F0010000000A /* AppLinkRouter.swift in Sources */,
 				CF2222DA2E355A8200A90265 /* TimerData.swift in Sources */,
 				CF228F542E7D7ED4000DEF21 /* SearchTabView.swift in Sources */,
 				CF4A94BD2F4EF11200A7B250 /* PredefinedTimer.swift in Sources */,
@@ -590,6 +625,7 @@
 			files = (
 				CFA10A052FA9B00100000005 /* SharedTimerLinkTests.swift in Sources */,
 				CFA10D042FB3E00100000004 /* AnalyticsTests.swift in Sources */,
+				CFA10E0D2FB4F0010000000D /* RemoteContentTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

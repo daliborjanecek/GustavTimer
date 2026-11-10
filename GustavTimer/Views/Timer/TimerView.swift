@@ -38,13 +38,16 @@ struct TimerView: View {
             setupViewModel()
         }
         .onChange(of: activeSheet) { oldValue, newValue in
-            if newValue == .settings {
-                // SettingsView se otevírá, zastavit časovač
-                viewModel.stopTimer()
-            } else if oldValue == .settings {
-                // SettingsView se zavřelo, znovu načti data z databáze a resetuj časovač
-                viewModel.reloadTimers(resetCurrentState: true)
+            // Otevření nastavení timer nezastaví – viz TimerViewModel.settingsEdited.
+            if oldValue == .settings, newValue != .settings {
+                viewModel.settingsClosed(TimerData.mainTimer(in: context).settings)
             }
+        }
+        .onChange(of: mainTimerSettings) { _, newSettings in
+            // Úpravy v otevřeném nastavení se do TimerData propisují hned
+            // (i bez uložení kontextu), takže tady je vidíme při každé změně.
+            guard activeSheet == .settings, let newSettings else { return }
+            viewModel.settingsEdited(newSettings)
         }
         .onAppear {
             // Nastavíme počáteční orientaci
@@ -93,6 +96,26 @@ struct TimerView: View {
             // Normalizaci obou tvarů dělá SharedTimerLink.route, ať neexistují
             // dvě větve, které se můžou rozejít.
             viewModel.handleDeepLink(url: url)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AppLinkRouter.internalLinkNotification)) { notification in
+            // Odkaz na timer z banneru v nastavení – viz AppLinkRouter.
+            guard let url = notification.object as? URL else { return }
+            viewModel.handleDeepLink(url: url, fromApp: true)
+        }
+        .onChange(of: viewModel.pendingSharedLink?.id) { _, id in
+            // Timer z externího odkazu se načte až po potvrzení.
+            guard id != nil, let pending = viewModel.pendingSharedLink else { return }
+            SharedLinkPrompt.present(
+                pending.link,
+                onLoad: { viewModel.confirmPendingSharedLink() },
+                onCancel: { viewModel.declinePendingSharedLink() }
+            )
+        }
+        .onReceive(AppNavigator.shared.$pendingScreen) { screen in
+            // Obrazovka v nastavení (gustavtimerapp://settings/…). Otevřené
+            // nastavení si ji převezme samo, jinak ho tady otevřeme.
+            guard screen != nil, activeSheet != .settings else { return }
+            present(.settings)
         }
     }
 }
@@ -188,20 +211,35 @@ private extension TimerView {
     ///
     /// Tap spustí/zastaví timer, dvojtap přeskočí interval. Stránka zabírá celé
     /// volné místo, takže na tapy reaguje i okolí čísla.
+    ///
+    /// Na šířku zasahuje bezpečná zóna (výřez, zaoblené rohy) do stran, takže
+    /// stránkovaný view by končil před okrajem displeje a při swipu by byly
+    /// vidět jeho hrany. `TabView` proto sahá až k okrajům a dovnitř stránky
+    /// se bezpečná zóna vrací jen jako odsazení čísla.
     func counterDisplay(format: Binding<TimeDisplayFormat>, formats: [TimeDisplayFormat]) -> some View {
-        TabView(selection: format) {
-            ForEach(formats, id: \.self) { pageFormat in
-                Text(viewModel.formattedCurrentTime(timeDisplayFormat: pageFormat))
-                    .font(.timerCounter)
-                    .minimumScaleFactor(0.01)
-                    .foregroundColor(Color.gustavVolt)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .contentShape(Rectangle())
-                    .playbackTaps(onTap: { startStopByTap() }, onDoubleTap: skipIfRunning)
-                    .tag(pageFormat)
+        GeometryReader { geometry in
+            let insets = geometry.safeAreaInsets
+            TabView(selection: format) {
+                ForEach(formats, id: \.self) { pageFormat in
+                    Text(viewModel.formattedCurrentTime(timeDisplayFormat: pageFormat))
+                        .font(.timerCounter)
+                        .minimumScaleFactor(0.01)
+                        .foregroundColor(Color.gustavVolt)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(.leading, insets.leading)
+                        .padding(.trailing, insets.trailing)
+                        .contentShape(Rectangle())
+                        .playbackTaps(onTap: { startStopByTap() }, onDoubleTap: skipIfRunning)
+                        // Stránka si případně bezpečnou zónu nedopočítá znovu
+                        // – odsazení výše by se jinak zdvojilo.
+                        .ignoresSafeArea(edges: .horizontal)
+                        .background(PagingSafeAreaInsetFix())
+                        .tag(pageFormat)
+                }
             }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .ignoresSafeArea(edges: .horizontal)
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
         .sensoryFeedback(.selection, trigger: format.wrappedValue)
     }
     
@@ -305,6 +343,11 @@ private extension TimerView {
 // MARK: - Computed Properties
 private extension TimerView {
     
+    /// Nastavení hlavního timeru tak, jak ho právě upravuje SettingsView.
+    var mainTimerSettings: TimerSettings? {
+        timerData.first { $0.order == AppConfig.mainTimerOrder }?.settings
+    }
+
     var currentTimer: IntervalData? {
         guard viewModel.activeTimerIndex < viewModel.timers.count else { return nil }
         return viewModel.timers[viewModel.activeTimerIndex]
@@ -370,6 +413,37 @@ private extension View {
     func playbackTaps(onTap: @escaping () -> Void, onDoubleTap: @escaping () -> Void) -> some View {
         onTapGesture(count: 2, perform: onDoubleTap)
             .onTapGesture(perform: onTap)
+    }
+}
+
+/// Stránkovaný `TabView` stojí na UIKitovém scroll view. Když sahá přes
+/// bezpečnou zónu (na šířku kvůli výřezu), scroll view si ji automaticky
+/// přidá do insetů obsahu. Po odpružení na první/poslední stránce se pak
+/// usadí o šířku bezpečné zóny vedle a číslo zůstane vyosené.
+///
+/// Tenhle prázdný view se vloží do stránky, najde nejbližší nadřazený
+/// scroll view a automatické insety mu vypne – bezpečnou zónu si stránka
+/// řeší sama odsazením čísla.
+private struct PagingSafeAreaInsetFix: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        FixView()
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+
+    private final class FixView: UIView {
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            isUserInteractionEnabled = false
+            var view = superview
+            while let current = view {
+                if let scrollView = current as? UIScrollView {
+                    scrollView.contentInsetAdjustmentBehavior = .never
+                    return
+                }
+                view = current.superview
+            }
+        }
     }
 }
 

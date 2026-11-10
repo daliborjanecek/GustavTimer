@@ -7,7 +7,6 @@
 
 import SwiftUI
 import SwiftData
-import SafariServices
 import GustavUICore
 
 struct SettingsView: View {
@@ -19,20 +18,23 @@ struct SettingsView: View {
     @State private var newTimerName = ""
     @State private var showSaveAlert = false
     @State private var showAlreadySavedAlert = false
-    @State private var showDeeplinkLoadedAlert = false
     @State private var cachedLastSavedTimers: [TimerData] = []
-    @AppStorage(AppPreferences.Key.deeplinkLoadToken) private var deeplinkLoadToken: Int = 0
-    @AppStorage(AppPreferences.Key.lastAcknowledgedDeeplinkToken) private var lastAcknowledgedDeeplinkToken: Int = 0
-    @AppStorage(AppPreferences.Key.deeplinkLoadedTitle) private var deeplinkLoadedTitle: String = ""
+    @ObservedObject private var remoteContent = RemoteContentManager.shared
+    @ObservedObject private var navigator = AppNavigator.shared
+    /// Obrazovky otevřené odkazem (`AppNavigator`) nebo z menu nastavení.
+    @State private var path: [AppScreen] = []
+    #if DEBUG
+    @State private var showDebugMenu = false
+    #endif
     
     private var currentTimerData: TimerData {
         getOrCreateTimerData()
     }
     
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             List {
-                banner
+                SettingsBannerView()
                 timerNameView
                 intervalsView
                 roundsView
@@ -40,6 +42,9 @@ struct SettingsView: View {
                 feedback
                 appearance
                 more
+                #if DEBUG
+                debugEntry
+                #endif
 //                about
             }
             .listSectionSpacing(24)
@@ -48,48 +53,29 @@ struct SettingsView: View {
             .environment(\.editMode, $editMode)
             .saveTimerAlert(isPresented: $showSaveAlert, timerName: $newTimerName, onSave: saveTimer)
             .alreadySavedAlert(isPresented: $showAlreadySavedAlert)
-            .deeplinkLoadedAlert(isPresented: $showDeeplinkLoadedAlert, timerTitle: deeplinkLoadedTitle)
             .toolbar { toolbar }
             .font(.gustavBody)
             .onAppear {
                 refreshLastSavedTimers()
-                checkForNewDeeplinkLoad()
+                openPendingScreen()
             }
-            // Settings může zůstat otevřené přes další načtení odkazu (aplikace jen
-            // na pozadí) – onAppear se tehdy znovu nespustí, protože instance
-            // SettingsView se nemění. Token ale poroste dál, takže tohle je jediné
-            // spolehlivé místo, které takový případ zachytí.
-            .onChange(of: deeplinkLoadToken) { _, _ in
-                checkForNewDeeplinkLoad()
+            // Odkaz na obrazovku, když je nastavení už otevřené (banner nahoře).
+            .onChange(of: navigator.pendingScreen) { _, _ in
+                openPendingScreen()
             }
+            .navigationDestination(for: AppScreen.self) { screen in
+                switch screen {
+                case .background:
+                    BackgroundSelectorView()
+                }
+            }
+            #if DEBUG
+            .navigationDestination(isPresented: $showDebugMenu) {
+                RemoteContentDebugView()
+            }
+            #endif
         }
         .tint(Color.gustavNavigationItemsColor)
-    }
-    
-    @ViewBuilder
-    var banner: some View {
-        SettingsSection(label: AppConfig.bannerName) {
-            let rn = Int.random(in: 0..<AppConfig.bannerImages.count)
-            
-            Image(AppConfig.bannerImages[rn].imageResource)
-                .resizable()
-                .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .overlay(alignment: .bottomLeading) {
-                    Image(.youtubeLogo)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 18)
-                        .padding()
-                }
-                .onTapGesture {
-                    if let url = AppConfig.bannerImages[rn].getURL() {
-                        Analytics.send(.externalLinkOpened, parameters: ["target": "banner"])
-                        UIApplication.shared.open(url)
-                    }
-                }
-        }
     }
     
     @ViewBuilder
@@ -207,12 +193,11 @@ struct SettingsView: View {
             Toggle("SET_COUNTDOWN", isOn: setting(\.hasCountdown, tracking: "countdown"))
                 .tint(Color.gustavVolt)
 
-            Picker("SET_TICKING", selection: setting(\.ticking, tracking: "ticking")) {
-                ForEach(TickingMode.allCases, id: \.self) { mode in
-                    Text(mode.title).tag(mode)
-                }
+            NavigationLink {
+                TickingSettingsView(ticking: setting(\.ticking, tracking: "ticking"))
+            } label: {
+                ListButton(name: "SET_TICKING", value: currentTimerData.ticking.title)
             }
-            .pickerStyle(.menu)
 
             NavigationLink {
                 SoundSettingsView(selectedSound: setting(\.selectedSound))
@@ -225,29 +210,56 @@ struct SettingsView: View {
     @ViewBuilder
     private var appearance: some View {
         SettingsSection(label: "APPEARANCE") {
-            NavigationLink {
-                BackgroundSelectorView()
-            } label: {
+            NavigationLink(value: AppScreen.background) {
                 ListButton(name: "BACKGROUND")
             }
         }
     }
     
+    /// Odkazy z API (včetně nástěnky nápadů). Když žádný platný odkaz z API
+    /// není, ukáže se vestavěné „Ohodnoť“.
     @ViewBuilder
     private var more: some View {
         SettingsSection(label: "MORE") {
-            ButtonLink(label: "RATE", URLString: AppConfig.reviewURL, target: "rate")
+            let remoteLinks = remoteContent.links
 
-            Button("SUGGEST_FEATURE", action: openIdeasBoard)
+            ForEach(remoteLinks) { link in
+                Button(link.label) {
+                    Analytics.send(.externalLinkOpened, parameters: ["target": "remote_link", "link_id": link.id])
+                    AppLinkRouter.open(link.url)
+                }
                 .foregroundStyle(Color.gustavPink)
+            }
 
-            ButtonLink(label: "TRY_WEIGHTS", URLString: AppConfig.weightsURL, target: "weights")
-            
-            ButtonLink(label: "FOLLOW_INSTAGRAM", URLString: AppConfig.instagramURL, target: "instagram")
-            
-            ButtonLink(label: "WATCH_ON_YOUTUBE", URLString: AppConfig.youtubeURL, target: "youtube")
+            if remoteLinks.isEmpty {
+                ButtonLink(label: "RATE", URLString: AppConfig.reviewURL, target: "rate")
+            }
         }
     }
+
+    #if DEBUG
+    /// Číslo verze. Pětinásobné klepnutí otevře vývojářské menu – jen v DEBUG.
+    private var debugEntry: some View {
+        Section {
+            Text(verbatim: appVersionText)
+                .font(.sectionFooter)
+                .foregroundStyle(Color.gustavNeutral)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    showDebugMenu = true
+                }
+                .listRowBackground(Color.clear)
+        }
+    }
+
+    private var appVersionText: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "\(version) (\(build))"
+    }
+    #endif
     
     @ViewBuilder
     private var about: some View {
@@ -328,33 +340,6 @@ struct SettingsView: View {
         }
     }
     
-    /// Nástěnka s nápady se otevírá uvnitř aplikace, aby se uživatel vrátil
-    /// rovnou do nastavení. Technické údaje v adrese web vloží do skrytých
-    /// polí formuláře, takže se u nahlášených chyb nemusí doptávat.
-    private func openIdeasBoard() {
-        guard let url = ideasBoardURL else { return }
-        Analytics.send(.ideasOpened)
-        InAppBrowser.open(url)
-    }
-
-    private var ideasBoardURL: URL? {
-        guard var components = URLComponents(string: AppConfig.ideasBoardURL) else { return nil }
-        let info = Bundle.main.infoDictionary
-        let items: [(String, String?)] = [
-            ("app", AppConfig.ideasBoardAppID),
-            ("v", info?["CFBundleShortVersionString"] as? String),
-            ("build", info?["CFBundleVersion"] as? String),
-            ("ios", UIDevice.current.systemVersion),
-            ("device", InAppBrowser.deviceModelIdentifier),
-            // Jazyk, ve kterém aplikace opravdu běží (cs/en), ne jazyk systému.
-            ("lang", Bundle.main.preferredLocalizations.first)
-        ]
-        components.queryItems = items.compactMap { name, value in
-            value.map { URLQueryItem(name: name, value: $0) }
-        }
-        return components.url
-    }
-
     private func isTimerAlreadySaved() -> Bool {
         let savedTimers = timerData.filter { $0.order != AppConfig.mainTimerOrder }
         if let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) {
@@ -397,13 +382,12 @@ struct SettingsView: View {
         cachedLastSavedTimers = Array(saved)
     }
 
-    /// Zobrazí alert, pokud přibyl nový token oproti tomu, co už uživatel viděl.
-    /// Token roste při každém načtení sdíleného odkazu, takže na rozdíl od
-    /// boolean příznaku zůstává rozpoznatelný i při opakovaných odkazech.
-    private func checkForNewDeeplinkLoad() {
-        guard deeplinkLoadToken != lastAcknowledgedDeeplinkToken else { return }
-        lastAcknowledgedDeeplinkToken = deeplinkLoadToken
-        showDeeplinkLoadedAlert = true
+    /// Pushne obrazovku vyžádanou odkazem (`gustavtimerapp://settings/…`).
+    /// Nahradí, co je zrovna otevřené, ať uživatel skončí přesně na ní
+    /// a zpět se vrátí do kořene nastavení.
+    private func openPendingScreen() {
+        guard let screen = navigator.consume() else { return }
+        path = [screen]
     }
     
     private func saveTimer() {
@@ -554,39 +538,6 @@ private struct ButtonLink: View {
     }
 }
 
-/// Webová stránka v `SFSafariViewController` uvnitř aplikace.
-///
-/// Prezentuje se přes UIKit nad nejvyšším otevřeným oknem (tady nad sheetem
-/// Settings), ne přes SwiftUI `.sheet` – Safari si tlačítkem Zavřít zavírá
-/// samo sebe a SwiftUI by se o tom nedozvědělo.
-private enum InAppBrowser {
-    @MainActor
-    static func open(_ url: URL) {
-        guard let top = UIApplication.shared.topmostViewController else {
-            UIApplication.shared.open(url)
-            return
-        }
-
-        let safari = SFSafariViewController(url: url)
-        safari.preferredControlTintColor = UIColor(Color.gustavPink)
-        safari.dismissButtonStyle = .close
-        top.present(safari, animated: true)
-    }
-
-    /// Model zařízení, např. `iPhone15,2`. Na simulátoru by `uname` vrátil
-    /// jen `arm64`, proto se tam bere simulovaný model.
-    static var deviceModelIdentifier: String {
-        if let simulated = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] {
-            return simulated
-        }
-        var systemInfo = utsname()
-        uname(&systemInfo)
-        return withUnsafeBytes(of: &systemInfo.machine) { bytes in
-            String(decoding: bytes.prefix { $0 != 0 }, as: UTF8.self)
-        }
-    }
-}
-
 #Preview("Light") {
     SettingsView()
         .preferredColorScheme(.light)
@@ -595,17 +546,4 @@ private enum InAppBrowser {
 #Preview("Dark") {
     SettingsView()
         .preferredColorScheme(.dark)
-}
-
-// MARK: - Tikání
-
-private extension TickingMode {
-    /// Název režimu v nabídce tikání.
-    var title: LocalizedStringKey {
-        switch self {
-        case .off:          return "TICKING_OFF"
-        case .everySecond:  return "TICKING_EVERY_SECOND"
-        case .finalSeconds: return "TICKING_FINAL_SECONDS"
-        }
-    }
 }

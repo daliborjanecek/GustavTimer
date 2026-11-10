@@ -14,7 +14,6 @@
 //  psal uživatel (timer, intervaly), se nikdy neposílají – název se posílá
 //  jen u presetů, ty pocházejí z aplikace.
 //
-//      Analytics.send(.ideasOpened)
 //      Analytics.send(.timerSaved, parameters: Analytics.parameters(for: settings))
 //
 
@@ -44,7 +43,6 @@ enum AnalyticsSignal: String {
     case displayFormatChanged = "settings.display_format_changed"
 
     // Aplikace
-    case ideasOpened = "ideas.opened"
     case externalLinkOpened = "link.opened"
     case whatsNewShown = "whatsnew.shown"
     case reviewRequested = "review.requested"

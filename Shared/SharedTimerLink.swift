@@ -133,6 +133,8 @@ extension SharedTimerLink {
     static let customScheme = "gustavtimerapp"
     static let customTimerHost = "timer"
     static let customWhatsNewHost = "whatsnew"
+    /// `gustavtimerapp://settings/<obrazovka>` – viz `AppScreen`.
+    static let customSettingsHost = "settings"
 
     /// Hostitelé, na kterých běží Universal Links. Web servíruje AASA na obou
     /// variantách (s www i bez), takže obě musí projít.
@@ -197,6 +199,8 @@ extension SharedTimerLink {
     enum Route: Equatable {
         case sharedTimer(items: [URLQueryItem])
         case whatsNew
+        /// Obrazovka v nastavení, např. `gustavtimerapp://settings/background`.
+        case screen(AppScreen)
     }
 
     /// Rozpozná příchozí URL. Vrací `nil` pro cokoliv, co aplikaci nepatří.
@@ -214,6 +218,9 @@ extension SharedTimerLink {
                 return .whatsNew
             case customTimerHost:
                 return .sharedTimer(items: components.queryItems ?? [])
+            case customSettingsHost:
+                // Neznámá obrazovka (odkaz pro novější verzi) = cizí odkaz.
+                return AppScreen(path: components.path).map(Route.screen)
             default:
                 return nil
             }
@@ -229,6 +236,35 @@ extension SharedTimerLink {
         }
 
         return nil
+    }
+}
+
+/// Obrazovka aplikace, kterou jde otevřít odkazem – z banneru v nastavení
+/// i zvenku. Hodnota je poslední část cesty:
+///
+///     gustavtimerapp://settings/background   → .background
+///
+/// Hodnoty jsou v administraci webu (`gtimer_app_screens()` v pluginu
+/// gustav-timer-api) a v bannerech uživatelů – NEPŘEJMENOVÁVEJ. Nová
+/// obrazovka = nový `case` tady i v pluginu.
+enum AppScreen: String, CaseIterable, Hashable {
+    /// Výběr pozadí timeru.
+    case background
+
+    /// `"/background"`, `"background/"` → `.background`. Víc úrovní cesty
+    /// ani neznámý název nepřijme.
+    init?(path: String) {
+        let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/")).lowercased()
+        self.init(rawValue: trimmed)
+    }
+
+    /// `gustavtimerapp://settings/background`
+    var url: URL {
+        var components = URLComponents()
+        components.scheme = SharedTimerLink.customScheme
+        components.host = SharedTimerLink.customSettingsHost
+        components.path = "/" + rawValue
+        return components.url!
     }
 }
 
@@ -492,6 +528,35 @@ extension SharedTimerLink {
 
     private static func encode(_ value: String) -> String? {
         value.addingPercentEncoding(withAllowedCharacters: queryAllowed)
+    }
+}
+
+// MARK: - Popis pro dotaz před načtením
+
+extension SharedTimerLink {
+
+    /// Kolik intervalů vypíše `summary`, než zbytek shrne do „+N“.
+    static let summaryIntervalCount = 4
+
+    /// Jednořádkový popis timeru pro dotaz „Načíst timer?“. Jen názvy,
+    /// délky a symboly – nic k lokalizaci.
+    ///
+    ///     Work 0:40 · Rest 0:20 · 4×
+    ///     A 0:30 · B 0:30 · C 0:30 · +3 · ∞
+    var summary: String {
+        let limit = Self.summaryIntervalCount
+        let shown = intervals.count > limit ? intervals.prefix(limit - 1) : intervals.prefix(limit)
+        var parts = shown.map { "\($0.name) \(Self.formattedDuration($0.value))" }
+        if intervals.count > shown.count {
+            parts.append("+\(intervals.count - shown.count)")
+        }
+        parts.append(rounds == -1 ? "∞" : "\(rounds)×")
+        return parts.joined(separator: " · ")
+    }
+
+    /// `40` → `0:40`, `600` → `10:00`.
+    static func formattedDuration(_ seconds: Int) -> String {
+        String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 }
 

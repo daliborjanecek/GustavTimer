@@ -15,6 +15,8 @@ struct BackgroundSelectorView: View {
     ]
         
     @AppStorage(AppPreferences.Key.backgroundIndex) var bgIndex: Int = 0
+    @AppStorage(AppPreferences.Key.remoteBackgroundID) var remoteBackgroundID: String = ""
+    @ObservedObject private var remoteContent = RemoteContentManager.shared
     
     @Environment(\.modelContext) var context
     @Query var customImage: [CustomImageModel]
@@ -25,13 +27,32 @@ struct BackgroundSelectorView: View {
     var body: some View {
         ScrollView {
             LazyVGrid(columns: flexibleColumn, spacing: 15) {
+                // Stažená pozadí jsou před vestavěnými, v pořadí z API.
+                ForEach(remoteContent.backgrounds) { item in
+                    Color.clear
+                        .aspectRatio(1, contentMode: .fit)
+                        .overlay {
+                            Image(uiImage: item.image)
+                                .backgroundThumbnail()
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .contentShape(Rectangle())
+                        .onTapGesture { setRemoteBG(id: item.id) }
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(style: .init(lineWidth: (remoteBackgroundID == item.id) ? 4 : 0))
+                                .fill(Color.gustavVolt)
+                                .animation(.easeInOut, value: remoteBackgroundID)
+                        }
+                        .padding(1)
+                }
                 ForEach(0..<AppConfig.backgroundImages.count, id: \.self) { index in
                     AppConfig.backgroundImages[index].getImage()
                         .backgroundThumbnail()
                         .onTapGesture { setBG(index: index) }
                         .overlay {
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(style: .init(lineWidth: (bgIndex == index) ? 4 : 0))
+                                .stroke(style: .init(lineWidth: (bgIndex == index && remoteBackgroundID.isEmpty) ? 4 : 0))
                                 .fill(Color.gustavVolt)
                                 .animation(.easeInOut, value: bgIndex)
                         }
@@ -49,7 +70,7 @@ struct BackgroundSelectorView: View {
                                                 .onTapGesture { setBG(index: -1) }
                                                 .overlay {
                                                     RoundedRectangle(cornerRadius: 10)
-                                                        .stroke(style: .init(lineWidth: (bgIndex == -1) ? 4 : 0))
+                                                        .stroke(style: .init(lineWidth: (bgIndex == -1 && remoteBackgroundID.isEmpty) ? 4 : 0))
                                                         .fill(Color.gustavVolt)
                                                         .animation(.easeInOut, value: bgIndex)
                                                 }
@@ -110,8 +131,17 @@ struct BackgroundSelectorView: View {
     }
     
     func setBG(index: Int) {
+        self.remoteBackgroundID = ""
         self.bgIndex = index
         Analytics.settingChanged("background", value: index == -1 ? "custom" : String(index))
+    }
+
+    /// Vzdálené pozadí se pamatuje podle ID. Index se nastaví na výchozí
+    /// vestavěné pozadí – na to se přepne, až vzdálené přestane platit.
+    func setRemoteBG(id: String) {
+        self.bgIndex = AppConfig.defaultBackgroundIndex
+        self.remoteBackgroundID = id
+        Analytics.settingChanged("background", value: "remote")
     }
     
     func getImage() -> Image {

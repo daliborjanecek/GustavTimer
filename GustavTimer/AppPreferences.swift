@@ -19,7 +19,8 @@ import SwiftUI
 
 final class AppPreferences: ObservableObject {
 
-    /// Vybrané pozadí. `-1` = vlastní fotka uživatele.
+    /// Vybrané vestavěné pozadí. `-1` = vlastní fotka uživatele. Když je
+    /// vyplněné `remoteBackgroundID`, má přednost vzdálené pozadí.
     @AppStorage(Key.backgroundIndex) var backgroundIndex: Int = 0
 
     /// Formát odpočtu na výšku. Přepíná se swipem přes odpočet.
@@ -46,12 +47,18 @@ final class AppPreferences: ObservableObject {
         static let stopCounter = "stopCounter"
         static let whatsNewVersion = "whatsNewVersion"
         static let lastOnboardingVersion = "lastOnboardingVersion"
-        static let deeplinkLoadToken = "deeplinkLoadToken"
-        static let deeplinkLoadedTitle = "deeplinkLoadedTitle"
-        static let lastAcknowledgedDeeplinkToken = "lastAcknowledgedDeeplinkToken"
         /// První spuštění s analytikou akvizice – viz `AnalyticsAcquisition`.
         static let installDate = "installDate"
         static let acquisitionReported = "acquisitionReported"
+        /// ID vybraného vzdáleného pozadí. Prázdné = platí `backgroundIndex`.
+        /// Vzdálená pozadí se vybírají podle ID, ne indexu – jejich počet
+        /// a pořadí se s každou synchronizací může změnit.
+        static let remoteBackgroundID = "remoteBackgroundID"
+        /// Diagnostika synchronizace – viz `RemoteContentManager`.
+        static let remoteContentLastSuccess = "remoteContentLastSuccess"
+        static let remoteContentLastAttempt = "remoteContentLastAttempt"
+        static let remoteContentLastResult = "remoteContentLastResult"
+        static let remoteContentLastError = "remoteContentLastError"
 
         /// Klíče, které do verze 2.3 držely nastavení timeru. Po migraci se mažou –
         /// viz `SettingsMigration`.
