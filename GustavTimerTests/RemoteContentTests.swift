@@ -161,6 +161,21 @@ func toleratesUnknownFieldsAndBannerTypes() throws {
 }
 
 @Test
+func bannerWithUnknownAppScreenIsNotSupported() throws {
+    func banner(_ url: String) throws -> RemoteBanner {
+        RemoteBanner(id: "b", imageUrl: URL(string: "https://example.com/b.jpg")!,
+                     url: try #require(URL(string: url)), type: .app)
+    }
+
+    #expect(try banner("gustavtimerapp://settings/background").isSupported)
+    #expect(try banner("https://gustavtraining.com/t?Work=30").isSupported)
+    #expect(try banner("https://apps.apple.com/app/id123").isSupported)
+    // Obrazovka z novější verze administrace – klepnutí by nic neudělalo.
+    #expect(try !banner("gustavtimerapp://settings/sounds").isSupported)
+    #expect(try !banner("gustavtimerapp://neco").isSupported)
+}
+
+@Test
 func rejectsUnsupportedSchemaVersion() {
     #expect(throws: RemoteContentError.unsupportedSchema(2)) {
         try RemoteContentConfig.decode(json(schemaVersion: 2))

@@ -66,7 +66,10 @@ struct RemoteContentConfig: Decodable, Equatable {
     }
 }
 
-/// Typ banneru. Určuje **jen ikonu** – otevírá se vždy `url` stejně.
+/// Typ banneru. Určuje **jen ikonu** – otevírá se vždy `url` přes
+/// `AppLinkRouter`. U typu `app` je `url` odkaz na obrazovku aplikace
+/// (`gustavtimerapp://settings/background`), který web generuje z výběru
+/// obrazovky v administraci. Odkazy na jiné aplikace mají typ `appstore`.
 enum RemoteBannerType: String, CaseIterable {
     case timer, youtube, app, web, appstore
 }
@@ -114,6 +117,16 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
         language = RemoteContentLanguage.normalize(try container.decodeIfPresent(String.self, forKey: .language))
         startAt = try container.decodeIfPresent(Date.self, forKey: .startAt)
         endAt = try container.decodeIfPresent(Date.self, forKey: .endAt)
+    }
+}
+
+extension RemoteBanner {
+    /// Umí tahle verze aplikace banner otevřít? Odkaz do aplikace
+    /// (`gustavtimerapp://…`) na obrazovku, kterou zná až novější verze,
+    /// by po klepnutí nic neudělal – takový banner se nezobrazí.
+    var isSupported: Bool {
+        guard url.scheme?.lowercased() == SharedTimerLink.customScheme else { return true }
+        return SharedTimerLink.route(url: url) != nil
     }
 }
 

@@ -106,11 +106,12 @@ final class RemoteContentManager: ObservableObject {
 
     var currentLanguage: String { language() }
 
-    /// Bannery platné teď, v pořadí z API, jen s připraveným obrázkem.
+    /// Bannery platné teď, v pořadí z API, jen s připraveným obrázkem
+    /// a s odkazem, který tahle verze umí otevřít.
     var banners: [RemoteBannerItem] {
         guard let config else { return [] }
         return config.banners
-            .filter { $0.isAvailable(language: currentLanguage, at: referenceDate) }
+            .filter { $0.isAvailable(language: currentLanguage, at: referenceDate) && $0.isSupported }
             .compactMap { banner in image(for: banner.imageUrl).map { RemoteBannerItem(banner: banner, image: $0) } }
     }
 

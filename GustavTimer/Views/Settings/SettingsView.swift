@@ -25,6 +25,9 @@ struct SettingsView: View {
     @AppStorage(AppPreferences.Key.lastAcknowledgedDeeplinkToken) private var lastAcknowledgedDeeplinkToken: Int = 0
     @AppStorage(AppPreferences.Key.deeplinkLoadedTitle) private var deeplinkLoadedTitle: String = ""
     @ObservedObject private var remoteContent = RemoteContentManager.shared
+    @ObservedObject private var navigator = AppNavigator.shared
+    /// Obrazovky otevřené odkazem (`AppNavigator`) nebo z menu nastavení.
+    @State private var path: [AppScreen] = []
     #if DEBUG
     @State private var showDebugMenu = false
     #endif
@@ -34,7 +37,7 @@ struct SettingsView: View {
     }
     
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             List {
                 SettingsBannerView()
                 timerNameView
@@ -61,6 +64,17 @@ struct SettingsView: View {
             .onAppear {
                 refreshLastSavedTimers()
                 checkForNewDeeplinkLoad()
+                openPendingScreen()
+            }
+            // Odkaz na obrazovku, když je nastavení už otevřené (banner nahoře).
+            .onChange(of: navigator.pendingScreen) { _, _ in
+                openPendingScreen()
+            }
+            .navigationDestination(for: AppScreen.self) { screen in
+                switch screen {
+                case .background:
+                    BackgroundSelectorView()
+                }
             }
             // Settings může zůstat otevřené přes další načtení odkazu (aplikace jen
             // na pozadí) – onAppear se tehdy znovu nespustí, protože instance
@@ -211,9 +225,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var appearance: some View {
         SettingsSection(label: "APPEARANCE") {
-            NavigationLink {
-                BackgroundSelectorView()
-            } label: {
+            NavigationLink(value: AppScreen.background) {
                 ListButton(name: "BACKGROUND")
             }
         }
@@ -420,6 +432,14 @@ struct SettingsView: View {
             .filter { $0.order != 0 }
             .sorted(by: { ($0.lastUsed ?? .distantPast) > ($1.lastUsed ?? .distantPast) })
         cachedLastSavedTimers = Array(saved)
+    }
+
+    /// Pushne obrazovku vyžádanou odkazem (`gustavtimerapp://settings/…`).
+    /// Nahradí, co je zrovna otevřené, ať uživatel skončí přesně na ní
+    /// a zpět se vrátí do kořene nastavení.
+    private func openPendingScreen() {
+        guard let screen = navigator.consume() else { return }
+        path = [screen]
     }
 
     /// Zobrazí alert, pokud přibyl nový token oproti tomu, co už uživatel viděl.

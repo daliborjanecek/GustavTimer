@@ -328,6 +328,9 @@ class TimerViewModel: ObservableObject {
         switch SharedTimerLink.route(url: url) {
         case .whatsNew:
             showingWhatsNew = true
+        case .screen(let screen):
+            // Nastavení otevře TimerView, obrazovku v něm SettingsView.
+            AppNavigator.shared.open(screen)
         case .sharedTimer(let items):
             // Odkaz přepíše rozběhnutý trénink – započítat ho dřív, než zmizí.
             trackSessionAbandoned(reason: "link")

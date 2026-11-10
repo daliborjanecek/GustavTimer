@@ -525,7 +525,18 @@ gustavtimerapp://timer?Work=30&Rest=15&rounds=8   (odkaz z 2.2.1, nastavení zů
 gustavtimerapp://timer?60&30&60&30                (minimalistický → Kolo 1..4)
 gustavtimerapp://timer?Sprint=20&Rest=10          (smyčka, rounds chybí → -1)
 gustavtimerapp://whatsnew
+gustavtimerapp://settings/background              (otevře nastavení → Výběr pozadí)
 ```
+
+### Odkazy na obrazovky
+
+`gustavtimerapp://settings/<obrazovka>` otevře nastavení a v něm obrazovku z výčtu `AppScreen` (`Shared/SharedTimerLink.swift`). Teď jen `background` (Výběr pozadí). Funguje z banneru i zvenku (Safari, Poznámky, push).
+
+1. `SharedTimerLink.route` → `.screen(AppScreen)`, `TimerViewModel.handleDeepLink` → `AppNavigator.shared.open(screen)`.
+2. `TimerView` na požadavek otevře sheet nastavení (když už otevřený není). Otevření nastavení zastaví běžící timer, stejně jako ruční otevření.
+3. `SettingsView` si požadavek převezme (`AppNavigator.consume()`) při zobrazení nebo hned, když je otevřené, a nastaví `NavigationStack(path:)` na `[screen]`. Zpět vede do kořene nastavení.
+
+Nová obrazovka = nový `case` v `AppScreen`, větev v `navigationDestination(for: AppScreen.self)` v `SettingsView` a položka v `gtimer_app_screens()` v pluginu webu. Neznámá obrazovka (odkaz pro novější verzi) se bere jako cizí odkaz.
 
 > [!tip] Sdílení
 > **ShareLink** generuje přesně takové URL na třech místech: v toolbaru `SettingsView` (právě rozdělaný timer) a swipem na řádku oblíbeného či presetu ve `FavouritesView`. Limity drží `AppConfig.sharedLinkLimits`. Po načtení z odkazu se v Settings zobrazí hláška `DEEPLINK_LOADED` (řízeno počítadlem `deeplinkLoadToken`).
@@ -855,11 +866,11 @@ Bannery, odkazy v nastavení a stažená pozadí se spravují na webu. Aplikace 
 
 | Obsah | Pravidlo |
 |---|---|
-| Bannery | Platné stažené bannery v pořadí z API, jinak vestavěný banner. Pevný poměr 16:9 jako vestavěné bannery, obrázek s jiným poměrem se ořízne na středu (doporučeno 1920×1080). Víc bannerů = `TabView` s přepínáním po 5 s, po posledním znovu první. Ikona podle `type` (`timer`, `youtube` – logo, `app`, `web`, `appstore`) |
+| Bannery | Platné stažené bannery v pořadí z API, jinak vestavěný banner. Pevný poměr 16:9 jako vestavěné bannery, obrázek s jiným poměrem se ořízne na středu (doporučeno 1920×1080). Víc bannerů = `TabView` s přepínáním po 5 s, po posledním znovu první. Ikona podle `type` (`timer`, `youtube` – logo, `app`, `web`, `appstore`). Typ `app` = obrazovka v aplikaci, `url` je `gustavtimerapp://settings/…` (viz [[#Odkazy na obrazovky]]). Banner s odkazem do aplikace, kterému verze nerozumí (`RemoteBanner.isSupported`), se nezobrazí |
 | Odkazy | Platné odkazy z API nahoře v sekci „Více“, pak Hodnotit a Navrhni funkci. Bez platných odkazů z API se ukážou vestavěné (Weights, Instagram, YouTube) |
 | Pozadí | Stažená pozadí před vestavěnými. Viz [[#9 · Pozadí (Background)]] |
 
-**Odkaz na timer** (`https://gustavtraining.com/t?…`) z banneru neotevírá systém (Universal Link otevřený z vlastní aplikace by skončil v Safari). `AppLinkRouter` ho pošle notifikací do `TimerView` → `TimerViewModel.handleDeepLink(url:fromApp: true)`, tedy stejnou cestou jako příchozí odkaz. Ostatní URL otevře `UIApplication.open`.
+**Odkaz na timer** (`https://gustavtraining.com/t?…`) ani odkaz na obrazovku (`gustavtimerapp://settings/…`) z banneru neotevírá systém (Universal Link otevřený z vlastní aplikace by skončil v Safari). `AppLinkRouter` ho pošle notifikací do `TimerView` → `TimerViewModel.handleDeepLink(url:fromApp: true)`, tedy stejnou cestou jako příchozí odkaz. Ostatní URL otevře `UIApplication.open`.
 
 ### Vývojářské menu (jen DEBUG)
 

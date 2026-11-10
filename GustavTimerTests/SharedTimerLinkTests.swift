@@ -77,6 +77,36 @@ func whatsNewRouteSurvives() throws {
     #expect(SharedTimerLink.route(url: url) == .whatsNew)
 }
 
+@Test("Odkaz na obrazovku v nastavení", arguments: [
+    "gustavtimerapp://settings/background",
+    "gustavtimerapp://settings/background/",
+    "GUSTAVTIMERAPP://Settings/Background"
+])
+func settingsScreenRoute(_ string: String) throws {
+    let url = try #require(URL(string: string))
+    #expect(SharedTimerLink.route(url: url) == .screen(.background))
+}
+
+@Test("Neznámá obrazovka v nastavení je cizí odkaz", arguments: [
+    "gustavtimerapp://settings",
+    "gustavtimerapp://settings/",
+    "gustavtimerapp://settings/sounds",
+    "gustavtimerapp://settings/background/detail",
+    "https://gustavtraining.com/settings/background"
+])
+func unknownSettingsScreenIsIgnored(_ string: String) throws {
+    let url = try #require(URL(string: string))
+    #expect(SharedTimerLink.route(url: url) == nil)
+}
+
+@Test("URL obrazovky projde routováním zpět na stejnou obrazovku")
+func appScreenURLRoundTrip() {
+    for screen in AppScreen.allCases {
+        #expect(screen.url.absoluteString == "gustavtimerapp://settings/\(screen.rawValue)")
+        #expect(SharedTimerLink.route(url: screen.url) == .screen(screen))
+    }
+}
+
 @Test("Cizí odkazy se ignorují", arguments: [
     "https://gustavtraining.com/timer?Work=40",  // /t není prefix /timer
     "https://gustavtraining.com/tools?Work=40",

@@ -99,6 +99,12 @@ struct TimerView: View {
             guard let url = notification.object as? URL else { return }
             viewModel.handleDeepLink(url: url, fromApp: true)
         }
+        .onReceive(AppNavigator.shared.$pendingScreen) { screen in
+            // Obrazovka v nastavení (gustavtimerapp://settings/…). Otevřené
+            // nastavení si ji převezme samo, jinak ho tady otevřeme.
+            guard screen != nil, activeSheet != .settings else { return }
+            present(.settings)
+        }
     }
 }
 
