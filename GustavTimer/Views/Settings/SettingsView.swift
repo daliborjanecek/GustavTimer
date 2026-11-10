@@ -194,12 +194,11 @@ struct SettingsView: View {
             Toggle("SET_COUNTDOWN", isOn: setting(\.hasCountdown, tracking: "countdown"))
                 .tint(Color.gustavVolt)
 
-            Picker("SET_TICKING", selection: setting(\.ticking, tracking: "ticking")) {
-                ForEach(TickingMode.allCases, id: \.self) { mode in
-                    Text(mode.title).tag(mode)
-                }
+            NavigationLink {
+                TickingSettingsView(ticking: setting(\.ticking, tracking: "ticking"))
+            } label: {
+                ListButton(name: "SET_TICKING", value: currentTimerData.ticking.title)
             }
-            .pickerStyle(.menu)
 
             NavigationLink {
                 SoundSettingsView(selectedSound: setting(\.selectedSound))
@@ -618,17 +617,4 @@ private enum InAppBrowser {
 #Preview("Dark") {
     SettingsView()
         .preferredColorScheme(.dark)
-}
-
-// MARK: - Tikání
-
-private extension TickingMode {
-    /// Název režimu v nabídce tikání.
-    var title: LocalizedStringKey {
-        switch self {
-        case .off:          return "TICKING_OFF"
-        case .everySecond:  return "TICKING_EVERY_SECOND"
-        case .finalSeconds: return "TICKING_FINAL_SECONDS"
-        }
-    }
 }

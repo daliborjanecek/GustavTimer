@@ -25,6 +25,7 @@
 		CF107C5A2EDE295A00A172E8 /* bell.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CF107C592EDE295A00A172E8 /* bell.mp3 */; };
 		CF107C5C2EDE29BE00A172E8 /* bubble.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CF107C5B2EDE29BE00A172E8 /* bubble.mp3 */; };
 		CF10D0562E73371F00F84454 /* RoundsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF10D0552E73371800F84454 /* RoundsSettingsView.swift */; };
+		CF10D0582E733A1000F84454 /* TickingSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF10D0572E733A1000F84454 /* TickingSettingsView.swift */; };
 		CF21843429F052590060706C /* GustavTimerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21843329F052590060706C /* GustavTimerApp.swift */; };
 		CF21843629F052590060706C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21843529F052590060706C /* ContentView.swift */; };
 		CF21843829F0525E0060706C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CF21843729F0525E0060706C /* Assets.xcassets */; };
@@ -113,6 +114,7 @@
 		CF107C592EDE295A00A172E8 /* bell.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = bell.mp3; sourceTree = "<group>"; };
 		CF107C5B2EDE29BE00A172E8 /* bubble.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = bubble.mp3; sourceTree = "<group>"; };
 		CF10D0552E73371800F84454 /* RoundsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundsSettingsView.swift; sourceTree = "<group>"; };
+		CF10D0572E733A1000F84454 /* TickingSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickingSettingsView.swift; sourceTree = "<group>"; };
 		CF21843029F052590060706C /* GustavTimer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GustavTimer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CF21843329F052590060706C /* GustavTimerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GustavTimerApp.swift; sourceTree = "<group>"; };
 		CF21843529F052590060706C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -291,6 +293,7 @@
 			children = (
 				CF7744F02E799F9A00693351 /* IntervalRowView.swift */,
 				CF10D0552E73371800F84454 /* RoundsSettingsView.swift */,
+				CF10D0572E733A1000F84454 /* TickingSettingsView.swift */,
 				CFF207D72E6CA9F300D0C369 /* FavouriteRowView.swift */,
 				CFF207D52E6CA9B300D0C369 /* FavouritesEmptyView.swift */,
 				CF01945B2C8A20D700CAC1BD /* SoundSettingsView.swift */,
@@ -566,6 +569,7 @@
 				CF21843629F052590060706C /* ContentView.swift in Sources */,
 				CFB1394F2AE59ED900EE8B2C /* BackgroundImageModel.swift in Sources */,
 				CF10D0562E73371F00F84454 /* RoundsSettingsView.swift in Sources */,
+				CF10D0582E733A1000F84454 /* TickingSettingsView.swift in Sources */,
 				CFC3A7722AAF8B1B00BB8CC2 /* ProgressBar.swift in Sources */,
 				CFF207D82E6CA9F900D0C369 /* FavouriteRowView.swift in Sources */,
 				CF4DB2852F098208007D5692 /* Int+Extension.swift in Sources */,
