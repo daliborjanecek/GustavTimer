@@ -133,7 +133,7 @@ Díky tomu je stejný engine použitelný i na **Apple Watch** (kód je na to p�
 ### Tok dat
 
 - **`TimerView`** zobrazuje stav a deleguje akce na **`TimerViewModel`**.
-- **`TimerViewModel`** je iOS-specifická obálka nad `TimerEngine` – přidává SwiftData persistenci, odkazy a analytiku. Vibrace a zvuky pouští přes `TimerFeedbackPlayer`. O vzhledu view neví nic: animace ikon ani sheety neřídí, jen dává vědět počítadly `intervalPulse` / `roundPulse` a callbackem `onPresentSheet`. Přeposílá `engine.objectWillChange` do vlastního `objectWillChange`, takže SwiftUI se překresluje na změny enginu.
+- **`TimerViewModel`** je iOS-specifická obálka nad `TimerEngine` – přidává SwiftData persistenci a načtení timeru z odkazu. Vibrace a zvuky pouští přes `TimerFeedbackPlayer`, analytiku tréninku vede `WorkoutSessionTracker` a `timer.link_opened` skládá `Analytics.linkOpened`. O vzhledu view neví nic: animace ikon ani sheety neřídí, jen dává vědět počítadly `intervalPulse` / `roundPulse` a callbackem `onPresentSheet`. Přeposílá `engine.objectWillChange` do vlastního `objectWillChange`, takže SwiftUI se překresluje na změny enginu.
 - **`SettingsView`** a **`FavouritesView`** jen kreslí. Úpravy aktivního timeru (`TimerData` s `order == 0`), ukládání do oblíbených a analytiku dělá sdílený **`SettingsViewModel`**; limity úprav (počet intervalů, délky názvů) hlídá model v `TimerData+Editing.swift`. Seznam oblíbených si views drží přes `@Query` a ViewModelu ho předávají. Po zavření Settings `TimerView` znovu načte data a resetuje timer.
 
 ---
@@ -593,7 +593,7 @@ Inicializace v `GustavTimerApp.init()` (App ID `E2CAE467-…`). Všechny signál
 
 ### Trénink
 
-Trychtýř: `timer.started` (`is_resume=false`) → `timer.completed`, nebo `timer.stopped`. Pauza a pokračování trénink nekončí. Stav drží `TimerViewModel` (`WorkoutSession`).
+Trychtýř: `timer.started` (`is_resume=false`) → `timer.completed`, nebo `timer.stopped`. Pauza a pokračování trénink nekončí. Stav tréninku drží a signály skládá `WorkoutSessionTracker` (`Managers/WorkoutSessionTracker.swift`); `TimerViewModel` mu jen předává, co ví engine a databáze. Odeslání se dá při vytvoření nahradit, takže ho `WorkoutSessionTrackerTests` testují bez enginu i bez sítě.
 
 | Signál | Kdy | Parametry |
 |---|---|---|
@@ -761,6 +761,7 @@ GustavTimer/
 │   ├── AppLinkRouter.swift       # Otevření URL z obsahu (odkaz na timer interně)
 │   ├── SoundManager.swift        # AVAudioPlayer singleton
 │   ├── TimerFeedbackPlayer.swift # Události enginu → vibrace a zvuky
+│   ├── WorkoutSessionTracker.swift # Analytika tréninku (started/completed/stopped)
 │   └── TimerShareSheet.swift     # Share sheet odkazu na timer
 │
 ├── Views/

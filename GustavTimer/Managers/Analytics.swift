@@ -61,6 +61,17 @@ enum TimerOrigin: String {
     case custom
 }
 
+/// Jak dopadl dotaz před načtením timeru ze sdíleného odkazu. Hodnota jde
+/// do parametru `prompt` signálu `timer.link_opened`.
+enum SharedLinkOutcome: String {
+    /// Uživatel timer načetl.
+    case accepted
+    /// Uživatel načtení odmítl.
+    case declined
+    /// Odkaz neměl platný interval, dotaz se neukázal.
+    case invalid = "none"
+}
+
 /// Čím uživatel timer spustil.
 enum TimerInput: String {
     /// Tlačítko START na výšku.
@@ -233,6 +244,64 @@ enum Analytics {
         parameters["screen"] = screen.rawValue
         parameters["mode"] = mode.rawValue
         send(.timerSaved, parameters: parameters)
+    }
+
+    // MARK: - Sdílený odkaz
+
+    /// `timer.link_opened` – otevření sdíleného odkazu, na který uživatel
+    /// odpověděl v dotazu před načtením.
+    static func linkOpened(_ pending: PendingSharedLink, outcome: SharedLinkOutcome) {
+        linkOpened(url: pending.url, items: pending.items, link: pending.link, fromApp: pending.fromApp, outcome: outcome)
+    }
+
+    /// `timer.link_opened`. U platného odkazu zvenku navíc nahlásí akvizici,
+    /// u neplatného chybu `link.invalid`.
+    ///
+    /// - Parameter link: `nil` = odkaz neobsahoval jediný platný interval.
+    static func linkOpened(url: URL, items: [URLQueryItem], link: SharedTimerLink?, fromApp: Bool, outcome: SharedLinkOutcome) {
+        let parameters = linkOpenedParameters(url: url, items: items, link: link, fromApp: fromApp, outcome: outcome)
+        send(.linkOpened, parameters: parameters)
+
+        if link != nil {
+            // Odkaz z banneru v aplikaci se jako akvizice nepočítá.
+            if !fromApp {
+                AnalyticsAcquisition.reportLinkIfEligible(channel: parameters["source"] ?? "unknown")
+            }
+        } else {
+            TelemetryDeck.errorOccurred(id: "link.invalid", category: .userInput)
+        }
+    }
+
+    /// Parametry `timer.link_opened`.
+    ///
+    /// `source` je kanál, kterým odkaz odesílatel poslal (`utm_source`, zapisuje
+    /// ho share sheet aplikace). Odkazy ze starších verzí ho nenesou, ty prozradí
+    /// `link_type` (custom schéma = verze 2.2.1) a `has_settings` (bez zvuku
+    /// a vibrací = verze před 2.4). `loaded` je `true` jen u odkazu, který
+    /// uživatel potvrdil – u neplatného i odmítnutého se timer nezměnil.
+    /// Odkaz z banneru v aplikaci má `link_type=in_app`.
+    static func linkOpenedParameters(
+        url: URL,
+        items: [URLQueryItem],
+        link: SharedTimerLink?,
+        fromApp: Bool,
+        outcome: SharedLinkOutcome
+    ) -> [String: String] {
+        let linkType = fromApp ? "in_app" : (url.scheme?.lowercased() == "https" ? "universal" : "scheme")
+        var parameters = [
+            "link_type": linkType,
+            "source": SharedTimerLink.trackingValue(for: SharedTimerLink.sourceKey, in: items) ?? "unknown",
+            "loaded": boolValue(link != nil && outcome == .accepted),
+            "prompt": outcome.rawValue
+        ]
+        if let campaign = SharedTimerLink.trackingValue(for: SharedTimerLink.campaignKey, in: items) {
+            parameters["campaign"] = campaign
+        }
+        if let link {
+            parameters["interval_pattern"] = intervalPattern(link.intervals)
+            parameters["has_settings"] = boolValue(link.sound != nil)
+        }
+        return parameters
     }
 
     // MARK: - Nastavení

@@ -65,24 +65,9 @@ class TimerViewModel: ObservableObject {
     // MARK: - Soukromé vlastnosti
     private var modelContext: ModelContext?
     private let feedbackPlayer = TimerFeedbackPlayer()
+    /// Analytika tréninku (`timer.started` / `completed` / `stopped`).
+    private let workoutTracker = WorkoutSessionTracker()
     private var cancellables = Set<AnyCancellable>()
-
-    // MARK: - Analytika tréninku
-
-    /// Rozběhnutý trénink – od prvního startu do dokončení nebo resetu.
-    /// Pauza ho neukončí, takže `timer.stopped` znamená opravdu vzdaný trénink.
-    private struct WorkoutSession {
-        let startedAt: Date
-        let settings: TimerSettings
-        let origin: TimerOrigin
-        let presetID: String?
-    }
-
-    private var session: WorkoutSession?
-
-    /// Nastavení z posledního načteného odkazu. Podle něj `timer.started`
-    /// pozná, že trénink přišel z odkazu. Drží se jen v paměti.
-    private var lastLinkSettings: TimerSettings?
 
     // MARK: - Forwarded properties z engine
 
@@ -167,7 +152,7 @@ class TimerViewModel: ObservableObject {
     }
 
     func reloadTimers(resetCurrentState: Bool = false) {
-        if resetCurrentState { trackSessionAbandoned(reason: "settings") }
+        if resetCurrentState { trackAbandoned(.settings) }
         loadTimers(resetCurrentState: resetCurrentState)
     }
 
@@ -218,7 +203,7 @@ class TimerViewModel: ObservableObject {
     }
 
     func resetTimer() {
-        trackSessionAbandoned(reason: "reset")
+        trackAbandoned(.reset)
         engine.reset()
     }
 
@@ -237,7 +222,9 @@ class TimerViewModel: ObservableObject {
     /// Trénink doběhl do konce: započítat ho a jednou za čas požádat o hodnocení.
     private func workoutCompleted() {
         completedTimerCount += 1
-        trackSessionCompleted()
+        if workoutTracker.completed(completedCount: completedTimerCount) {
+            TelemetryDeck.coreFeatureUsed(featureName: "timer_completed")
+        }
 
         guard completedTimerCount % AppConfig.reviewPromptInterval == 0 else { return }
         Analytics.send(.reviewRequested, parameters: [
@@ -280,7 +267,7 @@ class TimerViewModel: ObservableObject {
         case .sharedTimer(let items):
             guard let link = SharedTimerLink.parse(items: items, limits: AppConfig.sharedLinkLimits) else {
                 // Odkaz bez platného intervalu – timer se nemění, není se na co ptát.
-                trackSharedLinkOpened(url: url, items: items, link: nil, fromApp: fromApp, prompt: nil)
+                Analytics.linkOpened(url: url, items: items, link: nil, fromApp: fromApp, outcome: .invalid)
                 return
             }
             // Odkaz přepíše timer (i rozběhnutý trénink) – nejdřív se zeptat,
@@ -297,55 +284,14 @@ class TimerViewModel: ObservableObject {
         guard let pending = pendingSharedLink else { return }
         pendingSharedLink = nil
         load(pending.link)
-        trackSharedLinkOpened(url: pending.url, items: pending.items, link: pending.link, fromApp: pending.fromApp, prompt: true)
+        Analytics.linkOpened(pending, outcome: .accepted)
     }
 
     /// Uživatel načtení timeru z odkazu odmítl – nic se nemění.
     func declinePendingSharedLink() {
         guard let pending = pendingSharedLink else { return }
         pendingSharedLink = nil
-        trackSharedLinkOpened(url: pending.url, items: pending.items, link: pending.link, fromApp: pending.fromApp, prompt: false)
-    }
-
-    /// `timer.link_opened` – otevření sdíleného odkazu.
-    ///
-    /// `source` je kanál, kterým odkaz odesílatel poslal (`utm_source`, zapisuje
-    /// ho share sheet aplikace). Odkazy ze starších verzí ho nenesou, ty prozradí
-    /// `link_type` (custom schéma = verze 2.2.1) a `has_settings` (bez zvuku
-    /// a vibrací = verze před 2.4). `loaded` je `false`, když odkaz neobsahoval
-    /// jediný platný interval nebo ho uživatel odmítl načíst – timer se
-    /// nezměnil. Odkaz z banneru v aplikaci má `link_type=in_app`.
-    ///
-    /// - Parameter prompt: odpověď na dotaz před načtením – `true` načíst,
-    ///   `false` odmítnout, `nil` = dotaz nebyl (neplatný odkaz). Jde do
-    ///   parametru `prompt` (`accepted` / `declined` / `none`).
-    private func trackSharedLinkOpened(url: URL, items: [URLQueryItem], link: SharedTimerLink?, fromApp: Bool, prompt: Bool?) {
-        let source = SharedTimerLink.trackingValue(for: SharedTimerLink.sourceKey, in: items) ?? "unknown"
-        let linkType = fromApp ? "in_app" : (url.scheme?.lowercased() == "https" ? "universal" : "scheme")
-        let loaded = link != nil && prompt != false
-        var parameters = [
-            "link_type": linkType,
-            "source": source,
-            "loaded": loaded ? "true" : "false",
-            "prompt": prompt.map { $0 ? "accepted" : "declined" } ?? "none"
-        ]
-        if let campaign = SharedTimerLink.trackingValue(for: SharedTimerLink.campaignKey, in: items) {
-            parameters["campaign"] = campaign
-        }
-        if let link {
-            parameters["interval_pattern"] = Analytics.intervalPattern(link.intervals)
-            parameters["has_settings"] = Analytics.boolValue(link.sound != nil)
-        }
-
-        Analytics.send(.linkOpened, parameters: parameters)
-
-        if link != nil {
-            if !fromApp {
-                AnalyticsAcquisition.reportLinkIfEligible(channel: source)
-            }
-        } else {
-            TelemetryDeck.errorOccurred(id: "link.invalid", category: .userInput)
-        }
+        Analytics.linkOpened(pending, outcome: .declined)
     }
 
     /// Načte timer ze sdíleného odkazu, který uživatel potvrdil, a otevře
@@ -355,7 +301,7 @@ class TimerViewModel: ObservableObject {
     /// `nil` a stávající timer, počet kol ani uložená data se nezmění.
     private func load(_ link: SharedTimerLink) {
         // Odkaz přepíše rozběhnutý trénink – započítat ho dřív, než zmizí.
-        trackSessionAbandoned(reason: "link")
+        trackAbandoned(.link)
 
         // Odkaz přebije jen to, co skutečně nese. Odkaz z verze 2.2/2.3
         // neobsahuje zvuk ani vibrace, takže si uživatel nechá svoje.
@@ -364,7 +310,7 @@ class TimerViewModel: ObservableObject {
         apply(merged, resetState: true)
         // Timer z odkazu v oblíbených není – aktivní timer se od oblíbeného odpojí.
         persist(merged, detachingSource: true)
-        lastLinkSettings = merged
+        workoutTracker.linkLoaded(merged)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             self?.onPresentSheet?(.settings)
@@ -447,86 +393,36 @@ extension TimerViewModel {
 
 // MARK: - Analytika tréninku
 //
-// Trychtýř: timer.started (is_resume=false) → timer.completed, nebo
-// timer.stopped (vzdaný trénink). Pauza a pokračování trénink nekončí.
-extension TimerViewModel {
+// Signály skládá a posílá `WorkoutSessionTracker`. Tady se mu jen předává,
+// co ví engine a databáze.
+private extension TimerViewModel {
 
-    /// `timer.started`. První start zahájí trénink a určí jeho původ,
-    /// pokračování po pauze nese `is_resume=true`.
-    private func trackStart(input: TimerInput) {
+    func trackStart(input: TimerInput) {
         // finishedRounds je číslo běžícího kola, před prvním startem 0.
-        let isResume = engine.finishedRounds > 0
-        if !isResume || session == nil {
-            let (origin, presetID) = resolveOrigin(of: settings)
-            session = WorkoutSession(startedAt: .now, settings: settings, origin: origin, presetID: presetID)
-        }
-
-        var parameters = Analytics.parameters(for: settings)
-        parameters["input"] = input.rawValue
-        parameters["is_resume"] = Analytics.boolValue(isResume)
-        addOrigin(to: &parameters)
-        Analytics.send(.timerStarted, parameters: parameters)
+        workoutTracker.started(
+            settings,
+            input: input,
+            isResume: engine.finishedRounds > 0,
+            favourites: favouriteSettings()
+        )
     }
 
-    /// `timer.completed` – trénink doběhl do konce. `floatValue` je reálná
-    /// doba od prvního startu včetně pauz, v sekundách.
-    private func trackSessionCompleted() {
-        guard let session else { return }
-
-        var parameters = Analytics.parameters(for: session.settings)
-        parameters["completed_count"] = String(completedTimerCount)
-        addOrigin(to: &parameters)
-        Analytics.send(.timerCompleted, parameters: parameters, floatValue: Date.now.timeIntervalSince(session.startedAt))
-        TelemetryDeck.coreFeatureUsed(featureName: "timer_completed")
-
-        self.session = nil
-    }
-
-    /// `timer.stopped` – rozběhnutý trénink skončil dřív, než doběhl.
     /// Volat před resetem enginu, jinak se ztratí, kde uživatel skončil.
-    ///
-    /// - Parameter reason: `reset` (tlačítko), `settings` (zavření nastavení
-    ///   s resetem), `link` (přepsání odkazem).
-    private func trackSessionAbandoned(reason: String) {
-        guard let session else { return }
-        self.session = nil
+    func trackAbandoned(_ reason: WorkoutSessionTracker.StopReason) {
+        workoutTracker.abandoned(reason: reason, position: workoutPosition)
+    }
 
-        let progress = Analytics.workoutProgress(
-            intervals: session.settings.intervals,
-            rounds: session.settings.rounds,
+    var workoutPosition: WorkoutSessionTracker.Position {
+        let remaining = engine.remainingTime.components
+        return WorkoutSessionTracker.Position(
             round: engine.finishedRounds,
             activeIndex: engine.activeTimerIndex,
-            remainingSeconds: Double(engine.remainingTime.components.seconds)
-                + Double(engine.remainingTime.components.attoseconds) / 1e18
+            remainingSeconds: Double(remaining.seconds) + Double(remaining.attoseconds) / 1e18
         )
-
-        var parameters = Analytics.parameters(for: session.settings)
-        parameters["reason"] = reason
-        parameters["round"] = String(engine.finishedRounds)
-        parameters["elapsed"] = Analytics.durationBucket(seconds: progress.elapsed)
-        parameters["progress_pct"] = progress.fraction.map(Analytics.percentBucket) ?? "loop"
-        addOrigin(to: &parameters)
-        Analytics.send(.timerStopped, parameters: parameters, floatValue: progress.elapsed)
     }
 
-    private func addOrigin(to parameters: inout [String: String]) {
-        guard let session else { return }
-        parameters["timer_origin"] = session.origin.rawValue
-        if let presetID = session.presetID {
-            parameters["preset"] = presetID
-        }
-    }
-
-    private func resolveOrigin(of settings: TimerSettings) -> (TimerOrigin, String?) {
-        let favourites = (try? modelContext?.fetch(FetchDescriptor<TimerData>()))?
-            .filter { $0.order != AppConfig.mainTimerOrder }
-            .map(\.settings) ?? []
-
-        return Analytics.origin(
-            of: settings,
-            presets: PredefinedTimer.allCases.map { (id: $0.rawValue, settings: $0.settings) },
-            favourites: favourites,
-            lastLink: lastLinkSettings
-        )
+    func favouriteSettings() -> [TimerSettings] {
+        guard let modelContext else { return [] }
+        return FavouriteTimers.favourites(in: modelContext).map(\.settings)
     }
 }
