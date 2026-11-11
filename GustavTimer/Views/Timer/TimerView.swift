@@ -21,6 +21,10 @@ struct TimerView: View {
     @Query(sort: \TimerData.id, order: .reverse) private var timerData: [TimerData]
     @StateObject var viewModel = TimerViewModel()
     @State private var orientation = UIDeviceOrientation.unknown
+    /// Animace ikon v hlavičce – zvuk a vibrace bliknou při přechodu
+    /// intervalu, smyčka při dokončení kola.
+    @State private var feedbackIconAnimation = LottiePlaybackMode.paused(at: .frame(0))
+    @State private var loopIconAnimation = LottiePlaybackMode.paused(at: .frame(0))
     @AppStorage(AppPreferences.Key.portraitTimeDisplayFormat) private var portraitFormat: TimeDisplayFormat = .seconds
     @AppStorage(AppPreferences.Key.landscapeTimeDisplayFormat) private var landscapeFormat: TimeDisplayFormat = .minutesSecondsHundredths
 
@@ -50,36 +54,22 @@ struct TimerView: View {
             viewModel.settingsEdited(newSettings)
         }
         .onAppear {
-            // Nastavíme počáteční orientaci
             orientation = UIDevice.current.orientation
-            // Zaregistrujeme se pro notifikace o změně orientace
-            NotificationCenter.default.addObserver(
-                forName: UIDevice.orientationDidChangeNotification,
-                object: nil,
-                queue: .main) { _ in
-                    if UIDevice.current.orientation.isValidInterfaceOrientation {
-                        orientation = UIDevice.current.orientation
-                    }
-                }
         }
-        .onDisappear {
-            // Odregistrujeme notifikace
-            NotificationCenter.default.removeObserver(
-                self,
-                name: UIDevice.orientationDidChangeNotification,
-                object: nil)
-        }
-        .onChange(of: viewModel.showingSheet) { _, newValue in
-            if newValue {
-                viewModel.showingSheet = false
-                present(.settings)
+        // `onReceive` se odhlásí samo. Dřívější blokový observer se
+        // `removeObserver(self)` odregistrovat nedal a zůstával viset.
+        .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+            // Poloha „displejem nahoru/dolů“ rozložení nemění.
+            let current = UIDevice.current.orientation
+            if current.isValidInterfaceOrientation {
+                orientation = current
             }
         }
-        .onChange(of: viewModel.showingWhatsNew) { _, newValue in
-            if newValue {
-                viewModel.showingWhatsNew = false
-                present(.whatsNew)
-            }
+        .onChange(of: viewModel.intervalPulse) { _, _ in
+            feedbackIconAnimation = .playing(.fromProgress(0, toProgress: 1, loopMode: .playOnce))
+        }
+        .onChange(of: viewModel.roundPulse) { _, _ in
+            loopIconAnimation = .playing(.fromProgress(0, toProgress: 1, loopMode: .playOnce))
         }
         .onChange(of: portraitFormat) { _, format in
             trackDisplayFormat(format, orientation: "portrait")
@@ -126,7 +116,11 @@ private extension TimerView {
     
     var portraitTimerView: some View {
         VStack {
-            ProgressArrayView(viewModel: viewModel)
+            ProgressArrayView(
+                intervals: viewModel.timers,
+                activeIndex: viewModel.activeTimerIndex,
+                progress: viewModel.progress
+            )
                 .padding(.top)
             
             headerSection
@@ -146,18 +140,12 @@ private extension TimerView {
     
     var landscapeTimerView: some View {
         VStack {
-            //            ProgressArrayView(viewModel: viewModel)
-            //                .padding(.top)
-            
-            //            headerSection
-            
             Spacer()
             
             counterDisplay(format: $landscapeFormat, formats: [.minutesSecondsHundredths, .seconds])
             
             Spacer()
         }
-        //        .ignoresSafeArea(edges: .bottom)
         .statusBar(hidden: true)
         .persistentSystemOverlays(.hidden)
         // Na šířku nejsou tlačítka – timer se ovládá jen tapy.
@@ -254,17 +242,6 @@ private extension TimerView {
         .padding()
     }
     
-    var verticalControlButtons: some View {
-        VStack(spacing: 16) {
-            startStopButton
-            secondaryButton
-                .frame(width: 100)
-        }
-        .animation(.easeInOut, value: viewModel.isTimerRunning)
-        .frame(maxWidth: .infinity)
-        .padding()
-    }
-    
     @ViewBuilder
     var startStopButton: some View {
         if viewModel.isCountingDown {
@@ -276,25 +253,19 @@ private extension TimerView {
         } else {
             let isBeforeFirstStart = !viewModel.isTimerRunning && viewModel.finishedRounds == 0
             ControlButton(
-                action: { viewModel.startStopTimer(input: .button) },
                 label: isBeforeFirstStart && viewModel.hasCountdown ? "COUNTDOWN" : (viewModel.isTimerRunning ? "STOP" : "START"),
                 description: orientation.isLandscape ? nil : startButtonDescription.map { LocalizedStringKey($0) },
                 color: viewModel.isTimerRunning ? .gustavPink : .gustavVolt,
-                buttonType: .constant(.text)
+                action: { viewModel.startStopTimer(input: .button) }
             )
         }
     }
     
     var secondaryButton: some View {
         ControlButton(
-            action: viewModel.isTimerRunning ? viewModel.skipLap : viewModel.resetTimer,
-            riveAnimation: "",
+            icon: viewModel.isTimerRunning ? .skip : .reset,
             color: .gustavNeutral,
-            buttonType: .init(get: {
-                viewModel.isTimerRunning ? .skip : .reset
-            }, set: { _ in
-                //
-            })
+            action: viewModel.isTimerRunning ? viewModel.skipLap : viewModel.resetTimer
         )
     }
     
@@ -314,29 +285,21 @@ private extension TimerView {
     var settingsIcons: some View {
         HStack {
             if viewModel.settings.rounds == -1 {
-                GustavAnimationView(.loop, mode: $viewModel.loopIconAnimation)
+                GustavAnimationView(.loop, mode: $loopIconAnimation)
                     .frame(width: 20, height: 20)
             }
             
             if viewModel.settings.isVibrating {
-                GustavAnimationView(.vibration, mode: $viewModel.appearanceIconAnimation)
+                GustavAnimationView(.vibration, mode: $feedbackIconAnimation)
                     .frame(width: 20, height: 20)
             }
             
             if viewModel.settings.sound != nil {
-                GustavAnimationView(.sound, mode: $viewModel.appearanceIconAnimation)
+                GustavAnimationView(.sound, mode: $feedbackIconAnimation)
                     .frame(width: 20, height: 20)
             }
         }
         .frame(height: 20)
-    }
-    
-    var soundIcon: some View {
-        let isSoundEnabled = viewModel.settings.sound != nil
-        return Image(systemName: isSoundEnabled ? "speaker.wave.2.circle.fill" : "speaker.slash.circle.fill")
-            .resizable()
-            .scaledToFit()
-            .foregroundColor(Color(isSoundEnabled ? Color.gustavVolt : Color.gustavNeutral))
     }
 }
 
@@ -398,11 +361,11 @@ private extension TimerView {
     }
 
     func setupViewModel() {
+        // Callbacky dřív než `showWhatsNew`, které jeden z nich volá.
+        viewModel.onPresentSheet = { present($0) }
+        viewModel.onReviewRequested = { requestReview() }
         viewModel.setModelContext(context)
         viewModel.showWhatsNew()
-        viewModel.onReviewRequested = {
-            requestReview()
-        }
     }
 }
 
@@ -463,17 +426,12 @@ private struct CountdownStartButton: View {
                     Color.gustavPink
                         .frame(width: geo.size.width * animatedProgress)
                         .opacity(min(1.0, animatedProgress + 0.5))
-                        
                 }
 
-                HStack(spacing: 8) {
-//                    Text("COUNTDOWN")
-//                        .font(.buttonLabel)
-                    Text("\(countdownValue)")
-                        .font(.buttonLabel)
-                }
-                .foregroundStyle(animatedProgress > 0.5 ? Color.gustavVolt : Color.gustavNeutral)
-                .frame(maxWidth: .infinity)
+                Text("\(countdownValue)")
+                    .font(.buttonLabel)
+                    .foregroundStyle(animatedProgress > 0.5 ? Color.gustavVolt : Color.gustavNeutral)
+                    .frame(maxWidth: .infinity)
             }
             .frame(height: GustavLayout.controlHeight)
             .clipShape(Capsule())
@@ -495,7 +453,13 @@ private struct CountdownStartButton: View {
     }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: [CustomImageModel.self, TimerData.self])
+#Preview("Timer") {
+    TimerView(activeSheet: .constant(nil))
+        .modelContainer(PreviewData.container)
+}
+
+#Preview("Tlačítko odpočtu") {
+    CountdownStartButton(countdownValue: 2, countdownDuration: 3, action: {})
+        .padding()
+        .background(.black)
 }

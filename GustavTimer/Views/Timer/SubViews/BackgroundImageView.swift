@@ -44,3 +44,8 @@ struct BackgroundImageView: View {
         }
     }
 }
+
+#Preview {
+    BackgroundImageView()
+        .modelContainer(PreviewData.container)
+}

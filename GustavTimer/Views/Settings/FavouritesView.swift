@@ -9,135 +9,127 @@ import SwiftUI
 import SwiftData
 import GustavUICore
 
+/// Seznam oblíbených a přednastavených timerů. Výběr, ukládání a pořadí
+/// dělá `SettingsViewModel`, který sdílí se `SettingsView`.
+///
+///     NavigationLink {
+///         FavouritesView(viewModel: viewModel)
+///     } label: { … }
 struct FavouritesView: View {
-    
-    @Query(sort: \TimerData.order, order: .reverse) var timerData: [TimerData]
-    @Environment(\.modelContext) var context
-    
-    @State var showSaveAlert: Bool = false
-    @State var newTimerName: String = ""
-    @State var showDeleteAlert: Bool = false
-    @State var timerToDelete: TimerData?
-    @State var showAlreadySavedAlert: Bool = false
+
+    @ObservedObject var viewModel: SettingsViewModel
+    @Query(sort: \TimerData.order, order: .reverse) private var timerData: [TimerData]
+
+    @State private var showSaveAlert = false
+    @State private var newTimerName = ""
     @State private var editMode: EditMode = .inactive
-    @State private var selectedTip: Int = Int.random(in: 0...2)
-    
+    /// Který ze tří tipů u presetů se ukáže – vybraný jednou za zobrazení.
+    @State private var selectedTip = Int.random(in: 0...2)
+
+    /// Uložené oblíbené (bez hlavního timeru), odshora podle pořadí.
+    private var favouriteTimers: [TimerData] {
+        timerData.filter { $0.order > AppConfig.mainTimerOrder }
+    }
+
     var body: some View {
         List {
             savedTimers
             preloadedTimers
         }
         .navigationBarTitleDisplayMode(.automatic)
+        .settingsTitle("FAVOURITES")
         .toolbar { toolbar }
         .environment(\.editMode, $editMode)
-        .saveTimerAlert(isPresented: $showSaveAlert, timerName: $newTimerName, onSave: saveTimer)
-        .alreadySavedAlert(isPresented: $showAlreadySavedAlert)
+        .saveTimerAlert(isPresented: $showSaveAlert, timerName: $newTimerName) {
+            viewModel.saveAsNew(name: newTimerName, screen: .favourites)
+        }
     }
-    
-    @ViewBuilder
+
     private var savedTimers: some View {
         Section {
-            let savedTimers = timerData.filter { $0.order != 0 }
-            if !savedTimers.isEmpty {
-                ForEach(savedTimers) { timer in
-                    FavouriteRowView(settings: timer.settings, selected: isSelected(timer.settings))
-                        .onTapGesture {
-                            select(timer.settings, tracking: timer)
-                        }
-                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            if TimerShareSheet.url(for: timer.settings) != nil {
-                                Button {
-                                    TimerShareSheet.present(settings: timer.settings, origin: .favourite)
-                                } label: {
-                                    Label("SHARE", systemImage: "square.and.arrow.up")
-                                }
-                                .tint(Color.gustavVolt)
-                            }
-                        }
-                }
-                .onDelete { indexSet in
-                    if let index = indexSet.first {
-                        timerToDelete = savedTimers[index]
-                        deleteTimer()
+            let favourites = favouriteTimers
+            if favourites.isEmpty {
+                FavouritesEmptyView()
+            } else {
+                let isModified = viewModel.saveState(among: favourites).isModified
+                ForEach(favourites) { favourite in
+                    let selected = viewModel.isSelected(favourite)
+                    FavouriteRowView(
+                        settings: favourite.settings,
+                        selected: selected,
+                        isModified: selected && isModified
+                    )
+                    .onTapGesture {
+                        viewModel.select(favourite, screen: .favourites)
+                    }
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        shareButton(for: favourite.settings, origin: .favourite)
                     }
                 }
-                .onMove(perform: moveTimer)
-            } else {
-                FavouritesEmptyView()
+                .onDelete { offsets in
+                    offsets.map { favourites[$0] }.forEach(viewModel.remove)
+                }
+                .onMove { source, destination in
+                    viewModel.moveFavourites(favourites, from: source, to: destination)
+                }
             }
         } header: {
             Text("SAVED_TIMERS").font(.sectionHeader)
         }
         .animation(.spring, value: editMode)
     }
-    
-    @ViewBuilder
+
     private var preloadedTimers: some View {
         Section {
-            let preloadedTimers = PredefinedTimer.allCases
-            ForEach(preloadedTimers) { preset in
-                FavouriteRowView(settings: preset.settings, selected: isSelected(preset.settings), tip: preset.description[selectedTip])
-                    .onTapGesture {
-                        Analytics.presetSelected(preset, screen: .favourites)
-                        select(preset.settings)
-                    }
-                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                        if TimerShareSheet.url(for: preset.settings) != nil {
-                            Button {
-                                TimerShareSheet.present(settings: preset.settings, origin: .preset)
-                            } label: {
-                                Label("SHARE", systemImage: "square.and.arrow.up")
-                            }
-                            .tint(Color.gustavVolt)
-                        }
-                    }
+            ForEach(PredefinedTimer.allCases) { preset in
+                FavouriteRowView(
+                    settings: preset.settings,
+                    selected: viewModel.isSelected(preset),
+                    tip: preset.description[selectedTip]
+                )
+                .onTapGesture {
+                    viewModel.select(preset, screen: .favourites)
+                }
+                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                    shareButton(for: preset.settings, origin: .preset)
+                }
             }
         } header: {
             Text("PRELOADED_TIMERS").font(.sectionHeader)
         }
         .animation(.spring, value: editMode)
     }
-    
+
+    /// Sdílení odkazu na timer ze swipu. Timer, který se do odkazu nevejde,
+    /// tlačítko nedostane.
+    @ViewBuilder
+    private func shareButton(for settings: TimerSettings, origin: TimerShareOrigin) -> some View {
+        if TimerShareSheet.url(for: settings) != nil {
+            Button {
+                TimerShareSheet.present(settings: settings, origin: origin)
+            } label: {
+                Label("SHARE", systemImage: "square.and.arrow.up")
+            }
+            .tint(Color.gustavVolt)
+        }
+    }
+
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        if #available(iOS 26, *){
-            ToolbarItem(placement: .title) {
-                HStack {
-                    Text("FAVOURITES")
-                        .font(.settingsNavbarTitle)
-                }
-                .padding(.vertical)
-            }
-        } else {
-            // Fallback to earlier versions
-            ToolbarItem(placement: .title) {
-                HStack {
-                    Text("FAVOURITES")
-                        .font(.settingsNavbarTitle)
-                }
-                .padding(.vertical)
-            }
-        }
-        
         ToolbarItem {
+            // Vždy uloží aktivní timer jako nový oblíbený. Dialog startuje se
+            // stávajícím názvem, ať ho uživatel nemusí psát znovu.
             Button {
-                let savedTimers = timerData.filter { $0.order != AppConfig.mainTimerOrder }
-                if let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }),
-                   !savedTimers.contains(where: { $0.matchesWorkout(of: mainTimer) }) {
-                    // Dialog startuje se stávajícím názvem, ať ho uživatel
-                    // nemusí psát znovu – stačí ho upravit nebo potvrdit.
-                    newTimerName = mainTimer.name
-                    showSaveAlert.toggle()
-                } else {
-                    showAlreadySavedAlert.toggle()
-                }
+                newTimerName = viewModel.timer.name
+                showSaveAlert = true
             } label: {
                 Image(systemName: "plus")
             }
         }
-        
+
         ToolbarItem {
-            if timerData.count > 2 {
+            // Řazení má smysl až od dvou oblíbených.
+            if favouriteTimers.count > 1 {
                 Button {
                     editMode = (editMode == .active ? .inactive : .active)
                 } label: {
@@ -146,78 +138,18 @@ struct FavouritesView: View {
             }
         }
     }
-    
-    private func moveTimer(from indices: IndexSet, to newOffset: Int) {
-        // Získáme pouze uložené časovače (bez hlavního časovače)
-        let savedTimers = timerData.filter { $0.order != 0 }
-        
-        // Vytvoříme kopii časovačů, se kterou můžeme pracovat
-        var movedTimers = savedTimers
-        
-        // Provedeme přesun v naší kopii
-        movedTimers.move(fromOffsets: indices, toOffset: newOffset)
-        
-        // Přiřadíme nová ID pro zachování pořadí
-        // Začínáme od 1, protože 0 je rezervováno pro hlavní časovač
-        for i in 0..<movedTimers.count {
-            let timer = movedTimers[i]
-            // Nastavíme nové ID, které určuje pořadí (vyšší ID = novější časovač)
-            timer.order = movedTimers.count - i
-        }
-        
-        // Uložíme změny do databáze
-        try? context.save()
-    }
-    
-    private func deleteTimer() {
-        if let timerToDelete = timerToDelete {
-            context.delete(timerToDelete)
-        }
-    }
-    
-    private func saveTimer() {
-        guard let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) else { return }
-
-        let newId = (timerData.map { $0.order }.max() ?? 0) + 1
-        var settings = mainTimer.settings
-        settings.name = resolvedTimerName(fallback: mainTimer.name)
-        let newTimer = TimerData(order: newId, settings: settings)
-        context.insert(newTimer)
-        // Aktivní timer převezme pojmenování, aby se hned poznal jako uložený.
-        mainTimer.name = settings.name
-
-        Analytics.timerSaved(settings, screen: .favourites)
-    }
-
-    /// Název z dialogu, ořezaný a omezený délkou. Vymazané pole se nebere jako
-    /// „pojmenuj to prázdně“ – v oblíbených by z toho byl bezejmenný řádek.
-    private func resolvedTimerName(fallback: String) -> String {
-        let trimmed = newTimerName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return String((trimmed.isEmpty ? fallback : trimmed).prefix(AppConfig.maxTimerTitle))
-    }
-    
-    /// Nastaví hlavní timer podle zadaného nastavení.
-    ///
-    /// - Parameter tracking: uložený oblíbený, kterému se má započítat použití.
-    ///   Presety ho nemají – nejsou v databázi, takže není kam počítat.
-    private func select(_ settings: TimerSettings, tracking timer: TimerData? = nil) {
-        if let timer {
-            timer.selected()
-            Analytics.favouriteSelected(timer, screen: .favourites)
-        }
-        TimerData.mainTimer(in: context).settings = settings
-        try? context.save()
-    }
-
-    private func isSelected(_ settings: TimerSettings) -> Bool {
-        guard let mainTimer = timerData.first(where: { $0.order == AppConfig.mainTimerOrder }) else { return false }
-        return mainTimer.settings.matchesWorkout(of: settings)
-    }
 }
 
-#Preview {
-    List {
-        FavouritesEmptyView()
-        FavouriteRowView(settings: AppConfig.defaultTimer, selected: false)
+#Preview("S oblíbenými") {
+    NavigationStack {
+        FavouritesView(viewModel: SettingsViewModel(context: PreviewData.container.mainContext))
     }
+    .modelContainer(PreviewData.container)
+}
+
+#Preview("Prázdné") {
+    NavigationStack {
+        FavouritesView(viewModel: SettingsViewModel(context: PreviewData.emptyContainer.mainContext))
+    }
+    .modelContainer(PreviewData.emptyContainer)
 }

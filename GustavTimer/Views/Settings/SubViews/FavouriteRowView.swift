@@ -16,6 +16,9 @@ struct FavouriteRowView: View {
     let settings: TimerSettings
     let selected: Bool
 
+    /// Načtený oblíbený má neuložené úpravy – u názvu se ukáže „Upraveno“.
+    var isModified: Bool = false
+
     /// Vykreslí řádek jako „aktuální timer“ – ztlumený název místo vlastního
     /// a světlý progress bar. `order` součástí nastavení není, proto se to
     /// předává zvlášť. Dnes to nikdo nenastavuje na `true`; řádek se používá
@@ -48,11 +51,19 @@ struct FavouriteRowView: View {
                             }
                         }
                         HStack {
-                            Text(intervalName)
+                            timerName
                                 .font(isMinimized ? .savedRowTimerNameMinimized : .savedRowTimerName)
                                 .opacity(isMainTimer ? 0.4 : 1)
                                 .lineLimit(1)
                                 .padding(.trailing, 4)
+
+                            if isModified {
+                                Text("MODIFIED_BADGE")
+                                    .font(.sectionFooter)
+                                    .foregroundStyle(Color.gustavPink)
+                                    .lineLimit(1)
+                                    .fixedSize()
+                            }
                             
                             if !isMinimized {
                                 if settings.rounds == -1 {
@@ -84,29 +95,17 @@ struct FavouriteRowView: View {
             }
         }
         .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
-//        .padding()
     }
     
-    var intervalName: LocalizedStringKey {
-        if isMainTimer {
-            return "CURRENT_TIMER"
-        } else {
-            return LocalizedStringKey(settings.name)
-        }
-    }
-    
-    var selectedCornerRadius: CGFloat {
-        if #available(iOS 26, *) {
-            return 24
-        } else {
-            return 8
-        }
+    /// Název timeru napsal uživatel, takže se vypisuje doslova. Jako
+    /// lokalizační klíč by se timer pojmenovaný „START“ zobrazil přeložený
+    /// a hvězdičky v názvu by se vykreslily jako Markdown.
+    private var timerName: Text {
+        isMainTimer ? Text("CURRENT_TIMER") : Text(verbatim: settings.name)
     }
     
     var progressBarColor: Color {
-//        guard !isMinimized else { return Color.gustavLight }
-//        guard !selected else { return Color.gustavLight }
-        return isMainTimer ? Color.gustavLight : Color.gustavVolt
+        isMainTimer ? Color.gustavLight : Color.gustavVolt
     }
     
     func getIntervalWidth(interval: IntervalData, viewWidth: CGFloat) -> CGFloat {
@@ -136,7 +135,8 @@ struct FavouriteRowView: View {
             FavouriteRowView(settings: whistleTimer, selected: true, tip: "Box breathing, soustřeď se výhradně na dech (4-4-4-4: nádech, zadržení, výdech, zadržení). Kdykoli myšlenky odjedou jinam, jednoduše je vrátíš zpět k dechu.")
         }
         Section {
-            FavouriteRowView(settings: beepTimer, selected: true, isMinimized: true)
+            FavouriteRowView(settings: beepTimer, selected: true, isModified: true)
+            FavouriteRowView(settings: beepTimer, selected: true, isModified: true, isMinimized: true)
             FavouriteRowView(settings: whistleTimer, selected: false, isMinimized: true)
         }
         FavouriteRowView(settings: AppConfig.defaultTimer, selected: false, isMainTimer: true)

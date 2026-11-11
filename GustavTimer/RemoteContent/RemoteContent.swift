@@ -81,6 +81,10 @@ protocol RemoteContentItem {
     var language: String? { get }
     var startAt: Date? { get }
     var endAt: Date? { get }
+    /// Nejnižší verze aplikace (včetně), `nil` = bez omezení.
+    var minAppVersion: String? { get }
+    /// Verze aplikace, od které už se položka nezobrazí (bez ní), `nil` = bez omezení.
+    var maxAppVersion: String? { get }
 }
 
 struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
@@ -92,12 +96,15 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
     let language: String?
     let startAt: Date?
     let endAt: Date?
+    let minAppVersion: String?
+    let maxAppVersion: String?
 
     private enum CodingKeys: String, CodingKey {
-        case id, imageUrl, url, type, language, startAt, endAt
+        case id, imageUrl, url, type, language, startAt, endAt, minAppVersion, maxAppVersion
     }
 
-    init(id: String, imageUrl: URL, url: URL, type: RemoteBannerType?, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil) {
+    init(id: String, imageUrl: URL, url: URL, type: RemoteBannerType?, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil,
+         minAppVersion: String? = nil, maxAppVersion: String? = nil) {
         self.id = id
         self.imageUrl = imageUrl
         self.url = url
@@ -105,6 +112,8 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
         self.language = RemoteContentLanguage.normalize(language)
         self.startAt = startAt
         self.endAt = endAt
+        self.minAppVersion = RemoteContentVersion.normalize(minAppVersion)
+        self.maxAppVersion = RemoteContentVersion.normalize(maxAppVersion)
     }
 
     init(from decoder: Decoder) throws {
@@ -117,17 +126,17 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
         language = RemoteContentLanguage.normalize(try container.decodeIfPresent(String.self, forKey: .language))
         startAt = try container.decodeIfPresent(Date.self, forKey: .startAt)
         endAt = try container.decodeIfPresent(Date.self, forKey: .endAt)
+        // Nečitelný text verze položku skryje (`RemoteContentVersion.matches`),
+        // jiný typ než text zneplatní konfiguraci jako u ostatních polí.
+        minAppVersion = RemoteContentVersion.normalize(try container.decodeIfPresent(String.self, forKey: .minAppVersion))
+        maxAppVersion = RemoteContentVersion.normalize(try container.decodeIfPresent(String.self, forKey: .maxAppVersion))
     }
 }
 
 extension RemoteBanner {
-    /// Umí tahle verze aplikace banner otevřít? Odkaz do aplikace
-    /// (`gustavtimerapp://…`) na obrazovku, kterou zná až novější verze,
-    /// by po klepnutí nic neudělal – takový banner se nezobrazí.
-    var isSupported: Bool {
-        guard url.scheme?.lowercased() == SharedTimerLink.customScheme else { return true }
-        return SharedTimerLink.route(url: url) != nil
-    }
+    /// Smí a umí aplikace banner otevřít? Viz `RemoteContentPolicy.isOpenable`.
+    /// Jinak se banner nezobrazí.
+    var isSupported: Bool { RemoteContentPolicy.isOpenable(url) }
 }
 
 struct RemoteLink: RemoteContentItem, Decodable, Equatable, Identifiable {
@@ -137,18 +146,23 @@ struct RemoteLink: RemoteContentItem, Decodable, Equatable, Identifiable {
     let language: String?
     let startAt: Date?
     let endAt: Date?
+    let minAppVersion: String?
+    let maxAppVersion: String?
 
     private enum CodingKeys: String, CodingKey {
-        case id, label, url, language, startAt, endAt
+        case id, label, url, language, startAt, endAt, minAppVersion, maxAppVersion
     }
 
-    init(id: String, label: String, url: URL, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil) {
+    init(id: String, label: String, url: URL, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil,
+         minAppVersion: String? = nil, maxAppVersion: String? = nil) {
         self.id = id
         self.label = label
         self.url = url
         self.language = RemoteContentLanguage.normalize(language)
         self.startAt = startAt
         self.endAt = endAt
+        self.minAppVersion = RemoteContentVersion.normalize(minAppVersion)
+        self.maxAppVersion = RemoteContentVersion.normalize(maxAppVersion)
     }
 
     init(from decoder: Decoder) throws {
@@ -159,6 +173,57 @@ struct RemoteLink: RemoteContentItem, Decodable, Equatable, Identifiable {
         language = RemoteContentLanguage.normalize(try container.decodeIfPresent(String.self, forKey: .language))
         startAt = try container.decodeIfPresent(Date.self, forKey: .startAt)
         endAt = try container.decodeIfPresent(Date.self, forKey: .endAt)
+        // Nečitelný text verze položku skryje (`RemoteContentVersion.matches`),
+        // jiný typ než text zneplatní konfiguraci jako u ostatních polí.
+        minAppVersion = RemoteContentVersion.normalize(try container.decodeIfPresent(String.self, forKey: .minAppVersion))
+        maxAppVersion = RemoteContentVersion.normalize(try container.decodeIfPresent(String.self, forKey: .maxAppVersion))
+    }
+}
+
+extension RemoteLink {
+    /// Smí a umí aplikace odkaz otevřít? Viz `RemoteContentPolicy.isOpenable`.
+    /// Jinak se odkaz nezobrazí.
+    var isSupported: Bool { RemoteContentPolicy.isOpenable(url) }
+}
+
+// MARK: - Bezpečnost
+
+/// Co aplikace z API přijme. Nespoléhá na to, že server je vždycky v pořádku:
+/// ani napadený WordPress nesmí aplikací otevřít cizí URL schéma (`tel:`,
+/// `sms:`, jiné aplikace), stahovat obrázky z cizích serverů (a prozradit
+/// jim IP uživatelů) ani ji shodit obří odpovědí.
+enum RemoteContentPolicy {
+
+    /// Největší odpověď API. Dnešní obsah má jednotky kB.
+    static let maxConfigBytes = 512 * 1024
+
+    /// Největší obrázek banneru nebo pozadí, kontroluje se před dekódováním.
+    static let maxImageBytes = 10 * 1024 * 1024
+
+    /// Odkaz banneru nebo odkazu v nastavení, který smí aplikace otevřít:
+    /// webová adresa, nebo `gustavtimerapp://`, kterému rozumí
+    /// `SharedTimerLink.route` (timer, obrazovka, novinky). Odkaz na obrazovku,
+    /// kterou zná až novější verze, by po klepnutí nic neudělal.
+    ///
+    ///     https://gustavtraining.com/t?Work=40      → true
+    ///     gustavtimerapp://settings/background      → true
+    ///     gustavtimerapp://settings/neznama         → false
+    ///     tel:123, sms:123, whatsapp://send         → false
+    static func isOpenable(_ url: URL) -> Bool {
+        switch url.scheme?.lowercased() {
+        case "https", "http":
+            return url.host?.isEmpty == false
+        case SharedTimerLink.customScheme:
+            return SharedTimerLink.route(url: url) != nil
+        default:
+            return false
+        }
+    }
+
+    /// Obrázek jen přes https z domény v `hosts`.
+    static func isAllowedImageURL(_ url: URL, hosts: [String] = AppConfig.remoteContentImageHosts) -> Bool {
+        guard url.scheme?.lowercased() == "https", let host = url.host?.lowercased() else { return false }
+        return hosts.contains(host)
     }
 }
 
@@ -168,17 +233,22 @@ struct RemoteBackground: RemoteContentItem, Decodable, Equatable, Identifiable {
     let language: String?
     let startAt: Date?
     let endAt: Date?
+    let minAppVersion: String?
+    let maxAppVersion: String?
 
     private enum CodingKeys: String, CodingKey {
-        case id, imageUrl, language, startAt, endAt
+        case id, imageUrl, language, startAt, endAt, minAppVersion, maxAppVersion
     }
 
-    init(id: String, imageUrl: URL, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil) {
+    init(id: String, imageUrl: URL, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil,
+         minAppVersion: String? = nil, maxAppVersion: String? = nil) {
         self.id = id
         self.imageUrl = imageUrl
         self.language = RemoteContentLanguage.normalize(language)
         self.startAt = startAt
         self.endAt = endAt
+        self.minAppVersion = RemoteContentVersion.normalize(minAppVersion)
+        self.maxAppVersion = RemoteContentVersion.normalize(maxAppVersion)
     }
 
     init(from decoder: Decoder) throws {
@@ -188,6 +258,10 @@ struct RemoteBackground: RemoteContentItem, Decodable, Equatable, Identifiable {
         language = RemoteContentLanguage.normalize(try container.decodeIfPresent(String.self, forKey: .language))
         startAt = try container.decodeIfPresent(Date.self, forKey: .startAt)
         endAt = try container.decodeIfPresent(Date.self, forKey: .endAt)
+        // Nečitelný text verze položku skryje (`RemoteContentVersion.matches`),
+        // jiný typ než text zneplatní konfiguraci jako u ostatních polí.
+        minAppVersion = RemoteContentVersion.normalize(try container.decodeIfPresent(String.self, forKey: .minAppVersion))
+        maxAppVersion = RemoteContentVersion.normalize(try container.decodeIfPresent(String.self, forKey: .maxAppVersion))
     }
 }
 
@@ -199,6 +273,7 @@ enum RemoteContentError: LocalizedError, Equatable {
     case invalidItem(String)
     case http(status: Int, url: String)
     case invalidImage(String)
+    case tooLarge(String)
 
     var errorDescription: String? {
         switch self {
@@ -212,6 +287,8 @@ enum RemoteContentError: LocalizedError, Equatable {
             return "HTTP \(status): \(url)"
         case .invalidImage(let url):
             return "Soubor není obrázek: \(url)"
+        case .tooLarge(let url):
+            return "Příliš velký soubor: \(url)"
         }
     }
 }
@@ -260,14 +337,15 @@ extension RemoteContentConfig {
     }
 
     /// Kontroly, které typový systém nepokryje: prázdná a duplicitní ID,
-    /// URL bez schématu, obrázek mimo http(s), prázdný popisek odkazu.
+    /// URL bez schématu, obrázek mimo https z povolené domény
+    /// (`RemoteContentPolicy.isAllowedImageURL`), prázdný popisek odkazu.
     func validate() throws {
         try Self.validateIDs(banners.map(\.id), kind: "banner")
         try Self.validateIDs(links.map(\.id), kind: "link")
         try Self.validateIDs(backgrounds.map(\.id), kind: "background")
 
         for banner in banners {
-            guard Self.isWebURL(banner.imageUrl) else { throw RemoteContentError.invalidItem("\(banner.id): imageUrl") }
+            guard RemoteContentPolicy.isAllowedImageURL(banner.imageUrl) else { throw RemoteContentError.invalidItem("\(banner.id): imageUrl") }
             guard banner.url.scheme != nil else { throw RemoteContentError.invalidItem("\(banner.id): url") }
         }
         for link in links {
@@ -275,7 +353,7 @@ extension RemoteContentConfig {
             guard link.url.scheme != nil else { throw RemoteContentError.invalidItem("\(link.id): url") }
         }
         for background in backgrounds {
-            guard Self.isWebURL(background.imageUrl) else { throw RemoteContentError.invalidItem("\(background.id): imageUrl") }
+            guard RemoteContentPolicy.isAllowedImageURL(background.imageUrl) else { throw RemoteContentError.invalidItem("\(background.id): imageUrl") }
         }
     }
 
@@ -287,11 +365,6 @@ extension RemoteContentConfig {
         for id in ids where !seen.insert(id).inserted {
             throw RemoteContentError.invalidItem("duplicitní id \(id)")
         }
-    }
-
-    private static func isWebURL(_ url: URL) -> Bool {
-        guard let scheme = url.scheme?.lowercased(), url.host != nil else { return false }
-        return scheme == "https" || scheme == "http"
     }
 
     private static func describe(_ error: Error) -> String {
@@ -348,13 +421,75 @@ enum RemoteContentLanguage {
     }
 }
 
+/// Verze aplikace pro `minAppVersion` / `maxAppVersion`. Porovnává se po
+/// číslech, chybějící část je 0 – stejně jako `gtimer_compare_versions()`
+/// v pluginu:
+///
+///     compare("2.5", "2.5.0")   // .orderedSame
+///     compare("2.5", "2.10")    // .orderedAscending
+///     compare("2.x", "2.5")     // nil – nečitelná verze
+enum RemoteContentVersion {
+
+    /// Verze, ve které aplikace běží (`CFBundleShortVersionString`, např. `2.4.0`).
+    static var current: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+    }
+
+    /// Ořízne mezery, prázdná hodnota je `nil` (bez omezení).
+    static func normalize(_ version: String?) -> String? {
+        let trimmed = version?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    /// Čísla verze, `nil` pro cokoli jiného než 1–4 čísla oddělená tečkou.
+    static func components(_ version: String) -> [Int]? {
+        let parts = version.split(separator: ".", omittingEmptySubsequences: false)
+        guard (1...4).contains(parts.count) else { return nil }
+        var numbers: [Int] = []
+        for part in parts {
+            guard !part.isEmpty, part.allSatisfy(\.isASCIIDigit), let number = Int(part) else { return nil }
+            numbers.append(number)
+        }
+        return numbers
+    }
+
+    static func compare(_ lhs: String, _ rhs: String) -> ComparisonResult? {
+        guard let a = components(lhs), let b = components(rhs) else { return nil }
+        for index in 0..<max(a.count, b.count) {
+            let x = index < a.count ? a[index] : 0
+            let y = index < b.count ? b[index] : 0
+            if x != y { return x < y ? .orderedAscending : .orderedDescending }
+        }
+        return .orderedSame
+    }
+
+    /// Patří `version` do rozsahu? Od `min` včetně, do `max` bez ní.
+    /// Nečitelná hranice (nebo verze) položku skryje – je bezpečnější
+    /// banner pro „jen novou verzi“ neukázat, než ho ukázat všem.
+    static func matches(_ version: String, min: String?, max: String?) -> Bool {
+        if let min {
+            guard let result = compare(version, min), result != .orderedAscending else { return false }
+        }
+        if let max {
+            guard let result = compare(version, max), result == .orderedAscending else { return false }
+        }
+        return true
+    }
+}
+
+private extension Character {
+    var isASCIIDigit: Bool { ("0"..."9").contains(self) }
+}
+
 extension RemoteContentItem {
-    /// Má se položka zobrazit v jazyce `language` v okamžiku `date`?
-    /// Začátek i konec platnosti jsou včetně.
-    func isAvailable(language appLanguage: String, at date: Date) -> Bool {
+    /// Má se položka zobrazit v jazyce `language` v okamžiku `date`
+    /// ve verzi aplikace `appVersion`? Začátek i konec platnosti jsou
+    /// včetně, rozsah verzí od `minAppVersion` včetně do `maxAppVersion` bez ní.
+    func isAvailable(language appLanguage: String, at date: Date, appVersion: String = RemoteContentVersion.current) -> Bool {
         if let language, language != appLanguage { return false }
         if let startAt, date < startAt { return false }
         if let endAt, date > endAt { return false }
+        if !RemoteContentVersion.matches(appVersion, min: minAppVersion, max: maxAppVersion) { return false }
         return true
     }
 

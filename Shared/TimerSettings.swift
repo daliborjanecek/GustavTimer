@@ -122,6 +122,25 @@ struct TimerSettings: Equatable, Codable, Sendable {
     }
 }
 
+// MARK: - Délka tréninku
+
+extension TimerSettings {
+
+    /// Délka jednoho kola v sekundách.
+    var roundDuration: Int {
+        intervals.reduce(0) { $0 + $1.value }
+    }
+
+    /// Délka celého tréninku v sekundách. `nil` u smyčky (nekončí)
+    /// a u jediného kola (rovná se `roundDuration`).
+    ///
+    ///     tabata.roundDuration   // 30
+    ///     tabata.totalDuration   // 240 (8 kol)
+    var totalDuration: Int? {
+        rounds > 1 ? roundDuration * rounds : nil
+    }
+}
+
 // MARK: - Tikání
 
 /// Režim tikání (`tick.mp3`) během intervalu.

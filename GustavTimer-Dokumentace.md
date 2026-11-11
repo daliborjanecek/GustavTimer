@@ -133,8 +133,8 @@ Díky tomu je stejný engine použitelný i na **Apple Watch** (kód je na to p�
 ### Tok dat
 
 - **`TimerView`** zobrazuje stav a deleguje akce na **`TimerViewModel`**.
-- **`TimerViewModel`** je iOS-specifická obálka nad `TimerEngine` – přidává zvuky, vibrace, Lottie animace, SwiftData persistenci a analytiku. Přeposílá `engine.objectWillChange` do vlastního `objectWillChange`, takže SwiftUI se překresluje na změny enginu.
-- **`SettingsView`** edituje data přímo v SwiftData (`TimerData` s `order == 0`). Po zavření Settings `TimerView` znovu načte data a resetuje timer.
+- **`TimerViewModel`** je iOS-specifická obálka nad `TimerEngine` – přidává SwiftData persistenci a načtení timeru z odkazu. Vibrace a zvuky pouští přes `TimerFeedbackPlayer`, analytiku tréninku vede `WorkoutSessionTracker` a `timer.link_opened` skládá `Analytics.linkOpened`. O vzhledu view neví nic: animace ikon ani sheety neřídí, jen dává vědět počítadly `intervalPulse` / `roundPulse` a callbackem `onPresentSheet`. Přeposílá `engine.objectWillChange` do vlastního `objectWillChange`, takže SwiftUI se překresluje na změny enginu.
+- **`SettingsView`** a **`FavouritesView`** jen kreslí. Úpravy aktivního timeru (`TimerData` s `order == 0`), ukládání do oblíbených a analytiku dělá sdílený **`SettingsViewModel`**; limity úprav (počet intervalů, délky názvů) hlídá model v `TimerData+Editing.swift`. Seznam oblíbených si views drží přes `@Query` a ViewModelu ho předávají. Po zavření Settings `TimerView` znovu načte data a resetuje timer.
 
 ---
 
@@ -244,13 +244,14 @@ Hlavní entita časovače. Ukládá se přes SwiftData.
 | `createdAt` | `Date` | Datum vytvoření |
 | `usedCount` | `Int` | Kolikrát byl použit |
 | `lastUsed` | `Date?` | Naposledy použit (řazení oblíbených) |
+| `sourceID` | `UUID?` | Jen hlavní timer: `id` oblíbeného, ze kterého vznikl (`nil` = preset, odkaz, nový). Viz [[#Uložené (Saved) timery]] |
 
 > [!important] Význam `order`
 > - **`order == 0`** → **aktivní (hlavní) časovač**, který právě běží na hlavní obrazovce. Vždy existuje právě jeden.
 > - **`order > 0`** → **uložené oblíbené** časovače (vyšší = novější).
 > - **`order < 0`** → historicky předdefinované presety. Od verze 2.4 presety `TimerData` vůbec nejsou – jsou to hodnoty `TimerSettings` v enumu `PredefinedTimer` a `TimerData` z nich vznikne, až si je uživatel uloží mezi oblíbené.
 >
-> Shodu řeší `matchesWorkout(of:)` – porovná **celé nastavení kromě názvu**. Díky tomu appka pozná, zda je aktuální časovač už uložený mezi oblíbenými (hvězdička v toolbaru). Do verze 2.3 to bylo `Equatable` porovnávající jen `intervals`, takže časovač se stejnými intervaly a jiným zvukem se tvářil jako už uložený.
+> Jestli je aktivní časovač uložený, se pozná podle `sourceID` (`FavouriteTimers.state`), ne porovnáním. `matchesWorkout(of:)` (celé nastavení kromě názvu) slouží jen k označení vybraného presetu a k analytice (`Analytics.origin`).
 
 #### `CustomImageModel` (`@Model`)
 Jednoduchý model držící `Data` vlastní fotky uživatele použité jako pozadí.
@@ -308,7 +309,7 @@ let merged = link.applied(to: mainTimer.settings)   // sdílený odkaz
 └─────────────────────────────┘
 ```
 
-- **`ProgressArrayView`** – řada `ProgressBar` segmentů, šířka každého dle `timeRatio` (poměr délky intervalu k celému kolu). Aktivní segment ukazuje `progress`, dokončené jsou plné, budoucí prázdné.
+- **`ProgressArrayView`** – řada `ProgressBar` segmentů, šířka každého podle podílu intervalu na délce celého kola. Dostává jen intervaly, index aktivního a jeho průběh, ne celý ViewModel. Aktivní segment ukazuje `progress`, dokončené jsou plné, budoucí prázdné.
 - **Header** – název aktuálního intervalu + `finishedRounds/rounds` (u smyčky bez jmenovatele). Vedle animované ikony stavu (smyčka / vibrace / zvuk) přes `GustavAnimationView` (Lottie) a tlačítko **EDIT** → otevře Settings.
 - **Odpočet** – `Text` s fontem `.timerCounter` (MartianMono-Bold, 800 pt, `minimumScaleFactor 0.01`), barva `gustavVolt`. Odpočet je stránkovaný `TabView` (`.page`, bez teček) – **swipe** listuje s animací mezi celými sekundami (`.seconds`, výchozí stránka) a minutami:sekundami (`.minutesSeconds`). Přepnutí potvrdí haptika `.selection`. **Tap** na odpočet spustí/zastaví timer, **dvojtap** přeskočí interval (jen za běhu, stejně jako tlačítko Skip). Jednoduchý tap čeká, jestli nepřijde druhý, takže reaguje se zpožděním asi 0,3 s.
 - **Tlačítka** – `startStopButton` + `secondaryButton`.
@@ -348,7 +349,7 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 | **Intervaly** | Editovatelný seznam intervalů (`IntervalRowView`): název + hodnota, drag-to-reorder, swipe-to-delete, „+ Add interval". Footer ukazuje souhrn (délka kola, příp. celkový čas) |
 | **Rounds** | `NavigationLink` → `RoundsSettingsView` (smyčka / 1–31 kol) |
 | **Favourites** | Náhled posledních 3 oblíbených + odkaz na všechny |
-| **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, menu Tikání (vypnuto / každou sekundu / před koncem intervalu – poslední 3 s), výběr Zvuku |
+| **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, podstránka Tikání (přepínač, a když je zapnutý, výběr: každou sekundu / před koncem intervalu – poslední 3 s), výběr Zvuku |
 | **Appearance** | `NavigationLink` → `BackgroundSelectorView` |
 | **More** | Odkazy z API, pak Hodnotit a Navrhni funkci. Vestavěné Gustav Weights, Instagram a YouTube jen když z API žádný platný odkaz není |
 | *(jen DEBUG)* | Číslo verze – 5× klepnout = vývojářské menu vzdáleného obsahu |
@@ -356,7 +357,11 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 ### Toolbar
 
 - **✕** zavřít (na iOS 26+ `role: .close`).
-- **☆ / ★** uložit aktuální časovač mezi oblíbené (nebo info, že už je uložený).
+- **☆ / ★** podle stavu uložení (`FavouriteTimers.SaveState`):
+  - ☆ *neuloženo* → dialog s názvem, uloží jako nový oblíbený,
+  - ★ *uloženo* → menu Přejmenovat / Odebrat z oblíbených,
+  - ★• *upraveno* (tečka) → menu Uložit změny do „X“ / Uložit jako nový… / Vrátit uložené.
+  Stav je i textem pod názvem timeru.
 - **+** přidat interval (pokud není dosaženo limitu 10).
 - **slider** přepnout edit mód (reorder/delete).
 
@@ -381,8 +386,23 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 `Views/Settings/FavouritesView.swift`
 
 ### Uložené (Saved) timery
-- Filtr `order != 0`, řazené dle `order` sestupně.
-- Tap → **vybere** časovač (zkopíruje jeho data do hlavního `order == 0`, zvýší `usedCount`, nastaví `lastUsed`).
+Všechny operace s oblíbenými jsou v `Models/FavouriteTimers.swift`.
+
+Hlavní timer (`order == 0`) je **pracovní kopie**. Načtením oblíbeného si zapamatuje jeho `id` v `sourceID`. Úpravy se do oblíbeného **nepropisují samy**, takže jednorázová úprava na jeden trénink oblíbený nepřepíše. Stav:
+
+| Stav | Kdy |
+|---|---|
+| `.unsaved` | `sourceID == nil` (preset, odkaz, nový timer) nebo zdroj mezitím smazaný |
+| `.saved(fav)` | nastavení se shoduje se zdrojem **celé, i s názvem** |
+| `.modified(fav)` | nastavení se od zdroje liší, i jen zvukem, haptikou, tikáním, odpočtem nebo názvem |
+
+- *Uložit změny* zapíše nastavení do zdroje, *Vrátit uložené* ho vezme zpět, *Uložit jako nový* založí oblíbený a přepne `sourceID` na něj.
+- Preset a odkaz `sourceID` vynulují. Úprava v nastavení ho nechává, takže se ukáže jako úprava.
+- Instalace z doby před `sourceID`: při startu se hlavní timer propojí s oblíbeným, který se s ním shoduje úplně (`linkLegacySource`).
+
+- Filtr `order > 0`, řazené dle `order` sestupně.
+- Tap → **načte** časovač (`FavouriteTimers.load`: zkopíruje data do hlavního, nastaví `sourceID`, zvýší `usedCount`, nastaví `lastUsed`). Vybraný je ten, ze kterého hlavní timer vznikl; s neuloženými úpravami má štítek „Upraveno“.
+- **+** v toolbaru vždy uloží aktivní timer jako nový oblíbený.
 - Swipe (leading) → **ShareLink** s deep-link URL (sdílení časovače).
 - Swipe (trailing) / edit mód → smazat, drag → přeřadit (přepočítá `order`).
 - Prázdný stav → `FavouritesEmptyView`.
@@ -401,10 +421,7 @@ Z enumu `PredefinedTimer` (každý case nese `settings: TimerSettings` a tři ti
 Každý preset má 3 lokalizované **tipy** (`description[0..2]`), zobrazuje se náhodný.
 
 ### `FavouriteRowView`
-Vykresluje řádek časovače – mini progress bary jednotlivých intervalů (šířka dle poměru), název, ikony stavu (smyčka/zvuk/vibrace) a volitelný tip. Hlavní časovač (`order == 0`) má label `CURRENT_TIMER` a poloprůhledný název.
-
-### `SearchTabView`
-Vyhledávání mezi oblíbenými i předdefinovanými (`localizedCaseInsensitiveContains`).
+Vykresluje řádek časovače – mini progress bary jednotlivých intervalů (šířka dle poměru), název, štítek „Upraveno“ (`isModified`), ikony stavu (smyčka/zvuk/vibrace) a volitelný tip. Hlavní časovač (`order == 0`) má label `CURRENT_TIMER` a poloprůhledný název.
 
 ---
 
@@ -434,7 +451,9 @@ Enum (`Shared/SoundModel.swift`), každý case = MP3 v bundle:
 
 > Lokalizovaný název (`title`) je v iOS-only rozšíření `SoundModel+Title.swift`. Samotný enum je čistý Foundation (sdílitelný s Watch).
 
-### Logika přehrávání (v `TimerViewModel`)
+### Logika přehrávání (v `TimerFeedbackPlayer`)
+
+Co se má při které události enginu stát, rozhoduje čistá funkce `TimerFeedbackPlayer.effects(for:settings:isRunning:)` – vrací seznam vibrací a zvuků a pokrývá ji `TimerFeedbackPlayerTests`. `play` ten seznam jen provede.
 
 ```mermaid
 flowchart LR
@@ -554,9 +573,6 @@ Nová obrazovka = nový `case` v `AppScreen`, větev v `navigationDestination(fo
 - Onboarding se zobrazí, když `lastOnboardingVersion != AppConfig.onboardingVersion` (řízeno v `ContentView`).
 - **What's New** používá tutéž `OnboardingView` (zobrazí se přes `showWhatsNew` nebo deep-link `whatsnew`). Verze hlídá `whatsNewVersion < AppConfig.version`.
 
-> [!note]
-> Soubor `Views/WhatsNew/WhatsNewView.swift` je **placeholder** (jen text + zakomentovaný video-loop). Reálně se pro What's New používá `OnboardingView`.
-
 ---
 
 ## 12 · Hodnocení v App Store
@@ -577,7 +593,7 @@ Inicializace v `GustavTimerApp.init()` (App ID `E2CAE467-…`). Všechny signál
 
 ### Trénink
 
-Trychtýř: `timer.started` (`is_resume=false`) → `timer.completed`, nebo `timer.stopped`. Pauza a pokračování trénink nekončí. Stav drží `TimerViewModel` (`WorkoutSession`).
+Trychtýř: `timer.started` (`is_resume=false`) → `timer.completed`, nebo `timer.stopped`. Pauza a pokračování trénink nekončí. Stav tréninku drží a signály skládá `WorkoutSessionTracker` (`Managers/WorkoutSessionTracker.swift`); `TimerViewModel` mu jen předává, co ví engine a databáze. Odeslání se dá při vytvoření nahradit, takže ho `WorkoutSessionTrackerTests` testují bez enginu i bez sítě.
 
 | Signál | Kdy | Parametry |
 |---|---|---|
@@ -592,7 +608,8 @@ Trychtýř: `timer.started` (`is_resume=false`) → `timer.completed`, nebo `tim
 |---|---|---|
 | `timer.preloadselected` | Výběr presetu v oblíbených nebo ve vyhledávání | `timer_name`, `preset`, `interval_pattern`, `screen` (`favourites` / `search`) |
 | `timer.favourite_selected` | Výběr uloženého oblíbeného | `interval_pattern`, `use_count`, `screen` (`favourites` / `search` / `settings`) |
-| `timer.saved` | Uložení mezi oblíbené | *nastavení*, `screen` (`settings` / `favourites`) |
+| `timer.saved` | Uložení mezi oblíbené | *nastavení*, `screen` (`settings` / `favourites`), `mode` (`new` = nový oblíbený, `update` = uložené změny načteného oblíbeného) |
+| `timer.reverted` | *Vrátit uložené* – zahozené úpravy načteného oblíbeného | – |
 | `timer.shared` | Dokončené sdílení odkazu na timer | `origin` (`settings` / `favourite` / `preset`), `channel` (`messages`, `whatsapp`, `copy`…), `interval_pattern`, u presetů `timer_name` |
 | `timer.share_cancelled` | Zavřený share sheet bez sdílení | `origin`, `interval_pattern`, u presetů `timer_name` |
 | `timer.link_opened` | Otevření sdíleného odkazu | `source` (`utm_source`, jinak `unknown`), `link_type` (`universal` / `scheme` / `in_app` = z banneru v aplikaci, nepočítá se jako akvizice), `loaded` (`false` i u odmítnutého odkazu), `prompt` (`accepted` / `declined`, `none` u neplatného odkazu – posílá se až po odpovědi), případně `campaign`, `interval_pattern`, `has_settings` |
@@ -605,7 +622,7 @@ Share sheet (`TimerShareSheet`) zapíše zvolený kanál do odesílaného odkazu
 
 | Signál | Kdy | Parametry |
 |---|---|---|
-| `settings.changed` | Změna volby | `setting` (`haptics`, `countdown`, `ticking`, `rounds`, `sound_enabled`, `background` – index / `custom` / `remote`, `interval_added`, `interval_removed`), `value` |
+| `settings.changed` | Změna volby | `setting` (`haptics`, `countdown`, `ticking`, `rounds`, `sound_enabled`, `background` – index / `custom` / `remote`, `interval_added`, `interval_removed`, `favourite` – `renamed` / `removed`, odebrání z menu hvězdičky i swipem v seznamu oblíbených), `value` |
 | `timer.sound_selected` | Výběr zvuku | `sound` |
 | `settings.display_format_changed` | Swipe formátu odpočtu | `orientation`, `format` |
 | `link.opened` | Odkaz z nastavení | `target` (`rate`, `weights`, `instagram`, `youtube`, `banner`, `remote_link`); u banneru `banner_source` (`builtin` / `remote`), `banner_id`, `banner_type`; u odkazu z API `link_id` |
@@ -724,6 +741,9 @@ GustavTimer/
 │
 ├── Models/
 │   ├── TimerData.swift           # @Model – časovač (SwiftData)
+│   ├── TimerData+Editing.swift   # Úpravy názvu a intervalů s limity
+│   ├── FavouriteTimers.swift     # Načtení, uložení a pořadí oblíbených
+│   ├── PreviewData.swift         # Ukázková data pro Xcode Preview (v paměti)
 │   ├── CustomImageModel.swift    # @Model – vlastní pozadí
 │   ├── PredefinedTimer.swift     # Enum presetů (TimerSettings) + tipy
 │   ├── BackgroundImageModel.swift
@@ -740,6 +760,8 @@ GustavTimer/
 │   ├── Analytics.swift           # Signály TelemetryDeck a jejich parametry
 │   ├── AppLinkRouter.swift       # Otevření URL z obsahu (odkaz na timer interně)
 │   ├── SoundManager.swift        # AVAudioPlayer singleton
+│   ├── TimerFeedbackPlayer.swift # Události enginu → vibrace a zvuky
+│   ├── WorkoutSessionTracker.swift # Analytika tréninku (started/completed/stopped)
 │   └── TimerShareSheet.swift     # Share sheet odkazu na timer
 │
 ├── Views/
@@ -748,12 +770,11 @@ GustavTimer/
 │   │   ├── TimerViewModel.swift   # iOS obálka nad TimerEngine
 │   │   └── SubViews/
 │   │       ├── ProgressArrayView.swift
-│   │       ├── BackgroundImageView.swift
-│   │       └── VideoPlayerFullscreen.swift
+│   │       └── BackgroundImageView.swift
 │   ├── Settings/
 │   │   ├── SettingsView.swift
+│   │   ├── SettingsViewModel.swift  # Logika nastavení a oblíbených
 │   │   ├── FavouritesView.swift
-│   │   ├── SearchTabView.swift
 │   │   └── SubViews/
 │   │       ├── IntervalRowView.swift
 │   │       ├── RoundsSettingsView.swift
@@ -762,19 +783,18 @@ GustavTimer/
 │   │       ├── FavouriteRowView.swift
 │   │       └── FavouritesEmptyView.swift
 │   ├── Onboarding/OnboardingView.swift
-│   ├── WhatsNew/WhatsNewView.swift   # (placeholder)
 │   └── UI/
 │       ├── ControlButton.swift
 │       ├── ProgressBar.swift
 │       ├── ListButton.swift
-│       ├── SettingsSection.swift
-│       └── HintButton.swift
+│       ├── SelectableOptionRow.swift  # řádek výběru jedné možnosti
+│       └── SettingsSection.swift
 │
 ├── Extensions/
 │   ├── Int+Extension.swift        # asTime()
 │   ├── String+Extension.swift     # localized
 │   ├── Image+Extension.swift      # backgroundThumbnail()
-│   └── View+Extension.swift       # hideKeyboard, alerty
+│   └── View+Extension.swift       # settingsTitle, dialogy s názvem timeru
 │
 ├── Sound/   *.mp3                 # 11 zvuků + tick
 └── Media/   *.mp4                 # onboarding videa
@@ -811,12 +831,10 @@ Aplikace na pozadí neběží – systém ji během chvíle uspí. Engine proto 
 ## 20 · Poznámky k implementaci a TODO
 
 > [!warning] Postřehy z kódu (stav k verzi 2.3.0)
-> - **`WhatsNewView.swift`** je nedokončený placeholder – reálně se používá `OnboardingView`.
-> - **Sekce „About"** v `SettingsView` je zakomentovaná (`// about`) a vede jen na `Text("About")`.
 > - ~~V `ContentView` jsou nepoužívané `@AppStorage` klíče~~ – vyřešeno ve verzi 2.4, klíče maže `SettingsMigration`.
-> - **rive-ios** je mezi závislostmi, ale animace tlačítek běží na **Lottie** (přes GustavUI). Parametr `riveAnimation` v `ControlButton` je už jen spínač „je to animované tlačítko?" – samotná animace je Lottie. Pravděpodobně historická závislost.
+> - **rive-ios** je mezi závislostmi, ale animace tlačítek běží na **Lottie** (přes GustavUI). Pravděpodobně historická závislost.
 > - **`AppPreferences`** dnes slouží hlavně jako jmenný prostor klíčů (`AppPreferences.Key`); jako `ObservableObject` ji nikdo neinstancuje, protože nastavení timeru se přesunulo do `TimerData`. Její tři `@AppStorage` vlastnosti tak zatím nemají konzumenta – views sahají na klíče přímo.
-> - Landscape režim záměrně skrývá progress bar a header (zakomentováno v `landscapeTimerView`).
+> - Landscape režim záměrně skrývá progress bar a header.
 > - Zastaralý `.github/copilot-instructions.md` popisuje **starou** architekturu (GustavViewModel, EditSheetView, max 5 timerů, UserDefaults JSON) – **neodpovídá** současnému stavu (SwiftData, TimerEngine, max 10). Tato dokumentace vychází z aktuálního kódu.
 
 ---
@@ -847,29 +865,40 @@ Bannery, odkazy v nastavení a stažená pozadí se spravují na webu. Aplikace 
 
 - Spouští ji `ContentView` při spuštění a při každém návratu do popředí (`handleBecameActive`). Po úspěchu se nejdřív za **24 h**, po neúspěchu znovu při dalším otevření.
 - Postup: stáhnout JSON → ověřit → stáhnout chybějící obrázky (všech položek, kterým ještě neskončila platnost, bez ohledu na jazyk) → **teprve pak** atomicky zapsat `config.json`, přepnout konfiguraci, smazat nepotřebné obrázky a zapsat čas úspěchu.
-- Jakákoli chyba (síť, HTTP, neplatný JSON, jiná `schemaVersion`, obrázek, který není obrázek) celou aktualizaci zahodí a zůstane dosavadní konfigurace. Obrázky stažené během neúspěšného pokusu zůstanou a příště se už nestahují.
+- Jakákoli chyba (síť, HTTP, neplatný JSON, jiná `schemaVersion`, obrázek, který není obrázek nebo je z cizí domény, příliš velký soubor) celou aktualizaci zahodí a zůstane dosavadní konfigurace. Obrázky stažené během neúspěšného pokusu zůstanou a příště se už nestahují.
 - Neznámá pole se ignorují, neznámý `type` banneru = banner bez ikony.
 - Soubory: `Application Support/RemoteContent/config.json` (původní JSON) a `images/<SHA-256 URL>.<přípona>`. Název souboru je z celé URL včetně `?v=…`, takže nová verze obrázku = nový soubor. Složka je vyřazená ze zálohy.
 
-### Jazyk a platnost
+### Jazyk, platnost a verze aplikace
 
 - `language` je dvoupísmenný kód (`cs`, `en`), `null` = všechny jazyky. Porovnává se s jazykem, ve kterém aplikace běží (`Bundle.main.preferredLocalizations`).
 - `startAt` / `endAt` jsou UTC, včetně, `null` = bez omezení. Vyhodnocuje se lokálně, i offline.
+- `minAppVersion` / `maxAppVersion` (plugin 1.3.0+) omezí položku na verze aplikace: od `minAppVersion` včetně, do `maxAppVersion` bez ní, `null` nebo chybějící pole = bez omezení. Porovnává se s `CFBundleShortVersionString` po číslech, chybějící část = 0 (`2.5` = `2.5.0` < `2.10`) – `RemoteContentVersion`, stejně jako `gtimer_compare_versions()` v pluginu. Nečitelná verze položku skryje. Server nefiltruje, odpověď je pro všechny verze stejná. Obrázky položek mimo rozsah se stahují taky, takže po aktualizaci aplikace jsou hned k dispozici.
 - `RemoteContentManager.refresh()` přepočítá platnost a naplánuje další přepočet na nejbližší začátek nebo konec platnosti. Změna se tak projeví i bez nové synchronizace a bez restartu.
 
 ### Zobrazení
 
 | Obsah | Pravidlo |
 |---|---|
-| Bannery | Platné stažené bannery v pořadí z API, jinak vestavěný banner. Pevný poměr 16:9 jako vestavěné bannery, obrázek s jiným poměrem se ořízne na středu (doporučeno 1920×1080). Víc bannerů = `TabView` s přepínáním po 5 s, po posledním znovu první. Ikona podle `type` (`timer`, `youtube` – logo, `app`, `web`, `appstore`). Typ `app` = obrazovka v aplikaci, `url` je `gustavtimerapp://settings/…` (viz [[#Odkazy na obrazovky]]). Banner s odkazem do aplikace, kterému verze nerozumí (`RemoteBanner.isSupported`), se nezobrazí |
-| Odkazy | Platné odkazy z API nahoře v sekci „Více“, pak Hodnotit a Navrhni funkci. Bez platných odkazů z API se ukážou vestavěné (Weights, Instagram, YouTube) |
+| Bannery | Platné stažené bannery v pořadí z API, jinak vestavěný banner. Pevný poměr 16:9 jako vestavěné bannery, obrázek s jiným poměrem se ořízne na středu (doporučeno 1920×1080). Víc bannerů = `TabView` s přepínáním po 5 s, po posledním znovu první. Ikona podle `type` (`timer`, `youtube` – logo, `app`, `web`, `appstore`). Typ `app` = obrazovka v aplikaci, `url` je `gustavtimerapp://settings/…` (viz [[#Odkazy na obrazovky]]). Banner s odkazem, který aplikace nesmí nebo neumí otevřít (`RemoteBanner.isSupported`), se nezobrazí |
+| Odkazy | Platné odkazy z API (jen ty, které projdou `RemoteLink.isSupported`) nahoře v sekci „Více“, pak Hodnotit a Navrhni funkci. Bez platných odkazů z API se ukážou vestavěné (Weights, Instagram, YouTube) |
 | Pozadí | Stažená pozadí před vestavěnými. Viz [[#9 · Pozadí (Background)]] |
 
-**Odkaz na timer** (`https://gustavtraining.com/t?…`) ani odkaz na obrazovku (`gustavtimerapp://settings/…`) z banneru neotevírá systém (Universal Link otevřený z vlastní aplikace by skončil v Safari). `AppLinkRouter` ho pošle notifikací do `TimerView` → `TimerViewModel.handleDeepLink(url:fromApp: true)`, tedy stejnou cestou jako příchozí odkaz. Ostatní URL otevře `UIApplication.open`.
+**Odkaz na timer** (`https://gustavtraining.com/t?…`) ani odkaz na obrazovku (`gustavtimerapp://settings/…`) z banneru neotevírá systém (Universal Link otevřený z vlastní aplikace by skončil v Safari). `AppLinkRouter` ho pošle notifikací do `TimerView` → `TimerViewModel.handleDeepLink(url:fromApp: true)`, tedy stejnou cestou jako příchozí odkaz. Ostatní URL (jen ty, které povolí `RemoteContentPolicy`, viz [[#Bezpečnost]]) otevře `UIApplication.open`.
+
+### Bezpečnost
+
+Spojení je jen přes HTTPS (ATS bez výjimek) a API je veřejné, jen pro čtení, bez tajemství. Aplikace ale nespoléhá na to, že server je vždycky v pořádku – ani napadený WordPress nesmí přes ni udělat víc než ukázat obsah. Pravidla drží `RemoteContentPolicy` (`RemoteContent.swift`):
+
+- **Odkazy** banneru a odkazu v nastavení se otevřou jen jako `http(s)` s hostem nebo `gustavtimerapp://`, kterému rozumí `SharedTimerLink.route`. `tel:`, `sms:`, `mailto:` ani schémata cizích aplikací neprojdou – položka se jen nezobrazí, zbytek obsahu se aktivuje normálně. Timer z odkazu se navíc načte až po potvrzení.
+- **Obrázky** jen přes `https` z domén v `AppConfig.remoteContentImageHosts` (gustavtraining.com s www i bez). Obrázek odjinud zneplatní celou konfiguraci. Budoucí CDN = přidat doménu tam.
+- **Velikost**: odpověď API nejvýš 512 kB (`maxConfigBytes`), obrázek nejvýš 10 MB (`maxImageBytes`), kontroluje se před dekódováním. Větší soubor = chyba `tooLarge`, zůstane dosavadní obsah.
+
+Zbytek je na straně webu: obsah může měnit každý, kdo se dostane do administrace WordPressu (role Editor a výš), takže silná hesla a dvoufázové ověření jsou pro aplikaci stejně důležité jako kód.
 
 ### Vývojářské menu (jen DEBUG)
 
-Konec nastavení → 5× klepnout na číslo verze. Ukazuje časy posledního úspěchu a pokusu, výsledek a chybu, čas další automatické synchronizace, `schemaVersion`, `generatedAt`, počty uložených / zobrazených položek a jazyk. Akce:
+Konec nastavení → 5× klepnout na číslo verze. Ukazuje časy posledního úspěchu a pokusu, výsledek a chybu, čas další automatické synchronizace, `schemaVersion`, `generatedAt`, počty uložených / zobrazených položek, jazyk a verzi aplikace. Akce:
 
 - **Vynutit stažení API** – stejný proces jako běžná synchronizace, bez ohledu na 24 h.
 - **Resetovat čas synchronizace** – data zůstanou, příští otevření aplikace synchronizuje.

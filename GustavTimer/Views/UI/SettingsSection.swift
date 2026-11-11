@@ -8,31 +8,49 @@
 import SwiftUI
 import GustavUICore
 
+/// Sekce v nastavení s volitelným nadpisem a patičkou v jednotném stylu.
+///
+///     SettingsSection(label: "FEEDBACK", footer: "FEEDBACK_DESCRIPTION") {
+///         Toggle("HAPTICS", isOn: $isVibrating)
+///     }
 struct SettingsSection<Content: View>: View {
     var label: LocalizedStringKey? = nil
     var footer: LocalizedStringKey? = nil
     @ViewBuilder let content: () -> Content
-    
+
     var body: some View {
-        if let label, let footer {
-            Section(header: Text(label)
-                .font(.sectionHeader)
-                .foregroundStyle(Color.gustavNeutral),
-                    footer: Text(footer)
-                .font(.sectionFooter)
-                .foregroundStyle(Color.gustavNeutral)) {
-                    content()
-                }
-        } else if let label {
-            Section(header: Text(label)
-                .font(.sectionHeader)
-                .foregroundStyle(Color.gustavNeutral)) {
-                    content()
-                }
-        } else {
-            Section {
-                content()
+        Section {
+            content()
+        } header: {
+            if let label {
+                Text(label)
+                    .font(.sectionHeader)
+                    .foregroundStyle(Color.gustavNeutral)
+            }
+        } footer: {
+            if let footer {
+                Text(footer)
+                    .font(.sectionFooter)
+                    .foregroundStyle(Color.gustavNeutral)
             }
         }
     }
+}
+
+#Preview {
+    List {
+        SettingsSection(label: "FEEDBACK", footer: "FEEDBACK_DESCRIPTION") {
+            Text(verbatim: "Nadpis i patička")
+        }
+        SettingsSection(label: "APPEARANCE") {
+            Text(verbatim: "Jen nadpis")
+        }
+        SettingsSection(footer: "FEEDBACK_DESCRIPTION") {
+            Text(verbatim: "Jen patička")
+        }
+        SettingsSection {
+            Text(verbatim: "Bez nadpisu a patičky")
+        }
+    }
+    .font(.gustavBody)
 }

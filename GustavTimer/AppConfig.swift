@@ -14,6 +14,8 @@ struct AppConfig {
     // Maximální hodnota timeru
     static let maxTimerValue: Int = 600
     static let maxTimerCount: Int = 10
+    /// Délka nově přidaného intervalu v sekundách.
+    static let newIntervalValue: Int = 5
     static let countdownDuration: Int = 3
     static let reviewPromptInterval: Int = 5
     
@@ -25,6 +27,10 @@ struct AppConfig {
 //    static let youtubeURL: String = "https://www.youtube.com/@Gustavtraining"
     /// Vzdáleně spravované bannery, odkazy a pozadí – viz `RemoteContentManager`.
     static let remoteContentURL = URL(string: "https://www.gustavtraining.com/wp-json/gustav-timer/v1/content")!
+    /// Domény, ze kterých smí vzdálený obsah stahovat obrázky. Plugin je
+    /// servíruje z `wp-content/uploads` na téže doméně. Obrázek odjinud
+    /// konfiguraci zneplatní – viz `RemoteContentPolicy`.
+    static let remoteContentImageHosts = ["gustavtraining.com", "www.gustavtraining.com"]
 
     // Velikosti fontů
     static let largeFontSize: CGFloat = 30

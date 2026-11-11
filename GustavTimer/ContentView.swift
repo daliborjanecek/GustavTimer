@@ -33,7 +33,7 @@ struct ContentView: View {
             .sheet(item: $activeSheet) { sheet in
                 switch sheet {
                 case .settings:
-                    SettingsView()
+                    SettingsView(context: context)
                 case .onboarding, .whatsNew:
                     OnboardingView()
                 }
@@ -57,6 +57,7 @@ struct ContentView: View {
     
     private func initializeDataIfNeeded() {
         TimerData.mainTimer(in: context)
+        FavouriteTimers.linkLegacySource(in: context)
         try? context.save()
     }
 
@@ -81,9 +82,7 @@ struct ContentView: View {
     }
 }
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
-            .modelContainer(for: [CustomImageModel.self, TimerData.self])
-    }
+#Preview {
+    ContentView()
+        .modelContainer(PreviewData.container)
 }

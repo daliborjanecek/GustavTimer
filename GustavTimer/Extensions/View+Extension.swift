@@ -8,38 +8,68 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Titulek podstránky nastavení
+
 extension View {
-    func hideKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    /// Titulek podstránky nastavení ve fontu aplikace.
+    ///
+    ///     List { … }
+    ///         .settingsTitle("ROUNDS")
+    func settingsTitle(_ title: LocalizedStringKey) -> some View {
+        toolbar {
+            ToolbarItem(placement: .title) {
+                Text(title)
+                    .font(.settingsNavbarTitle)
+                    .padding(.vertical)
+            }
+        }
     }
 }
 
+// MARK: - Dialogy s názvem timeru
+
 extension View {
+    /// Uložení aktivního timeru do oblíbených.
     func saveTimerAlert(
         isPresented: Binding<Bool>,
         timerName: Binding<String>,
         onSave: @escaping () -> Void
     ) -> some View {
-        self.alert("SAVE_TITLE", isPresented: isPresented) {
+        timerNameAlert(
+            "SAVE_TITLE", message: "SAVE_DIALOG", confirm: "SAVE",
+            isPresented: isPresented, timerName: timerName, onConfirm: onSave
+        )
+    }
+
+    /// Přejmenování uloženého oblíbeného.
+    func renameTimerAlert(
+        isPresented: Binding<Bool>,
+        timerName: Binding<String>,
+        onRename: @escaping () -> Void
+    ) -> some View {
+        timerNameAlert(
+            "RENAME_FAVOURITE", confirm: "RENAME",
+            isPresented: isPresented, timerName: timerName, onConfirm: onRename
+        )
+    }
+
+    /// Dialog s polem pro název timeru – společný základ obou dialogů výše.
+    private func timerNameAlert(
+        _ title: LocalizedStringKey,
+        message: LocalizedStringKey? = nil,
+        confirm: LocalizedStringKey,
+        isPresented: Binding<Bool>,
+        timerName: Binding<String>,
+        onConfirm: @escaping () -> Void
+    ) -> some View {
+        alert(title, isPresented: isPresented) {
             TextField("TIMER_NAME_PROMPT", text: timerName)
-            Button("SAVE") {
-                onSave()
-            }
+            Button(confirm, action: onConfirm)
             Button("CANCEL", role: .cancel) { }
         } message: {
-            Text("SAVE_DIALOG")
-        }
-    }
-}
-
-extension View {
-    func alreadySavedAlert(
-        isPresented: Binding<Bool>
-    ) -> some View {
-        self.alert("ALREADY_SAVED_TITLE", isPresented: isPresented) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("ALREADY_SAVED_DIALOG")
+            if let message {
+                Text(message)
+            }
         }
     }
 }
