@@ -1717,6 +1717,23 @@
         }
       }
     },
+    "SELECT_TICKING" : {
+      "comment" : "Section header on the Ticking settings page, above the options for when to tick.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kdy tikat"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When to tick"
+          }
+        }
+      }
+    },
     "SET_COUNTDOWN" : {
       "localizations" : {
         "cs" : {
