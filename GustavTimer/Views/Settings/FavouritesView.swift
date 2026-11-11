@@ -16,7 +16,6 @@ struct FavouritesView: View {
     
     @State var showSaveAlert: Bool = false
     @State var newTimerName: String = ""
-    @State var showDeleteAlert: Bool = false
     @State var timerToDelete: TimerData?
     @State private var editMode: EditMode = .inactive
     @State private var selectedTip: Int = Int.random(in: 0...2)

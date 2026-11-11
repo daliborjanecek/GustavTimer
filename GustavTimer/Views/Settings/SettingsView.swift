@@ -56,7 +56,6 @@ struct SettingsView: View {
                 #if DEBUG
                 debugEntry
                 #endif
-//                about
             }
             .listSectionSpacing(24)
             .scrollDismissesKeyboard(.immediately)
@@ -290,15 +289,6 @@ struct SettingsView: View {
         return "\(version) (\(build))"
     }
     #endif
-    
-    @ViewBuilder
-    private var about: some View {
-        NavigationLink {
-            Text("About")
-        } label: {
-            Text("ABOUT_GUSTAV")
-        }
-    }
     
     @ToolbarContentBuilder
     var toolbar: some ToolbarContent {

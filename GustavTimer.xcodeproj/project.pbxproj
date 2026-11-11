@@ -35,7 +35,6 @@
 		CF2222DA2E355A8200A90265 /* TimerData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF2222D92E355A8000A90265 /* TimerData.swift */; };
 		CF10D05A2E733A1000F84454 /* FavouriteTimers.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF10D0592E733A1000F84454 /* FavouriteTimers.swift */; };
 		CF228F502E7C52B9000DEF21 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF228F4F2E7C52B5000DEF21 /* AppPreferences.swift */; };
-		CF228F542E7D7ED4000DEF21 /* SearchTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF228F532E7D7ECF000DEF21 /* SearchTabView.swift */; };
 		CFA10D022FB3E00100000002 /* Analytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10D012FB3E00100000001 /* Analytics.swift */; };
 		CFA10C022FB2D00100000002 /* TimerShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFA10C012FB2D00100000001 /* TimerShareSheet.swift */; };
 		CF279C4C2C31A8940084C43F /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF279C4B2C31A8940084C43F /* SoundManager.swift */; };
@@ -44,7 +43,6 @@
 		CF4DB2832F09511B007D5692 /* String+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF4DB2822F095116007D5692 /* String+Extension.swift */; };
 		CF4DB2852F098208007D5692 /* Int+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF4DB2842F098203007D5692 /* Int+Extension.swift */; };
 		CF52F0F62EC3B611002CA453 /* SettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF52F0F52EC3B60D002CA453 /* SettingsSection.swift */; };
-		CF70037D2C8DE816009F1531 /* HintButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF70037C2C8DE816009F1531 /* HintButton.swift */; };
 		CF70037F2C8DED37009F1531 /* BackgroundSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF70037E2C8DED37009F1531 /* BackgroundSelectorView.swift */; };
 		CF7744F12E799FA100693351 /* IntervalRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF7744F02E799F9A00693351 /* IntervalRowView.swift */; };
 		CF7BAE252EC27A74002A4746 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF7BAE242EC27A6F002A4746 /* SettingsView.swift */; };
@@ -55,7 +53,6 @@
 		CF882DA63095139400894C1E /* GustavUI in Frameworks */ = {isa = PBXBuildFile; productRef = CF882DA53095139400894C1E /* GustavUI */; };
 		CF882DA83095139400894C1E /* GustavUIAnimations in Frameworks */ = {isa = PBXBuildFile; productRef = CF882DA73095139400894C1E /* GustavUIAnimations */; };
 		CF882DAA3095139400894C1E /* GustavUICore in Frameworks */ = {isa = PBXBuildFile; productRef = CF882DA93095139400894C1E /* GustavUICore */; };
-		CF8E14672D17404900155BE8 /* VideoPlayerFullscreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8E14662D17403900155BE8 /* VideoPlayerFullscreen.swift */; };
 		CF93EB012C5E679700A98ABD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CF93EB002C5E679700A98ABD /* PrivacyInfo.xcprivacy */; };
 		CF9922AD2C8F84C9004186DF /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF9922AC2C8F84C9004186DF /* AppConfig.swift */; };
 		CF9922AF2C920C51004186DF /* Image+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF9922AE2C920C51004186DF /* Image+Extension.swift */; };
@@ -70,7 +67,6 @@
 		CFB1394D2AE572D300EE8B2C /* BackgroundImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB1394C2AE572D300EE8B2C /* BackgroundImageView.swift */; };
 		CFB1394F2AE59ED900EE8B2C /* BackgroundImageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB1394E2AE59ED900EE8B2C /* BackgroundImageModel.swift */; };
 		CFC3A7722AAF8B1B00BB8CC2 /* ProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC3A7712AAF8B1B00BB8CC2 /* ProgressBar.swift */; };
-		CFC4C1872D047C1D0086CEBB /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC4C1862D047C1D0086CEBB /* WhatsNewView.swift */; };
 		CFCD99D02CA068B00017BD0E /* ListButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFCD99CF2CA068B00017BD0E /* ListButton.swift */; };
 		CFCE3C762C431EC900D33AE3 /* View+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFCE3C752C431EC900D33AE3 /* View+Extension.swift */; };
 		CFDE17AE2F48A646006BEF5D /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = CFDE17AD2F48A646006BEF5D /* TelemetryDeck */; };
@@ -127,7 +123,6 @@
 		CF2222D92E355A8000A90265 /* TimerData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerData.swift; sourceTree = "<group>"; };
 		CF10D0592E733A1000F84454 /* FavouriteTimers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavouriteTimers.swift; sourceTree = "<group>"; };
 		CF228F4F2E7C52B5000DEF21 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
-		CF228F532E7D7ECF000DEF21 /* SearchTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTabView.swift; sourceTree = "<group>"; };
 		CFA10D012FB3E00100000001 /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
 		CFA10C012FB2D00100000001 /* TimerShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerShareSheet.swift; sourceTree = "<group>"; };
 		CF279C4B2C31A8940084C43F /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
@@ -137,7 +132,6 @@
 		CF4DB2842F098203007D5692 /* Int+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Int+Extension.swift"; sourceTree = "<group>"; };
 		CF52F0F52EC3B60D002CA453 /* SettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSection.swift; sourceTree = "<group>"; };
 		CF5B11122AD33CE500F42131 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		CF70037C2C8DE816009F1531 /* HintButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HintButton.swift; sourceTree = "<group>"; };
 		CF70037E2C8DED37009F1531 /* BackgroundSelectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSelectorView.swift; sourceTree = "<group>"; };
 		CF7744F02E799F9A00693351 /* IntervalRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntervalRowView.swift; sourceTree = "<group>"; };
 		CF7BAE242EC27A6F002A4746 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -145,7 +139,6 @@
 		CF7BCED62BB881C900A65EF1 /* CustomImageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomImageModel.swift; sourceTree = "<group>"; };
 		CF8438962F12BF3E0033EE39 /* ob_favourites.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ob_favourites.mp4; sourceTree = "<group>"; };
 		CF8438972F12BF3E0033EE39 /* ob_timer.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = ob_timer.mp4; sourceTree = "<group>"; };
-		CF8E14662D17403900155BE8 /* VideoPlayerFullscreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerFullscreen.swift; sourceTree = "<group>"; };
 		CF93EB002C5E679700A98ABD /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		CF9922AC2C8F84C9004186DF /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		CF9922AE2C920C51004186DF /* Image+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Image+Extension.swift"; sourceTree = "<group>"; };
@@ -162,7 +155,6 @@
 		CFB1394C2AE572D300EE8B2C /* BackgroundImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundImageView.swift; sourceTree = "<group>"; };
 		CFB1394E2AE59ED900EE8B2C /* BackgroundImageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundImageModel.swift; sourceTree = "<group>"; };
 		CFC3A7712AAF8B1B00BB8CC2 /* ProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressBar.swift; sourceTree = "<group>"; };
-		CFC4C1862D047C1D0086CEBB /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		CFCD99CF2CA068B00017BD0E /* ListButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListButton.swift; sourceTree = "<group>"; };
 		CFCE3C752C431EC900D33AE3 /* View+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extension.swift"; sourceTree = "<group>"; };
 		CFEF371E2FAD23570071E2A8 /* tick.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = tick.mp3; sourceTree = "<group>"; };
@@ -286,7 +278,6 @@
 			children = (
 				CF7BAE262EC28238002A4746 /* FavouritesView.swift */,
 				CF7BAE242EC27A6F002A4746 /* SettingsView.swift */,
-				CF228F532E7D7ECF000DEF21 /* SearchTabView.swift */,
 				CF2222D52E354A1900A90265 /* SubViews */,
 			);
 			path = Settings;
@@ -310,18 +301,9 @@
 			isa = PBXGroup;
 			children = (
 				CFADBCF12AC9C8AE00AE27D8 /* ProgressArrayView.swift */,
-				CF8E14662D17403900155BE8 /* VideoPlayerFullscreen.swift */,
 				CFB1394C2AE572D300EE8B2C /* BackgroundImageView.swift */,
 			);
 			path = SubViews;
-			sourceTree = "<group>";
-		};
-		CF2222D72E354A6A00A90265 /* WhatsNew */ = {
-			isa = PBXGroup;
-			children = (
-				CFC4C1862D047C1D0086CEBB /* WhatsNewView.swift */,
-			);
-			path = WhatsNew;
 			sourceTree = "<group>";
 		};
 		CF279C462C31A0CF0084C43F /* Sound */ = {
@@ -347,7 +329,6 @@
 			children = (
 				CF52F0F52EC3B60D002CA453 /* SettingsSection.swift */,
 				CFC3A7712AAF8B1B00BB8CC2 /* ProgressBar.swift */,
-				CF70037C2C8DE816009F1531 /* HintButton.swift */,
 				CF9922B02C959AC1004186DF /* ControlButton.swift */,
 				CFCD99CF2CA068B00017BD0E /* ListButton.swift */,
 			);
@@ -396,7 +377,6 @@
 				CFF3BAE92EFD7D6B0069C610 /* Onboarding */,
 				CF70037B2C8DE807009F1531 /* UI */,
 				CF2222D12E353FA100A90265 /* Timer */,
-				CF2222D72E354A6A00A90265 /* WhatsNew */,
 				CF2222D22E353FE800A90265 /* Settings */,
 			);
 			path = Views;
@@ -580,18 +560,15 @@
 				CFF207D82E6CA9F900D0C369 /* FavouriteRowView.swift in Sources */,
 				CF4DB2852F098208007D5692 /* Int+Extension.swift in Sources */,
 				CF7744F12E799FA100693351 /* IntervalRowView.swift in Sources */,
-				CF8E14672D17404900155BE8 /* VideoPlayerFullscreen.swift in Sources */,
 				CF01945C2C8A20D700CAC1BD /* SoundSettingsView.swift in Sources */,
 				CF9922B12C959AC1004186DF /* ControlButton.swift in Sources */,
 				CF4977932EED67BB00EE09B1 /* BannerImageModel.swift in Sources */,
 				CF228F502E7C52B9000DEF21 /* AppPreferences.swift in Sources */,
 				CFADBCF22AC9C8AE00AE27D8 /* ProgressArrayView.swift in Sources */,
-				CFC4C1872D047C1D0086CEBB /* WhatsNewView.swift in Sources */,
 				CF21844229F0528C0060706C /* TimerViewModel.swift in Sources */,
 				CF9922AD2C8F84C9004186DF /* AppConfig.swift in Sources */,
 				CF9922AF2C920C51004186DF /* Image+Extension.swift in Sources */,
 				CF7BAE272EC2823C002A4746 /* FavouritesView.swift in Sources */,
-				CF70037D2C8DE816009F1531 /* HintButton.swift in Sources */,
 				CFCD99D02CA068B00017BD0E /* ListButton.swift in Sources */,
 				CFFAF94A2F3DEE2C00A20D76 /* IntervalData.swift in Sources */,
 				CFFAF94B2F3DEE2C00A20D76 /* SoundModel.swift in Sources */,
@@ -621,7 +598,6 @@
 				CFA10E0A2FB4F0010000000A /* AppLinkRouter.swift in Sources */,
 				CF2222DA2E355A8200A90265 /* TimerData.swift in Sources */,
 				CF10D05A2E733A1000F84454 /* FavouriteTimers.swift in Sources */,
-				CF228F542E7D7ED4000DEF21 /* SearchTabView.swift in Sources */,
 				CF4A94BD2F4EF11200A7B250 /* PredefinedTimer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

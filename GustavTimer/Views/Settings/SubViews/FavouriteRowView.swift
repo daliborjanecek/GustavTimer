@@ -95,7 +95,6 @@ struct FavouriteRowView: View {
             }
         }
         .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
-//        .padding()
     }
     
     /// Název timeru napsal uživatel, takže se vypisuje doslova. Jako
@@ -105,18 +104,8 @@ struct FavouriteRowView: View {
         isMainTimer ? Text("CURRENT_TIMER") : Text(verbatim: settings.name)
     }
     
-    var selectedCornerRadius: CGFloat {
-        if #available(iOS 26, *) {
-            return 24
-        } else {
-            return 8
-        }
-    }
-    
     var progressBarColor: Color {
-//        guard !isMinimized else { return Color.gustavLight }
-//        guard !selected else { return Color.gustavLight }
-        return isMainTimer ? Color.gustavLight : Color.gustavVolt
+        isMainTimer ? Color.gustavLight : Color.gustavVolt
     }
     
     func getIntervalWidth(interval: IntervalData, viewWidth: CGFloat) -> CGFloat {

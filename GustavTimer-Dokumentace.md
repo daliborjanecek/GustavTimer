@@ -423,9 +423,6 @@ Každý preset má 3 lokalizované **tipy** (`description[0..2]`), zobrazuje se 
 ### `FavouriteRowView`
 Vykresluje řádek časovače – mini progress bary jednotlivých intervalů (šířka dle poměru), název, štítek „Upraveno“ (`isModified`), ikony stavu (smyčka/zvuk/vibrace) a volitelný tip. Hlavní časovač (`order == 0`) má label `CURRENT_TIMER` a poloprůhledný název.
 
-### `SearchTabView`
-Vyhledávání mezi oblíbenými i předdefinovanými (`localizedCaseInsensitiveContains`).
-
 ---
 
 ## 8 · Zvuky, tikání a haptika
@@ -573,9 +570,6 @@ Nová obrazovka = nový `case` v `AppScreen`, větev v `navigationDestination(fo
   3. **Gustav** (`ob_fristensky.mp4`) – o značce, s tlačítkem dokončení.
 - Onboarding se zobrazí, když `lastOnboardingVersion != AppConfig.onboardingVersion` (řízeno v `ContentView`).
 - **What's New** používá tutéž `OnboardingView` (zobrazí se přes `showWhatsNew` nebo deep-link `whatsnew`). Verze hlídá `whatsNewVersion < AppConfig.version`.
-
-> [!note]
-> Soubor `Views/WhatsNew/WhatsNewView.swift` je **placeholder** (jen text + zakomentovaný video-loop). Reálně se pro What's New používá `OnboardingView`.
 
 ---
 
@@ -769,12 +763,10 @@ GustavTimer/
 │   │   ├── TimerViewModel.swift   # iOS obálka nad TimerEngine
 │   │   └── SubViews/
 │   │       ├── ProgressArrayView.swift
-│   │       ├── BackgroundImageView.swift
-│   │       └── VideoPlayerFullscreen.swift
+│   │       └── BackgroundImageView.swift
 │   ├── Settings/
 │   │   ├── SettingsView.swift
 │   │   ├── FavouritesView.swift
-│   │   ├── SearchTabView.swift
 │   │   └── SubViews/
 │   │       ├── IntervalRowView.swift
 │   │       ├── RoundsSettingsView.swift
@@ -783,19 +775,17 @@ GustavTimer/
 │   │       ├── FavouriteRowView.swift
 │   │       └── FavouritesEmptyView.swift
 │   ├── Onboarding/OnboardingView.swift
-│   ├── WhatsNew/WhatsNewView.swift   # (placeholder)
 │   └── UI/
 │       ├── ControlButton.swift
 │       ├── ProgressBar.swift
 │       ├── ListButton.swift
-│       ├── SettingsSection.swift
-│       └── HintButton.swift
+│       └── SettingsSection.swift
 │
 ├── Extensions/
 │   ├── Int+Extension.swift        # asTime()
 │   ├── String+Extension.swift     # localized
 │   ├── Image+Extension.swift      # backgroundThumbnail()
-│   └── View+Extension.swift       # hideKeyboard, alerty
+│   └── View+Extension.swift       # alerty
 │
 ├── Sound/   *.mp3                 # 11 zvuků + tick
 └── Media/   *.mp4                 # onboarding videa
@@ -832,12 +822,10 @@ Aplikace na pozadí neběží – systém ji během chvíle uspí. Engine proto 
 ## 20 · Poznámky k implementaci a TODO
 
 > [!warning] Postřehy z kódu (stav k verzi 2.3.0)
-> - **`WhatsNewView.swift`** je nedokončený placeholder – reálně se používá `OnboardingView`.
-> - **Sekce „About"** v `SettingsView` je zakomentovaná (`// about`) a vede jen na `Text("About")`.
 > - ~~V `ContentView` jsou nepoužívané `@AppStorage` klíče~~ – vyřešeno ve verzi 2.4, klíče maže `SettingsMigration`.
 > - **rive-ios** je mezi závislostmi, ale animace tlačítek běží na **Lottie** (přes GustavUI). Parametr `riveAnimation` v `ControlButton` je už jen spínač „je to animované tlačítko?" – samotná animace je Lottie. Pravděpodobně historická závislost.
 > - **`AppPreferences`** dnes slouží hlavně jako jmenný prostor klíčů (`AppPreferences.Key`); jako `ObservableObject` ji nikdo neinstancuje, protože nastavení timeru se přesunulo do `TimerData`. Její tři `@AppStorage` vlastnosti tak zatím nemají konzumenta – views sahají na klíče přímo.
-> - Landscape režim záměrně skrývá progress bar a header (zakomentováno v `landscapeTimerView`).
+> - Landscape režim záměrně skrývá progress bar a header.
 > - Zastaralý `.github/copilot-instructions.md` popisuje **starou** architekturu (GustavViewModel, EditSheetView, max 5 timerů, UserDefaults JSON) – **neodpovídá** současnému stavu (SwiftData, TimerEngine, max 10). Tato dokumentace vychází z aktuálního kódu.
 
 ---

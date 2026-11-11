@@ -22,7 +22,6 @@ struct BackgroundSelectorView: View {
     @Query var customImage: [CustomImageModel]
     
     @State private var selectedPhoto: PhotosPickerItem?
-    @State private var selectedPhotoData: Data?
     
     var body: some View {
         ScrollView {
@@ -98,7 +97,6 @@ struct BackgroundSelectorView: View {
                     for image in customImage {
                                 context.delete(image)
                             }
-                    selectedPhotoData = data
                     let customPhoto = CustomImageModel(image: data)
                     context.insert(customPhoto)
                     setBG(index: -1)
@@ -142,13 +140,5 @@ struct BackgroundSelectorView: View {
         self.bgIndex = AppConfig.defaultBackgroundIndex
         self.remoteBackgroundID = id
         Analytics.settingChanged("background", value: "remote")
-    }
-    
-    func getImage() -> Image {
-        if AppConfig.backgroundImages.indices.contains(bgIndex) {
-            return AppConfig.backgroundImages[bgIndex].getImage()
-        } else {
-            return AppConfig.backgroundImages[0].getImage()
-        }
     }
 }

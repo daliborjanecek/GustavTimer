@@ -138,18 +138,12 @@ private extension TimerView {
     
     var landscapeTimerView: some View {
         VStack {
-            //            ProgressArrayView(viewModel: viewModel)
-            //                .padding(.top)
-            
-            //            headerSection
-            
             Spacer()
             
             counterDisplay(format: $landscapeFormat, formats: [.minutesSecondsHundredths, .seconds])
             
             Spacer()
         }
-        //        .ignoresSafeArea(edges: .bottom)
         .statusBar(hidden: true)
         .persistentSystemOverlays(.hidden)
         // Na šířku nejsou tlačítka – timer se ovládá jen tapy.
@@ -246,17 +240,6 @@ private extension TimerView {
         .padding()
     }
     
-    var verticalControlButtons: some View {
-        VStack(spacing: 16) {
-            startStopButton
-            secondaryButton
-                .frame(width: 100)
-        }
-        .animation(.easeInOut, value: viewModel.isTimerRunning)
-        .frame(maxWidth: .infinity)
-        .padding()
-    }
-    
     @ViewBuilder
     var startStopButton: some View {
         if viewModel.isCountingDown {
@@ -321,14 +304,6 @@ private extension TimerView {
             }
         }
         .frame(height: 20)
-    }
-    
-    var soundIcon: some View {
-        let isSoundEnabled = viewModel.settings.sound != nil
-        return Image(systemName: isSoundEnabled ? "speaker.wave.2.circle.fill" : "speaker.slash.circle.fill")
-            .resizable()
-            .scaledToFit()
-            .foregroundColor(Color(isSoundEnabled ? Color.gustavVolt : Color.gustavNeutral))
     }
 }
 
@@ -455,17 +430,12 @@ private struct CountdownStartButton: View {
                     Color.gustavPink
                         .frame(width: geo.size.width * animatedProgress)
                         .opacity(min(1.0, animatedProgress + 0.5))
-                        
                 }
 
-                HStack(spacing: 8) {
-//                    Text("COUNTDOWN")
-//                        .font(.buttonLabel)
-                    Text("\(countdownValue)")
-                        .font(.buttonLabel)
-                }
-                .foregroundStyle(animatedProgress > 0.5 ? Color.gustavVolt : Color.gustavNeutral)
-                .frame(maxWidth: .infinity)
+                Text("\(countdownValue)")
+                    .font(.buttonLabel)
+                    .foregroundStyle(animatedProgress > 0.5 ? Color.gustavVolt : Color.gustavNeutral)
+                    .frame(maxWidth: .infinity)
             }
             .frame(height: GustavLayout.controlHeight)
             .clipShape(Capsule())

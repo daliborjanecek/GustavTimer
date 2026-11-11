@@ -8,8 +8,6 @@
 import Foundation
 import Combine
 import SwiftUI
-import AVKit
-import AVFoundation
 import SwiftData
 import Lottie
 import TelemetryDeck
@@ -43,7 +41,6 @@ class TimerViewModel: ObservableObject {
     /// odpovědi zavolá `confirmPendingSharedLink()` nebo
     /// `declinePendingSharedLink()`. Do té doby se timer nemění.
     @Published private(set) var pendingSharedLink: PendingSharedLink?
-    @Published var editMode = EditMode.inactive
 
     // MARK: Lottie animation state
     @Published var appearanceIconAnimation = LottiePlaybackMode.paused(at: .frame(0))
@@ -94,7 +91,6 @@ class TimerViewModel: ObservableObject {
     var finishedRounds: Int { engine.finishedRounds }
     var count: Int { engine.count }
     var progress: Double { engine.progress }
-    var isTimerFull: Bool { engine.isTimerFull }
 
     // MARK: - Inicializace
     init() {
@@ -241,23 +237,6 @@ class TimerViewModel: ObservableObject {
         engine.skipCurrentInterval()
     }
 
-    // MARK: - Správa intervalů
-
-    func addTimer() {
-        engine.addInterval()
-        persistIntervals()
-    }
-
-    func removeTimer(at offsets: IndexSet) {
-        engine.removeInterval(at: offsets)
-        persistIntervals()
-    }
-
-    func removeTimer(index: Int) {
-        engine.removeInterval(at: index)
-        persistIntervals()
-    }
-
     // MARK: - Progress bar
 
     func getProgressBarWidth(geometry: GeometryProxy, timerIndex: Int) -> Double {
@@ -269,20 +248,8 @@ class TimerViewModel: ObservableObject {
 
     // MARK: - Formátování času
 
-    func formattedTime(from duration: Duration) -> String {
-        engine.formattedTime(from: duration)
-    }
-
     func formattedCurrentTime(timeDisplayFormat: TimeDisplayFormat) -> String {
         engine.formattedCurrentTime(format: timeDisplayFormat)
-    }
-
-    /// Zobrazení/skrytí nastavení
-    func toggleSheet() {
-        showingSheet.toggle()
-        stopTimer()
-        trackSessionAbandoned(reason: "settings")
-        engine.reset()
     }
 
     // MARK: - Zpětná vazba (vibrace a zvuky) – iOS specific
@@ -520,14 +487,6 @@ extension TimerViewModel {
             print("Chyba při ukládání časovačů: \(error)")
             TelemetryDeck.errorOccurred(id: "timer.persist_failed", category: .thrownException)
         }
-    }
-
-    /// Uloží intervaly upravené přes engine (addTimer/removeTimer).
-    private func persistIntervals() {
-        var updated = settings
-        updated.intervals = timers
-        settings = updated
-        persist(updated)
     }
 }
 

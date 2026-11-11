@@ -53,7 +53,6 @@ struct SoundSettingsView: View {
                 }
             }
         }
-//        .animation(.easeInOut, value: selectedSound)
         .font(.gustavBody)
         .toolbar{toolbar}
     }
