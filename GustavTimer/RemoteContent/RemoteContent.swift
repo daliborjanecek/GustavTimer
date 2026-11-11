@@ -121,13 +121,9 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
 }
 
 extension RemoteBanner {
-    /// Umí tahle verze aplikace banner otevřít? Odkaz do aplikace
-    /// (`gustavtimerapp://…`) na obrazovku, kterou zná až novější verze,
-    /// by po klepnutí nic neudělal – takový banner se nezobrazí.
-    var isSupported: Bool {
-        guard url.scheme?.lowercased() == SharedTimerLink.customScheme else { return true }
-        return SharedTimerLink.route(url: url) != nil
-    }
+    /// Smí a umí aplikace banner otevřít? Viz `RemoteContentPolicy.isOpenable`.
+    /// Jinak se banner nezobrazí.
+    var isSupported: Bool { RemoteContentPolicy.isOpenable(url) }
 }
 
 struct RemoteLink: RemoteContentItem, Decodable, Equatable, Identifiable {
@@ -159,6 +155,53 @@ struct RemoteLink: RemoteContentItem, Decodable, Equatable, Identifiable {
         language = RemoteContentLanguage.normalize(try container.decodeIfPresent(String.self, forKey: .language))
         startAt = try container.decodeIfPresent(Date.self, forKey: .startAt)
         endAt = try container.decodeIfPresent(Date.self, forKey: .endAt)
+    }
+}
+
+extension RemoteLink {
+    /// Smí a umí aplikace odkaz otevřít? Viz `RemoteContentPolicy.isOpenable`.
+    /// Jinak se odkaz nezobrazí.
+    var isSupported: Bool { RemoteContentPolicy.isOpenable(url) }
+}
+
+// MARK: - Bezpečnost
+
+/// Co aplikace z API přijme. Nespoléhá na to, že server je vždycky v pořádku:
+/// ani napadený WordPress nesmí aplikací otevřít cizí URL schéma (`tel:`,
+/// `sms:`, jiné aplikace), stahovat obrázky z cizích serverů (a prozradit
+/// jim IP uživatelů) ani ji shodit obří odpovědí.
+enum RemoteContentPolicy {
+
+    /// Největší odpověď API. Dnešní obsah má jednotky kB.
+    static let maxConfigBytes = 512 * 1024
+
+    /// Největší obrázek banneru nebo pozadí, kontroluje se před dekódováním.
+    static let maxImageBytes = 10 * 1024 * 1024
+
+    /// Odkaz banneru nebo odkazu v nastavení, který smí aplikace otevřít:
+    /// webová adresa, nebo `gustavtimerapp://`, kterému rozumí
+    /// `SharedTimerLink.route` (timer, obrazovka, novinky). Odkaz na obrazovku,
+    /// kterou zná až novější verze, by po klepnutí nic neudělal.
+    ///
+    ///     https://gustavtraining.com/t?Work=40      → true
+    ///     gustavtimerapp://settings/background      → true
+    ///     gustavtimerapp://settings/neznama         → false
+    ///     tel:123, sms:123, whatsapp://send         → false
+    static func isOpenable(_ url: URL) -> Bool {
+        switch url.scheme?.lowercased() {
+        case "https", "http":
+            return url.host?.isEmpty == false
+        case SharedTimerLink.customScheme:
+            return SharedTimerLink.route(url: url) != nil
+        default:
+            return false
+        }
+    }
+
+    /// Obrázek jen přes https z domény v `hosts`.
+    static func isAllowedImageURL(_ url: URL, hosts: [String] = AppConfig.remoteContentImageHosts) -> Bool {
+        guard url.scheme?.lowercased() == "https", let host = url.host?.lowercased() else { return false }
+        return hosts.contains(host)
     }
 }
 
@@ -199,6 +242,7 @@ enum RemoteContentError: LocalizedError, Equatable {
     case invalidItem(String)
     case http(status: Int, url: String)
     case invalidImage(String)
+    case tooLarge(String)
 
     var errorDescription: String? {
         switch self {
@@ -212,6 +256,8 @@ enum RemoteContentError: LocalizedError, Equatable {
             return "HTTP \(status): \(url)"
         case .invalidImage(let url):
             return "Soubor není obrázek: \(url)"
+        case .tooLarge(let url):
+            return "Příliš velký soubor: \(url)"
         }
     }
 }
@@ -260,14 +306,15 @@ extension RemoteContentConfig {
     }
 
     /// Kontroly, které typový systém nepokryje: prázdná a duplicitní ID,
-    /// URL bez schématu, obrázek mimo http(s), prázdný popisek odkazu.
+    /// URL bez schématu, obrázek mimo https z povolené domény
+    /// (`RemoteContentPolicy.isAllowedImageURL`), prázdný popisek odkazu.
     func validate() throws {
         try Self.validateIDs(banners.map(\.id), kind: "banner")
         try Self.validateIDs(links.map(\.id), kind: "link")
         try Self.validateIDs(backgrounds.map(\.id), kind: "background")
 
         for banner in banners {
-            guard Self.isWebURL(banner.imageUrl) else { throw RemoteContentError.invalidItem("\(banner.id): imageUrl") }
+            guard RemoteContentPolicy.isAllowedImageURL(banner.imageUrl) else { throw RemoteContentError.invalidItem("\(banner.id): imageUrl") }
             guard banner.url.scheme != nil else { throw RemoteContentError.invalidItem("\(banner.id): url") }
         }
         for link in links {
@@ -275,7 +322,7 @@ extension RemoteContentConfig {
             guard link.url.scheme != nil else { throw RemoteContentError.invalidItem("\(link.id): url") }
         }
         for background in backgrounds {
-            guard Self.isWebURL(background.imageUrl) else { throw RemoteContentError.invalidItem("\(background.id): imageUrl") }
+            guard RemoteContentPolicy.isAllowedImageURL(background.imageUrl) else { throw RemoteContentError.invalidItem("\(background.id): imageUrl") }
         }
     }
 
@@ -287,11 +334,6 @@ extension RemoteContentConfig {
         for id in ids where !seen.insert(id).inserted {
             throw RemoteContentError.invalidItem("duplicitní id \(id)")
         }
-    }
-
-    private static func isWebURL(_ url: URL) -> Bool {
-        guard let scheme = url.scheme?.lowercased(), url.host != nil else { return false }
-        return scheme == "https" || scheme == "http"
     }
 
     private static func describe(_ error: Error) -> String {

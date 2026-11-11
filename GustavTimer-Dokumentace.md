@@ -868,7 +868,7 @@ Bannery, odkazy v nastavení a stažená pozadí se spravují na webu. Aplikace 
 
 - Spouští ji `ContentView` při spuštění a při každém návratu do popředí (`handleBecameActive`). Po úspěchu se nejdřív za **24 h**, po neúspěchu znovu při dalším otevření.
 - Postup: stáhnout JSON → ověřit → stáhnout chybějící obrázky (všech položek, kterým ještě neskončila platnost, bez ohledu na jazyk) → **teprve pak** atomicky zapsat `config.json`, přepnout konfiguraci, smazat nepotřebné obrázky a zapsat čas úspěchu.
-- Jakákoli chyba (síť, HTTP, neplatný JSON, jiná `schemaVersion`, obrázek, který není obrázek) celou aktualizaci zahodí a zůstane dosavadní konfigurace. Obrázky stažené během neúspěšného pokusu zůstanou a příště se už nestahují.
+- Jakákoli chyba (síť, HTTP, neplatný JSON, jiná `schemaVersion`, obrázek, který není obrázek nebo je z cizí domény, příliš velký soubor) celou aktualizaci zahodí a zůstane dosavadní konfigurace. Obrázky stažené během neúspěšného pokusu zůstanou a příště se už nestahují.
 - Neznámá pole se ignorují, neznámý `type` banneru = banner bez ikony.
 - Soubory: `Application Support/RemoteContent/config.json` (původní JSON) a `images/<SHA-256 URL>.<přípona>`. Název souboru je z celé URL včetně `?v=…`, takže nová verze obrázku = nový soubor. Složka je vyřazená ze zálohy.
 
@@ -882,11 +882,21 @@ Bannery, odkazy v nastavení a stažená pozadí se spravují na webu. Aplikace 
 
 | Obsah | Pravidlo |
 |---|---|
-| Bannery | Platné stažené bannery v pořadí z API, jinak vestavěný banner. Pevný poměr 16:9 jako vestavěné bannery, obrázek s jiným poměrem se ořízne na středu (doporučeno 1920×1080). Víc bannerů = `TabView` s přepínáním po 5 s, po posledním znovu první. Ikona podle `type` (`timer`, `youtube` – logo, `app`, `web`, `appstore`). Typ `app` = obrazovka v aplikaci, `url` je `gustavtimerapp://settings/…` (viz [[#Odkazy na obrazovky]]). Banner s odkazem do aplikace, kterému verze nerozumí (`RemoteBanner.isSupported`), se nezobrazí |
-| Odkazy | Platné odkazy z API nahoře v sekci „Více“, pak Hodnotit a Navrhni funkci. Bez platných odkazů z API se ukážou vestavěné (Weights, Instagram, YouTube) |
+| Bannery | Platné stažené bannery v pořadí z API, jinak vestavěný banner. Pevný poměr 16:9 jako vestavěné bannery, obrázek s jiným poměrem se ořízne na středu (doporučeno 1920×1080). Víc bannerů = `TabView` s přepínáním po 5 s, po posledním znovu první. Ikona podle `type` (`timer`, `youtube` – logo, `app`, `web`, `appstore`). Typ `app` = obrazovka v aplikaci, `url` je `gustavtimerapp://settings/…` (viz [[#Odkazy na obrazovky]]). Banner s odkazem, který aplikace nesmí nebo neumí otevřít (`RemoteBanner.isSupported`), se nezobrazí |
+| Odkazy | Platné odkazy z API (jen ty, které projdou `RemoteLink.isSupported`) nahoře v sekci „Více“, pak Hodnotit a Navrhni funkci. Bez platných odkazů z API se ukážou vestavěné (Weights, Instagram, YouTube) |
 | Pozadí | Stažená pozadí před vestavěnými. Viz [[#9 · Pozadí (Background)]] |
 
-**Odkaz na timer** (`https://gustavtraining.com/t?…`) ani odkaz na obrazovku (`gustavtimerapp://settings/…`) z banneru neotevírá systém (Universal Link otevřený z vlastní aplikace by skončil v Safari). `AppLinkRouter` ho pošle notifikací do `TimerView` → `TimerViewModel.handleDeepLink(url:fromApp: true)`, tedy stejnou cestou jako příchozí odkaz. Ostatní URL otevře `UIApplication.open`.
+**Odkaz na timer** (`https://gustavtraining.com/t?…`) ani odkaz na obrazovku (`gustavtimerapp://settings/…`) z banneru neotevírá systém (Universal Link otevřený z vlastní aplikace by skončil v Safari). `AppLinkRouter` ho pošle notifikací do `TimerView` → `TimerViewModel.handleDeepLink(url:fromApp: true)`, tedy stejnou cestou jako příchozí odkaz. Ostatní URL (jen ty, které povolí `RemoteContentPolicy`, viz [[#Bezpečnost]]) otevře `UIApplication.open`.
+
+### Bezpečnost
+
+Spojení je jen přes HTTPS (ATS bez výjimek) a API je veřejné, jen pro čtení, bez tajemství. Aplikace ale nespoléhá na to, že server je vždycky v pořádku – ani napadený WordPress nesmí přes ni udělat víc než ukázat obsah. Pravidla drží `RemoteContentPolicy` (`RemoteContent.swift`):
+
+- **Odkazy** banneru a odkazu v nastavení se otevřou jen jako `http(s)` s hostem nebo `gustavtimerapp://`, kterému rozumí `SharedTimerLink.route`. `tel:`, `sms:`, `mailto:` ani schémata cizích aplikací neprojdou – položka se jen nezobrazí, zbytek obsahu se aktivuje normálně. Timer z odkazu se navíc načte až po potvrzení.
+- **Obrázky** jen přes `https` z domén v `AppConfig.remoteContentImageHosts` (gustavtraining.com s www i bez). Obrázek odjinud zneplatní celou konfiguraci. Budoucí CDN = přidat doménu tam.
+- **Velikost**: odpověď API nejvýš 512 kB (`maxConfigBytes`), obrázek nejvýš 10 MB (`maxImageBytes`), kontroluje se před dekódováním. Větší soubor = chyba `tooLarge`, zůstane dosavadní obsah.
+
+Zbytek je na straně webu: obsah může měnit každý, kdo se dostane do administrace WordPressu (role Editor a výš), takže silná hesla a dvoufázové ověření jsou pro aplikaci stejně důležité jako kód.
 
 ### Vývojářské menu (jen DEBUG)
 

@@ -115,10 +115,10 @@ final class RemoteContentManager: ObservableObject {
             .compactMap { banner in image(for: banner.imageUrl).map { RemoteBannerItem(banner: banner, image: $0) } }
     }
 
-    /// Odkazy platné teď, v pořadí z API.
+    /// Odkazy platné teď, v pořadí z API, jen ty, které tahle verze smí otevřít.
     var links: [RemoteLink] {
         guard let config else { return [] }
-        return config.links.filter { $0.isAvailable(language: currentLanguage, at: referenceDate) }
+        return config.links.filter { $0.isAvailable(language: currentLanguage, at: referenceDate) && $0.isSupported }
     }
 
     /// Pozadí platná teď, v pořadí z API, jen s připraveným obrázkem.
@@ -203,6 +203,9 @@ final class RemoteContentManager: ObservableObject {
 
         do {
             let data = try await fetcher.data(from: endpoint)
+            guard data.count <= RemoteContentPolicy.maxConfigBytes else {
+                throw RemoteContentError.tooLarge(endpoint.absoluteString)
+            }
             let newConfig = try RemoteContentConfig.decode(data)
             let required = newConfig.requiredImageURLs(at: attempt)
             try await downloadMissingImages(required)
@@ -233,6 +236,10 @@ final class RemoteContentManager: ObservableObject {
             guard !FileManager.default.fileExists(atPath: file.path) else { continue }
 
             let data = try await fetcher.data(from: url)
+            // Před dekódováním – obří soubor by UIImage nafoukl v paměti.
+            guard data.count <= RemoteContentPolicy.maxImageBytes else {
+                throw RemoteContentError.tooLarge(url.absoluteString)
+            }
             guard UIImage(data: data) != nil else { throw RemoteContentError.invalidImage(url.absoluteString) }
             try data.write(to: file, options: .atomic)
         }

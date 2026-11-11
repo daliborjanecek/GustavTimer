@@ -25,6 +25,10 @@ struct AppConfig {
 //    static let youtubeURL: String = "https://www.youtube.com/@Gustavtraining"
     /// Vzdáleně spravované bannery, odkazy a pozadí – viz `RemoteContentManager`.
     static let remoteContentURL = URL(string: "https://www.gustavtraining.com/wp-json/gustav-timer/v1/content")!
+    /// Domény, ze kterých smí vzdálený obsah stahovat obrázky. Plugin je
+    /// servíruje z `wp-content/uploads` na téže doméně. Obrázek odjinud
+    /// konfiguraci zneplatní – viz `RemoteContentPolicy`.
+    static let remoteContentImageHosts = ["gustavtraining.com", "www.gustavtraining.com"]
 
     // Velikosti fontů
     static let largeFontSize: CGFloat = 30
