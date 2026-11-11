@@ -96,6 +96,7 @@ private final class TestEnvironment {
     let fetcher = FakeFetcher()
     var now = date("2026-11-09T12:00:00Z")
     var language = "cs"
+    var appVersion = "2.4.0"
 
     init(_ name: String) {
         directory = FileManager.default.temporaryDirectory
@@ -111,7 +112,8 @@ private final class TestEnvironment {
             defaults: defaults,
             fetcher: fetcher,
             now: { [unowned self] in self.now },
-            language: { [unowned self] in self.language }
+            language: { [unowned self] in self.language },
+            appVersion: appVersion
         )
     }
 
@@ -544,4 +546,90 @@ func oversizedResponsesKeepPreviousConfig() async {
     #expect(manager.links.map(\.id) == ["l"])
     #expect(manager.backgrounds.isEmpty)
     #expect(env.storedImages.isEmpty)
+}
+
+// MARK: - Verze aplikace
+
+@Test
+func versionComparison() {
+    #expect(RemoteContentVersion.compare("2.5", "2.5.0") == .orderedSame)
+    #expect(RemoteContentVersion.compare("2.5", "2.10") == .orderedAscending)
+    #expect(RemoteContentVersion.compare("3", "2.10.4") == .orderedDescending)
+    #expect(RemoteContentVersion.compare("2.4.0", "2.4") == .orderedSame)
+    #expect(RemoteContentVersion.compare("2.x", "2.5") == nil)
+    #expect(RemoteContentVersion.compare("2.", "2.5") == nil)
+    #expect(RemoteContentVersion.compare("v2", "2.5") == nil)
+}
+
+@Test
+func versionRangeIsInclusiveFromExclusiveTo() {
+    func matches(_ version: String, _ min: String?, _ max: String?) -> Bool {
+        RemoteContentVersion.matches(version, min: min, max: max)
+    }
+
+    #expect(matches("2.4.0", nil, nil))
+    #expect(!matches("2.4.9", "2.5", "3.0"))
+    #expect(matches("2.5", "2.5", "3.0"))
+    #expect(matches("2.9.9", "2.5", "3.0"))
+    #expect(!matches("3.0", "2.5", "3.0"))
+    #expect(matches("2.4.0", nil, "2.5"))
+    #expect(!matches("2.5.0", nil, "2.5"))
+    // Nečitelná hranice položku skryje – bezpečnější než ji ukázat všem.
+    #expect(!matches("2.5", "dvě", nil))
+    #expect(!matches("2.5", nil, "?"))
+}
+
+@Test
+func decodesAppVersionRange() throws {
+    let config = try RemoteContentConfig.decode(json(
+        banners: """
+        [{ "id": "b", "imageUrl": "https://www.gustavtraining.com/b.jpg", "url": "https://www.gustavtraining.com/",
+           "type": "web", "minAppVersion": "2.5", "maxAppVersion": null }]
+        """,
+        links: """
+        [{ "id": "l", "label": "Web", "url": "https://www.gustavtraining.com/", "maxAppVersion": " 3.0 " }]
+        """,
+        backgrounds: "[\(background("bg", image: "https://www.gustavtraining.com/bg.jpg"))]"
+    ))
+
+    #expect(config.banners[0].minAppVersion == "2.5")
+    #expect(config.banners[0].maxAppVersion == nil)
+    #expect(config.links[0].maxAppVersion == "3.0")
+    // Odpověď bez polí (plugin před 1.3.0) = všechny verze.
+    #expect(config.backgrounds[0].minAppVersion == nil && config.backgrounds[0].maxAppVersion == nil)
+
+    let banner = config.banners[0]
+    let now = date("2026-11-09T12:00:00Z")
+    #expect(!banner.isAvailable(language: "cs", at: now, appVersion: "2.4.0"))
+    #expect(banner.isAvailable(language: "cs", at: now, appVersion: "2.5.1"))
+}
+
+@MainActor
+@Test
+func itemsOutsideAppVersionAreHidden() async {
+    let env = TestEnvironment("appversion")
+    env.serve(json(
+        banners: """
+        [{ "id": "new", "imageUrl": "https://www.gustavtraining.com/b.jpg", "url": "https://www.gustavtraining.com/",
+           "type": "web", "minAppVersion": "2.5" },
+         { "id": "update", "imageUrl": "https://www.gustavtraining.com/b.jpg", "url": "https://apps.apple.com/app/id6478176431",
+           "type": "appstore", "maxAppVersion": "2.5" }]
+        """,
+        links: """
+        [{ "id": "all", "label": "Web", "url": "https://www.gustavtraining.com/" },
+         { "id": "new", "label": "Novinka", "url": "https://www.gustavtraining.com/", "minAppVersion": "2.5" }]
+        """
+    ))
+    env.serveImage("https://www.gustavtraining.com/b.jpg")
+
+    let old = env.makeManager()
+    #expect(await old.sync())
+    #expect(old.banners.map(\.id) == ["update"])
+    #expect(old.links.map(\.id) == ["all"])
+
+    // Stejná uložená konfigurace v novější verzi aplikace.
+    env.appVersion = "2.5.0"
+    let new = env.makeManager()
+    #expect(new.banners.map(\.id) == ["new"])
+    #expect(new.links.map(\.id) == ["all", "new"])
 }

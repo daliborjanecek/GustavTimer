@@ -872,10 +872,11 @@ Bannery, odkazy v nastavení a stažená pozadí se spravují na webu. Aplikace 
 - Neznámá pole se ignorují, neznámý `type` banneru = banner bez ikony.
 - Soubory: `Application Support/RemoteContent/config.json` (původní JSON) a `images/<SHA-256 URL>.<přípona>`. Název souboru je z celé URL včetně `?v=…`, takže nová verze obrázku = nový soubor. Složka je vyřazená ze zálohy.
 
-### Jazyk a platnost
+### Jazyk, platnost a verze aplikace
 
 - `language` je dvoupísmenný kód (`cs`, `en`), `null` = všechny jazyky. Porovnává se s jazykem, ve kterém aplikace běží (`Bundle.main.preferredLocalizations`).
 - `startAt` / `endAt` jsou UTC, včetně, `null` = bez omezení. Vyhodnocuje se lokálně, i offline.
+- `minAppVersion` / `maxAppVersion` (plugin 1.3.0+) omezí položku na verze aplikace: od `minAppVersion` včetně, do `maxAppVersion` bez ní, `null` nebo chybějící pole = bez omezení. Porovnává se s `CFBundleShortVersionString` po číslech, chybějící část = 0 (`2.5` = `2.5.0` < `2.10`) – `RemoteContentVersion`, stejně jako `gtimer_compare_versions()` v pluginu. Nečitelná verze položku skryje. Server nefiltruje, odpověď je pro všechny verze stejná. Obrázky položek mimo rozsah se stahují taky, takže po aktualizaci aplikace jsou hned k dispozici.
 - `RemoteContentManager.refresh()` přepočítá platnost a naplánuje další přepočet na nejbližší začátek nebo konec platnosti. Změna se tak projeví i bez nové synchronizace a bez restartu.
 
 ### Zobrazení
@@ -900,7 +901,7 @@ Zbytek je na straně webu: obsah může měnit každý, kdo se dostane do admini
 
 ### Vývojářské menu (jen DEBUG)
 
-Konec nastavení → 5× klepnout na číslo verze. Ukazuje časy posledního úspěchu a pokusu, výsledek a chybu, čas další automatické synchronizace, `schemaVersion`, `generatedAt`, počty uložených / zobrazených položek a jazyk. Akce:
+Konec nastavení → 5× klepnout na číslo verze. Ukazuje časy posledního úspěchu a pokusu, výsledek a chybu, čas další automatické synchronizace, `schemaVersion`, `generatedAt`, počty uložených / zobrazených položek, jazyk a verzi aplikace. Akce:
 
 - **Vynutit stažení API** – stejný proces jako běžná synchronizace, bez ohledu na 24 h.
 - **Resetovat čas synchronizace** – data zůstanou, příští otevření aplikace synchronizuje.

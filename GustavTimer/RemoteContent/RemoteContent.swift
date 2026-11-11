@@ -81,6 +81,10 @@ protocol RemoteContentItem {
     var language: String? { get }
     var startAt: Date? { get }
     var endAt: Date? { get }
+    /// Nejnižší verze aplikace (včetně), `nil` = bez omezení.
+    var minAppVersion: String? { get }
+    /// Verze aplikace, od které už se položka nezobrazí (bez ní), `nil` = bez omezení.
+    var maxAppVersion: String? { get }
 }
 
 struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
@@ -92,12 +96,15 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
     let language: String?
     let startAt: Date?
     let endAt: Date?
+    let minAppVersion: String?
+    let maxAppVersion: String?
 
     private enum CodingKeys: String, CodingKey {
-        case id, imageUrl, url, type, language, startAt, endAt
+        case id, imageUrl, url, type, language, startAt, endAt, minAppVersion, maxAppVersion
     }
 
-    init(id: String, imageUrl: URL, url: URL, type: RemoteBannerType?, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil) {
+    init(id: String, imageUrl: URL, url: URL, type: RemoteBannerType?, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil,
+         minAppVersion: String? = nil, maxAppVersion: String? = nil) {
         self.id = id
         self.imageUrl = imageUrl
         self.url = url
@@ -105,6 +112,8 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
         self.language = RemoteContentLanguage.normalize(language)
         self.startAt = startAt
         self.endAt = endAt
+        self.minAppVersion = RemoteContentVersion.normalize(minAppVersion)
+        self.maxAppVersion = RemoteContentVersion.normalize(maxAppVersion)
     }
 
     init(from decoder: Decoder) throws {
@@ -117,6 +126,10 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
         language = RemoteContentLanguage.normalize(try container.decodeIfPresent(String.self, forKey: .language))
         startAt = try container.decodeIfPresent(Date.self, forKey: .startAt)
         endAt = try container.decodeIfPresent(Date.self, forKey: .endAt)
+        // Nečitelný text verze položku skryje (`RemoteContentVersion.matches`),
+        // jiný typ než text zneplatní konfiguraci jako u ostatních polí.
+        minAppVersion = RemoteContentVersion.normalize(try container.decodeIfPresent(String.self, forKey: .minAppVersion))
+        maxAppVersion = RemoteContentVersion.normalize(try container.decodeIfPresent(String.self, forKey: .maxAppVersion))
     }
 }
 
@@ -133,18 +146,23 @@ struct RemoteLink: RemoteContentItem, Decodable, Equatable, Identifiable {
     let language: String?
     let startAt: Date?
     let endAt: Date?
+    let minAppVersion: String?
+    let maxAppVersion: String?
 
     private enum CodingKeys: String, CodingKey {
-        case id, label, url, language, startAt, endAt
+        case id, label, url, language, startAt, endAt, minAppVersion, maxAppVersion
     }
 
-    init(id: String, label: String, url: URL, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil) {
+    init(id: String, label: String, url: URL, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil,
+         minAppVersion: String? = nil, maxAppVersion: String? = nil) {
         self.id = id
         self.label = label
         self.url = url
         self.language = RemoteContentLanguage.normalize(language)
         self.startAt = startAt
         self.endAt = endAt
+        self.minAppVersion = RemoteContentVersion.normalize(minAppVersion)
+        self.maxAppVersion = RemoteContentVersion.normalize(maxAppVersion)
     }
 
     init(from decoder: Decoder) throws {
@@ -155,6 +173,10 @@ struct RemoteLink: RemoteContentItem, Decodable, Equatable, Identifiable {
         language = RemoteContentLanguage.normalize(try container.decodeIfPresent(String.self, forKey: .language))
         startAt = try container.decodeIfPresent(Date.self, forKey: .startAt)
         endAt = try container.decodeIfPresent(Date.self, forKey: .endAt)
+        // Nečitelný text verze položku skryje (`RemoteContentVersion.matches`),
+        // jiný typ než text zneplatní konfiguraci jako u ostatních polí.
+        minAppVersion = RemoteContentVersion.normalize(try container.decodeIfPresent(String.self, forKey: .minAppVersion))
+        maxAppVersion = RemoteContentVersion.normalize(try container.decodeIfPresent(String.self, forKey: .maxAppVersion))
     }
 }
 
@@ -211,17 +233,22 @@ struct RemoteBackground: RemoteContentItem, Decodable, Equatable, Identifiable {
     let language: String?
     let startAt: Date?
     let endAt: Date?
+    let minAppVersion: String?
+    let maxAppVersion: String?
 
     private enum CodingKeys: String, CodingKey {
-        case id, imageUrl, language, startAt, endAt
+        case id, imageUrl, language, startAt, endAt, minAppVersion, maxAppVersion
     }
 
-    init(id: String, imageUrl: URL, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil) {
+    init(id: String, imageUrl: URL, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil,
+         minAppVersion: String? = nil, maxAppVersion: String? = nil) {
         self.id = id
         self.imageUrl = imageUrl
         self.language = RemoteContentLanguage.normalize(language)
         self.startAt = startAt
         self.endAt = endAt
+        self.minAppVersion = RemoteContentVersion.normalize(minAppVersion)
+        self.maxAppVersion = RemoteContentVersion.normalize(maxAppVersion)
     }
 
     init(from decoder: Decoder) throws {
@@ -231,6 +258,10 @@ struct RemoteBackground: RemoteContentItem, Decodable, Equatable, Identifiable {
         language = RemoteContentLanguage.normalize(try container.decodeIfPresent(String.self, forKey: .language))
         startAt = try container.decodeIfPresent(Date.self, forKey: .startAt)
         endAt = try container.decodeIfPresent(Date.self, forKey: .endAt)
+        // Nečitelný text verze položku skryje (`RemoteContentVersion.matches`),
+        // jiný typ než text zneplatní konfiguraci jako u ostatních polí.
+        minAppVersion = RemoteContentVersion.normalize(try container.decodeIfPresent(String.self, forKey: .minAppVersion))
+        maxAppVersion = RemoteContentVersion.normalize(try container.decodeIfPresent(String.self, forKey: .maxAppVersion))
     }
 }
 
@@ -390,13 +421,75 @@ enum RemoteContentLanguage {
     }
 }
 
+/// Verze aplikace pro `minAppVersion` / `maxAppVersion`. Porovnává se po
+/// číslech, chybějící část je 0 – stejně jako `gtimer_compare_versions()`
+/// v pluginu:
+///
+///     compare("2.5", "2.5.0")   // .orderedSame
+///     compare("2.5", "2.10")    // .orderedAscending
+///     compare("2.x", "2.5")     // nil – nečitelná verze
+enum RemoteContentVersion {
+
+    /// Verze, ve které aplikace běží (`CFBundleShortVersionString`, např. `2.4.0`).
+    static var current: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+    }
+
+    /// Ořízne mezery, prázdná hodnota je `nil` (bez omezení).
+    static func normalize(_ version: String?) -> String? {
+        let trimmed = version?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    /// Čísla verze, `nil` pro cokoli jiného než 1–4 čísla oddělená tečkou.
+    static func components(_ version: String) -> [Int]? {
+        let parts = version.split(separator: ".", omittingEmptySubsequences: false)
+        guard (1...4).contains(parts.count) else { return nil }
+        var numbers: [Int] = []
+        for part in parts {
+            guard !part.isEmpty, part.allSatisfy(\.isASCIIDigit), let number = Int(part) else { return nil }
+            numbers.append(number)
+        }
+        return numbers
+    }
+
+    static func compare(_ lhs: String, _ rhs: String) -> ComparisonResult? {
+        guard let a = components(lhs), let b = components(rhs) else { return nil }
+        for index in 0..<max(a.count, b.count) {
+            let x = index < a.count ? a[index] : 0
+            let y = index < b.count ? b[index] : 0
+            if x != y { return x < y ? .orderedAscending : .orderedDescending }
+        }
+        return .orderedSame
+    }
+
+    /// Patří `version` do rozsahu? Od `min` včetně, do `max` bez ní.
+    /// Nečitelná hranice (nebo verze) položku skryje – je bezpečnější
+    /// banner pro „jen novou verzi“ neukázat, než ho ukázat všem.
+    static func matches(_ version: String, min: String?, max: String?) -> Bool {
+        if let min {
+            guard let result = compare(version, min), result != .orderedAscending else { return false }
+        }
+        if let max {
+            guard let result = compare(version, max), result == .orderedAscending else { return false }
+        }
+        return true
+    }
+}
+
+private extension Character {
+    var isASCIIDigit: Bool { ("0"..."9").contains(self) }
+}
+
 extension RemoteContentItem {
-    /// Má se položka zobrazit v jazyce `language` v okamžiku `date`?
-    /// Začátek i konec platnosti jsou včetně.
-    func isAvailable(language appLanguage: String, at date: Date) -> Bool {
+    /// Má se položka zobrazit v jazyce `language` v okamžiku `date`
+    /// ve verzi aplikace `appVersion`? Začátek i konec platnosti jsou
+    /// včetně, rozsah verzí od `minAppVersion` včetně do `maxAppVersion` bez ní.
+    func isAvailable(language appLanguage: String, at date: Date, appVersion: String = RemoteContentVersion.current) -> Bool {
         if let language, language != appLanguage { return false }
         if let startAt, date < startAt { return false }
         if let endAt, date > endAt { return false }
+        if !RemoteContentVersion.matches(appVersion, min: minAppVersion, max: maxAppVersion) { return false }
         return true
     }
 

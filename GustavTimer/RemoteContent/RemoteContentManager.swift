@@ -73,6 +73,8 @@ final class RemoteContentManager: ObservableObject {
     private let fetcher: RemoteContentFetching
     private let now: () -> Date
     private let language: () -> String
+    /// Verze aplikace pro `minAppVersion` / `maxAppVersion`.
+    let appVersion: String
     private let imageCache = NSCache<NSString, UIImage>()
     private var refreshTask: Task<Void, Never>?
 
@@ -82,7 +84,8 @@ final class RemoteContentManager: ObservableObject {
         defaults: UserDefaults = .standard,
         fetcher: RemoteContentFetching = URLSessionRemoteContentFetcher(),
         now: @escaping () -> Date = { Date() },
-        language: @escaping () -> String = { RemoteContentLanguage.current }
+        language: @escaping () -> String = { RemoteContentLanguage.current },
+        appVersion: String = RemoteContentVersion.current
     ) {
         self.endpoint = endpoint
         self.directory = directory
@@ -90,6 +93,7 @@ final class RemoteContentManager: ObservableObject {
         self.fetcher = fetcher
         self.now = now
         self.language = language
+        self.appVersion = appVersion
         self.referenceDate = now()
         self.config = loadStoredConfig()
     }
@@ -111,21 +115,21 @@ final class RemoteContentManager: ObservableObject {
     var banners: [RemoteBannerItem] {
         guard let config else { return [] }
         return config.banners
-            .filter { $0.isAvailable(language: currentLanguage, at: referenceDate) && $0.isSupported }
+            .filter { $0.isAvailable(language: currentLanguage, at: referenceDate, appVersion: appVersion) && $0.isSupported }
             .compactMap { banner in image(for: banner.imageUrl).map { RemoteBannerItem(banner: banner, image: $0) } }
     }
 
     /// Odkazy platné teď, v pořadí z API, jen ty, které tahle verze smí otevřít.
     var links: [RemoteLink] {
         guard let config else { return [] }
-        return config.links.filter { $0.isAvailable(language: currentLanguage, at: referenceDate) && $0.isSupported }
+        return config.links.filter { $0.isAvailable(language: currentLanguage, at: referenceDate, appVersion: appVersion) && $0.isSupported }
     }
 
     /// Pozadí platná teď, v pořadí z API, jen s připraveným obrázkem.
     var backgrounds: [RemoteBackgroundItem] {
         guard let config else { return [] }
         return config.backgrounds
-            .filter { $0.isAvailable(language: currentLanguage, at: referenceDate) }
+            .filter { $0.isAvailable(language: currentLanguage, at: referenceDate, appVersion: appVersion) }
             .compactMap { background in
                 image(for: background.imageUrl).map { RemoteBackgroundItem(background: background, image: $0) }
             }
