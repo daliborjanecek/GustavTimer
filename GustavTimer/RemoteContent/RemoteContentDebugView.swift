@@ -53,10 +53,11 @@ struct RemoteContentDebugView: View {
                 row("Odkazy", count(stored: content.config?.links.count, shown: content.links.count))
                 row("Pozadí", count(stored: content.config?.backgrounds.count, shown: content.backgrounds.count))
                 row("Jazyk aplikace", content.currentLanguage)
+                row("Verze aplikace", content.appVersion)
             } header: {
                 Text(verbatim: "Uložený obsah")
             } footer: {
-                Text(verbatim: "Uloženo / zobrazeno teď (podle jazyka a platnosti).")
+                Text(verbatim: "Uloženo / zobrazeno teď (podle jazyka, platnosti a verze aplikace).")
             }
 
             Section {
