@@ -21,6 +21,10 @@ struct TimerView: View {
     @Query(sort: \TimerData.id, order: .reverse) private var timerData: [TimerData]
     @StateObject var viewModel = TimerViewModel()
     @State private var orientation = UIDeviceOrientation.unknown
+    /// Animace ikon v hlavičce – zvuk a vibrace bliknou při přechodu
+    /// intervalu, smyčka při dokončení kola.
+    @State private var feedbackIconAnimation = LottiePlaybackMode.paused(at: .frame(0))
+    @State private var loopIconAnimation = LottiePlaybackMode.paused(at: .frame(0))
     @AppStorage(AppPreferences.Key.portraitTimeDisplayFormat) private var portraitFormat: TimeDisplayFormat = .seconds
     @AppStorage(AppPreferences.Key.landscapeTimeDisplayFormat) private var landscapeFormat: TimeDisplayFormat = .minutesSecondsHundredths
 
@@ -61,17 +65,11 @@ struct TimerView: View {
                 orientation = current
             }
         }
-        .onChange(of: viewModel.showingSheet) { _, newValue in
-            if newValue {
-                viewModel.showingSheet = false
-                present(.settings)
-            }
+        .onChange(of: viewModel.intervalPulse) { _, _ in
+            feedbackIconAnimation = .playing(.fromProgress(0, toProgress: 1, loopMode: .playOnce))
         }
-        .onChange(of: viewModel.showingWhatsNew) { _, newValue in
-            if newValue {
-                viewModel.showingWhatsNew = false
-                present(.whatsNew)
-            }
+        .onChange(of: viewModel.roundPulse) { _, _ in
+            loopIconAnimation = .playing(.fromProgress(0, toProgress: 1, loopMode: .playOnce))
         }
         .onChange(of: portraitFormat) { _, format in
             trackDisplayFormat(format, orientation: "portrait")
@@ -287,17 +285,17 @@ private extension TimerView {
     var settingsIcons: some View {
         HStack {
             if viewModel.settings.rounds == -1 {
-                GustavAnimationView(.loop, mode: $viewModel.loopIconAnimation)
+                GustavAnimationView(.loop, mode: $loopIconAnimation)
                     .frame(width: 20, height: 20)
             }
             
             if viewModel.settings.isVibrating {
-                GustavAnimationView(.vibration, mode: $viewModel.appearanceIconAnimation)
+                GustavAnimationView(.vibration, mode: $feedbackIconAnimation)
                     .frame(width: 20, height: 20)
             }
             
             if viewModel.settings.sound != nil {
-                GustavAnimationView(.sound, mode: $viewModel.appearanceIconAnimation)
+                GustavAnimationView(.sound, mode: $feedbackIconAnimation)
                     .frame(width: 20, height: 20)
             }
         }
@@ -363,11 +361,11 @@ private extension TimerView {
     }
 
     func setupViewModel() {
+        // Callbacky dřív než `showWhatsNew`, které jeden z nich volá.
+        viewModel.onPresentSheet = { present($0) }
+        viewModel.onReviewRequested = { requestReview() }
         viewModel.setModelContext(context)
         viewModel.showWhatsNew()
-        viewModel.onReviewRequested = {
-            requestReview()
-        }
     }
 }
 

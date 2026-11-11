@@ -133,7 +133,7 @@ Díky tomu je stejný engine použitelný i na **Apple Watch** (kód je na to p�
 ### Tok dat
 
 - **`TimerView`** zobrazuje stav a deleguje akce na **`TimerViewModel`**.
-- **`TimerViewModel`** je iOS-specifická obálka nad `TimerEngine` – přidává zvuky, vibrace, Lottie animace, SwiftData persistenci a analytiku. Přeposílá `engine.objectWillChange` do vlastního `objectWillChange`, takže SwiftUI se překresluje na změny enginu.
+- **`TimerViewModel`** je iOS-specifická obálka nad `TimerEngine` – přidává SwiftData persistenci, odkazy a analytiku. Vibrace a zvuky pouští přes `TimerFeedbackPlayer`. O vzhledu view neví nic: animace ikon ani sheety neřídí, jen dává vědět počítadly `intervalPulse` / `roundPulse` a callbackem `onPresentSheet`. Přeposílá `engine.objectWillChange` do vlastního `objectWillChange`, takže SwiftUI se překresluje na změny enginu.
 - **`SettingsView`** edituje data přímo v SwiftData (`TimerData` s `order == 0`). Po zavření Settings `TimerView` znovu načte data a resetuje timer.
 
 ---
@@ -397,7 +397,7 @@ Hlavní timer (`order == 0`) je **pracovní kopie**. Načtením oblíbeného si 
 | `.modified(fav)` | nastavení se od zdroje liší, i jen zvukem, haptikou, tikáním, odpočtem nebo názvem |
 
 - *Uložit změny* zapíše nastavení do zdroje, *Vrátit uložené* ho vezme zpět, *Uložit jako nový* založí oblíbený a přepne `sourceID` na něj.
-- Preset a odkaz `sourceID` vynulují. Úprava intervalů za běhu (`TimerViewModel.persistIntervals`) ho nechává, takže se ukáže jako úprava.
+- Preset a odkaz `sourceID` vynulují. Úprava v nastavení ho nechává, takže se ukáže jako úprava.
 - Instalace z doby před `sourceID`: při startu se hlavní timer propojí s oblíbeným, který se s ním shoduje úplně (`linkLegacySource`).
 
 - Filtr `order > 0`, řazené dle `order` sestupně.
@@ -451,7 +451,9 @@ Enum (`Shared/SoundModel.swift`), každý case = MP3 v bundle:
 
 > Lokalizovaný název (`title`) je v iOS-only rozšíření `SoundModel+Title.swift`. Samotný enum je čistý Foundation (sdílitelný s Watch).
 
-### Logika přehrávání (v `TimerViewModel`)
+### Logika přehrávání (v `TimerFeedbackPlayer`)
+
+Co se má při které události enginu stát, rozhoduje čistá funkce `TimerFeedbackPlayer.effects(for:settings:isRunning:)` – vrací seznam vibrací a zvuků a pokrývá ji `TimerFeedbackPlayerTests`. `play` ten seznam jen provede.
 
 ```mermaid
 flowchart LR
@@ -755,6 +757,7 @@ GustavTimer/
 │   ├── Analytics.swift           # Signály TelemetryDeck a jejich parametry
 │   ├── AppLinkRouter.swift       # Otevření URL z obsahu (odkaz na timer interně)
 │   ├── SoundManager.swift        # AVAudioPlayer singleton
+│   ├── TimerFeedbackPlayer.swift # Události enginu → vibrace a zvuky
 │   └── TimerShareSheet.swift     # Share sheet odkazu na timer
 │
 ├── Views/

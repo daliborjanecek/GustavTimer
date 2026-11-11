@@ -9,7 +9,6 @@ import Foundation
 import Combine
 import SwiftUI
 import SwiftData
-import Lottie
 import TelemetryDeck
 
 /// ViewModel pro správu časovače – iOS vrstva nad sdíleným TimerEngine
@@ -32,19 +31,28 @@ class TimerViewModel: ObservableObject {
     /// s tím, co bylo uložené v databázi. Viz `TimerSettings`.
     @Published private(set) var settings: TimerSettings = .default
 
-    // MARK: - iOS-specific publikované vlastnosti
-    @Published var showingSheet = false
-    @Published var showingWhatsNew: Bool = false
+    // MARK: - Události pro view
+    //
+    // ViewModel neví, jak view vypadá – animace ikon ani prezentaci sheetů
+    // neřídí. Jen dává vědět, že se něco stalo.
+
+    /// Počítadlo přechodů intervalu. View podle něj přehraje animaci ikon
+    /// zvuku a vibrací.
+    ///
+    ///     .onChange(of: viewModel.intervalPulse) { _, _ in playFeedbackIcons() }
+    @Published private(set) var intervalPulse = 0
+
+    /// Počítadlo dokončených kol – pro animaci ikony smyčky.
+    @Published private(set) var roundPulse = 0
+
+    /// View má ukázat sheet (nastavení po načtení odkazu, „co je nového“).
+    var onPresentSheet: ((AppSheet) -> Void)?
 
     /// Timer z odkazu (zvenku i z banneru), který čeká na potvrzení uživatele.
     /// `TimerView` na něj reaguje dotazem (`SharedLinkPrompt`) a podle
     /// odpovědi zavolá `confirmPendingSharedLink()` nebo
     /// `declinePendingSharedLink()`. Do té doby se timer nemění.
     @Published private(set) var pendingSharedLink: PendingSharedLink?
-
-    // MARK: Lottie animation state
-    @Published var appearanceIconAnimation = LottiePlaybackMode.paused(at: .frame(0))
-    @Published var loopIconAnimation = LottiePlaybackMode.paused(at: .frame(0))
 
     // MARK: - Statistiky a stav aplikace (UserDefaults)
     @AppStorage(AppPreferences.Key.stopCounter) var stopCounter: Int = 0
@@ -56,6 +64,7 @@ class TimerViewModel: ObservableObject {
 
     // MARK: - Soukromé vlastnosti
     private var modelContext: ModelContext?
+    private let feedbackPlayer = TimerFeedbackPlayer()
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Analytika tréninku
@@ -114,38 +123,18 @@ class TimerViewModel: ObservableObject {
     private func setupEngineCallbacks() {
         engine.onFeedback = { [weak self] feedback in
             guard let self else { return }
+            // Vibrace a zvuky podle nastavení – viz TimerFeedbackPlayer.
+            self.feedbackPlayer.play(feedback, settings: self.settings, isRunning: self.engine.isRunning)
+
             switch feedback {
             case .intervalTransition:
-                self.vibrate()
-                self.playSound()
-                self.appearanceIconAnimation = .playing(
-                    .fromProgress(0, toProgress: 1, loopMode: .playOnce)
-                )
+                self.intervalPulse += 1
             case .roundComplete:
-                self.vibrateRound()
-                self.playSound()
-                self.loopIconAnimation = .playing(
-                    .fromProgress(0, toProgress: 1, loopMode: .playOnce)
-                )
+                self.roundPulse += 1
             case .timerEnd:
-                self.vibrateEnd()
-                self.playSound()
-                self.completedTimerCount += 1
-                self.trackSessionCompleted()
-                if self.completedTimerCount % AppConfig.reviewPromptInterval == 0 {
-                    Analytics.send(.reviewRequested, parameters: [
-                        "completed_count": String(self.completedTimerCount)
-                    ])
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-                        self?.onReviewRequested?()
-                    }
-                }
-            case .countdownTick:
-                self.vibrate()
-            case .countdownEnd:
-                self.vibrateRound()
-            case .secondTick(let remainingSeconds):
-                self.playTickSound(remainingSeconds: remainingSeconds)
+                self.workoutCompleted()
+            case .countdownTick, .countdownEnd, .secondTick:
+                break
             }
         }
 
@@ -243,45 +232,20 @@ class TimerViewModel: ObservableObject {
         engine.formattedCurrentTime(format: timeDisplayFormat)
     }
 
-    // MARK: - Zpětná vazba (vibrace a zvuky) – iOS specific
+    // MARK: - Dokončení tréninku
 
-    private func vibrate() {
-        guard settings.isVibrating && engine.isRunning else { return }
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
-    }
+    /// Trénink doběhl do konce: započítat ho a jednou za čas požádat o hodnocení.
+    private func workoutCompleted() {
+        completedTimerCount += 1
+        trackSessionCompleted()
 
-    private func vibrateRound() {
-        guard settings.isVibrating && engine.isRunning else { return }
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-    }
-
-    private func vibrateEnd() {
-        guard settings.isVibrating else { return }
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.error)
-    }
-
-    private func playSound() {
-        if let sound = settings.sound {
-            SoundManager.instance.playSound(soundModel: sound)
-        } else {
-            // Poslední sekunda intervalu nedostane .secondTick – engine místo ní
-            // pošle .intervalTransition – takže tik při ztlumeném zvuku
-            // doplňujeme tady. Bez toho by tikání na přechodu vynechalo.
-            // Přechod je „nultá“ sekunda, takže tiká v obou režimech tikání.
-            playTickSound(remainingSeconds: 0)
+        guard completedTimerCount % AppConfig.reviewPromptInterval == 0 else { return }
+        Analytics.send(.reviewRequested, parameters: [
+            "completed_count": String(completedTimerCount)
+        ])
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.onReviewRequested?()
         }
-    }
-
-    /// Tik, pokud ho režim tikání pro danou sekundu odpočtu chce.
-    ///
-    ///     .everySecond  → tiká vždy
-    ///     .finalSeconds → tiká jen při 3, 2, 1 (a na přechodu při ztlumeném zvuku)
-    private func playTickSound(remainingSeconds: Int) {
-        guard settings.ticking.shouldTick(remainingSeconds: remainingSeconds) else { return }
-        SoundManager.instance.playTick()
     }
 
     // MARK: - Co je nového
@@ -293,7 +257,7 @@ class TimerViewModel: ObservableObject {
             return
         }
         if whatsNewVersion < AppConfig.version {
-            showingWhatsNew = true
+            onPresentSheet?(.whatsNew)
             whatsNewVersion = AppConfig.version
         }
     }
@@ -309,7 +273,7 @@ class TimerViewModel: ObservableObject {
     func handleDeepLink(url: URL, fromApp: Bool = false) {
         switch SharedTimerLink.route(url: url) {
         case .whatsNew:
-            showingWhatsNew = true
+            onPresentSheet?(.whatsNew)
         case .screen(let screen):
             // Nastavení otevře TimerView, obrazovku v něm SettingsView.
             AppNavigator.shared.open(screen)
@@ -402,8 +366,8 @@ class TimerViewModel: ObservableObject {
         persist(merged, detachingSource: true)
         lastLinkSettings = merged
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.showingSheet = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.onPresentSheet?(.settings)
         }
     }
 }
