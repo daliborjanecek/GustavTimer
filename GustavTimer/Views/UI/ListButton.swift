@@ -11,8 +11,7 @@ import GustavUICore
 struct ListButton: View {
     var name: LocalizedStringKey
     var value: LocalizedStringKey?
-    var isSelected: Bool = false
-        
+
     var body: some View {
         HStack {
             Text(name)
@@ -21,10 +20,6 @@ struct ListButton: View {
                 Text(value)
                     .foregroundColor(Color.gustavNeutral)
                     .font(.bodyNumber)
-            }
-            if isSelected {
-                Image(systemName: "checkmark")
-                    .foregroundColor(Color.gustavPink)
             }
         }
         .font(.gustavBody)

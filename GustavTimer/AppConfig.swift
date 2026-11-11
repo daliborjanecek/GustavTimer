@@ -14,6 +14,8 @@ struct AppConfig {
     // Maximální hodnota timeru
     static let maxTimerValue: Int = 600
     static let maxTimerCount: Int = 10
+    /// Délka nově přidaného intervalu v sekundách.
+    static let newIntervalValue: Int = 5
     static let countdownDuration: Int = 3
     static let reviewPromptInterval: Int = 5
     

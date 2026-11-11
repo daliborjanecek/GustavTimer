@@ -164,3 +164,9 @@ private extension RemoteBannerType {
         }
     }
 }
+
+#Preview {
+    List {
+        SettingsBannerView()
+    }
+}

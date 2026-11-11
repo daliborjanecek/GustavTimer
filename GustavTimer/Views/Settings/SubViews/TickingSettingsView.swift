@@ -8,7 +8,9 @@
 import SwiftUI
 import GustavUICore
 
-/// Podstránka nastavení s výběrem režimu tikání.
+/// Podstránka nastavení tikání: nahoře přepínač zapnuto/vypnuto, pod ním
+/// (jen při zapnutém tikání) výběr, kdy se tikne – stejně jako u zvuků
+/// a opakování.
 ///
 ///     NavigationLink {
 ///         TickingSettingsView(ticking: setting(\.ticking, tracking: "ticking"))
@@ -18,36 +20,47 @@ import GustavUICore
 struct TickingSettingsView: View {
     @Binding var ticking: TickingMode
 
+    /// Režim, na který se vrátí zapnutí přepínače. Dřívější „zapnuto“
+    /// tikalo každou sekundu, proto je to výchozí hodnota.
+    @State private var lastMode: TickingMode
+
+    init(ticking: Binding<TickingMode>) {
+        _ticking = ticking
+        _lastMode = State(initialValue: ticking.wrappedValue == .off ? .everySecond : ticking.wrappedValue)
+    }
+
     var body: some View {
         List {
             SettingsSection {
-                ForEach(TickingMode.allCases, id: \.self) { mode in
-                    GustavSelectableListRow(selected: ticking == mode) {
-                        Button {
+                Toggle(isOn: .init(get: {
+                    ticking != .off
+                }, set: { isOn in
+                    if isOn {
+                        ticking = lastMode
+                    } else {
+                        if ticking != .off { lastMode = ticking }
+                        ticking = .off
+                    }
+                })) {
+                    Text("SET_TICKING")
+                }
+                .tint(Color.gustavVolt)
+            }
+
+            if ticking != .off {
+                SettingsSection(label: "SELECT_TICKING") {
+                    ForEach(TickingMode.allCases.filter { $0 != .off }, id: \.self) { mode in
+                        SelectableOptionRow(selected: ticking == mode) {
                             select(mode)
                         } label: {
-                            HStack {
-                                Text(mode.title)
-                                Spacer()
-                            }
+                            Text(mode.title)
                         }
                     }
                 }
             }
         }
         .font(.gustavBody)
-        .toolbar { toolbar }
-    }
-
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .title) {
-            HStack {
-                Text("SET_TICKING")
-                    .font(.settingsNavbarTitle)
-            }
-            .padding(.vertical)
-        }
+        .settingsTitle("SET_TICKING")
     }
 
     /// Výběr režimu. Ukázkový tik, ať je slyšet, co se vybírá – stejně
@@ -55,9 +68,8 @@ struct TickingSettingsView: View {
     private func select(_ mode: TickingMode) {
         guard mode != ticking else { return }
         ticking = mode
-        if mode != .off {
-            SoundManager.instance.playTick()
-        }
+        lastMode = mode
+        SoundManager.instance.playTick()
     }
 }
 
@@ -73,7 +85,15 @@ extension TickingMode {
 }
 
 #Preview {
+    @Previewable @State var ticking = TickingMode.finalSeconds
     NavigationStack {
-        TickingSettingsView(ticking: .constant(.finalSeconds))
+        TickingSettingsView(ticking: $ticking)
+    }
+}
+
+#Preview("Vypnuto") {
+    @Previewable @State var ticking = TickingMode.off
+    NavigationStack {
+        TickingSettingsView(ticking: $ticking)
     }
 }

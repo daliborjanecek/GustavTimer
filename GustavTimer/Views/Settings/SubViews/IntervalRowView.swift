@@ -80,3 +80,12 @@ struct IntervalRowView: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var name = "Work"
+    @Previewable @State var value = 30
+    List {
+        IntervalRowView(intervalName: $name, intervalValue: $value)
+        IntervalRowView(intervalName: .constant(""), intervalValue: .constant(600))
+    }
+}

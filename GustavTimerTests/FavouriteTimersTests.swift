@@ -112,3 +112,23 @@ struct FavouriteTimersNameTests {
         #expect(FavouriteTimers.resolvedName(long, fallback: "").count == AppConfig.maxTimerTitle)
     }
 }
+
+/// Ukázková data pro Preview se musí dát sestavit – jinak spadne každé
+/// Preview, které je používá.
+@MainActor
+struct PreviewDataTests {
+
+    @Test func containerHoldsModifiedFavourite() {
+        let context = PreviewData.container.mainContext
+        #expect(FavouriteTimers.favourites(in: context).count == 2)
+        #expect(FavouriteTimers.state(in: context).isModified)
+    }
+
+    @Test func emptyContainerHasOnlyMainTimer() {
+        let context = PreviewData.emptyContainer.mainContext
+        #expect(FavouriteTimers.favourites(in: context).isEmpty)
+        if case .unsaved = FavouriteTimers.state(in: context) {} else {
+            Issue.record("Aktivní timer bez oblíbených má být neuložený")
+        }
+    }
+}
