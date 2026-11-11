@@ -37,17 +37,12 @@ struct RoundsSettingsView: View {
             if rounds != -1 {
                 Section {
                     ForEach(AppConfig.roundsOptions, id: \.self) { roundOption in
-                        GustavSelectableListRow(selected: rounds == roundOption) {
-                            Button {
-                                rounds = roundOption
-                                lastRoundOption = roundOption
-                            } label: {
-                                HStack {
-                                    Text("\(roundOption)")
-                                        .font(.bodyNumber)
-                                    Spacer()
-                                }
-                            }
+                        SelectableOptionRow(selected: rounds == roundOption) {
+                            rounds = roundOption
+                            lastRoundOption = roundOption
+                        } label: {
+                            Text("\(roundOption)")
+                                .font(.bodyNumber)
                         }
                     }
                 } header: {
@@ -56,29 +51,7 @@ struct RoundsSettingsView: View {
                 }
             }
         }
-        .toolbar{toolbar}
-    }
-    
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        if #available(iOS 26, *){
-            ToolbarItem(placement: .title) {
-                HStack {
-                    Text("ROUNDS")
-                        .font(.settingsNavbarTitle)
-                }
-                .padding(.vertical)
-            }
-        } else {
-            // Fallback to earlier versions
-            ToolbarItem(placement: .title) {
-                HStack {
-                    Text("ROUNDS")
-                        .font(.settingsNavbarTitle)
-                }
-                .padding(.vertical)
-            }
-        }
+        .settingsTitle("ROUNDS")
     }
 }
 

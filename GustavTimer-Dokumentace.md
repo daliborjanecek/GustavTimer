@@ -309,7 +309,7 @@ let merged = link.applied(to: mainTimer.settings)   // sdílený odkaz
 └─────────────────────────────┘
 ```
 
-- **`ProgressArrayView`** – řada `ProgressBar` segmentů, šířka každého dle `timeRatio` (poměr délky intervalu k celému kolu). Aktivní segment ukazuje `progress`, dokončené jsou plné, budoucí prázdné.
+- **`ProgressArrayView`** – řada `ProgressBar` segmentů, šířka každého podle podílu intervalu na délce celého kola. Dostává jen intervaly, index aktivního a jeho průběh, ne celý ViewModel. Aktivní segment ukazuje `progress`, dokončené jsou plné, budoucí prázdné.
 - **Header** – název aktuálního intervalu + `finishedRounds/rounds` (u smyčky bez jmenovatele). Vedle animované ikony stavu (smyčka / vibrace / zvuk) přes `GustavAnimationView` (Lottie) a tlačítko **EDIT** → otevře Settings.
 - **Odpočet** – `Text` s fontem `.timerCounter` (MartianMono-Bold, 800 pt, `minimumScaleFactor 0.01`), barva `gustavVolt`. Odpočet je stránkovaný `TabView` (`.page`, bez teček) – **swipe** listuje s animací mezi celými sekundami (`.seconds`, výchozí stránka) a minutami:sekundami (`.minutesSeconds`). Přepnutí potvrdí haptika `.selection`. **Tap** na odpočet spustí/zastaví timer, **dvojtap** přeskočí interval (jen za běhu, stejně jako tlačítko Skip). Jednoduchý tap čeká, jestli nepřijde druhý, takže reaguje se zpožděním asi 0,3 s.
 - **Tlačítka** – `startStopButton` + `secondaryButton`.
@@ -779,13 +779,14 @@ GustavTimer/
 │       ├── ControlButton.swift
 │       ├── ProgressBar.swift
 │       ├── ListButton.swift
+│       ├── SelectableOptionRow.swift  # řádek výběru jedné možnosti
 │       └── SettingsSection.swift
 │
 ├── Extensions/
 │   ├── Int+Extension.swift        # asTime()
 │   ├── String+Extension.swift     # localized
 │   ├── Image+Extension.swift      # backgroundThumbnail()
-│   └── View+Extension.swift       # alerty
+│   └── View+Extension.swift       # settingsTitle, dialogy s názvem timeru
 │
 ├── Sound/   *.mp3                 # 11 zvuků + tick
 └── Media/   *.mp4                 # onboarding videa
@@ -823,7 +824,7 @@ Aplikace na pozadí neběží – systém ji během chvíle uspí. Engine proto 
 
 > [!warning] Postřehy z kódu (stav k verzi 2.3.0)
 > - ~~V `ContentView` jsou nepoužívané `@AppStorage` klíče~~ – vyřešeno ve verzi 2.4, klíče maže `SettingsMigration`.
-> - **rive-ios** je mezi závislostmi, ale animace tlačítek běží na **Lottie** (přes GustavUI). Parametr `riveAnimation` v `ControlButton` je už jen spínač „je to animované tlačítko?" – samotná animace je Lottie. Pravděpodobně historická závislost.
+> - **rive-ios** je mezi závislostmi, ale animace tlačítek běží na **Lottie** (přes GustavUI). Pravděpodobně historická závislost.
 > - **`AppPreferences`** dnes slouží hlavně jako jmenný prostor klíčů (`AppPreferences.Key`); jako `ObservableObject` ji nikdo neinstancuje, protože nastavení timeru se přesunulo do `TimerData`. Její tři `@AppStorage` vlastnosti tak zatím nemají konzumenta – views sahají na klíče přímo.
 > - Landscape režim záměrně skrývá progress bar a header.
 > - Zastaralý `.github/copilot-instructions.md` popisuje **starou** architekturu (GustavViewModel, EditSheetView, max 5 timerů, UserDefaults JSON) – **neodpovídá** současnému stavu (SwiftData, TimerEngine, max 10). Tato dokumentace vychází z aktuálního kódu.

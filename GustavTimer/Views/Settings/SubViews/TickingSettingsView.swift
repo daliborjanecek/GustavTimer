@@ -22,32 +22,16 @@ struct TickingSettingsView: View {
         List {
             SettingsSection {
                 ForEach(TickingMode.allCases, id: \.self) { mode in
-                    GustavSelectableListRow(selected: ticking == mode) {
-                        Button {
-                            select(mode)
-                        } label: {
-                            HStack {
-                                Text(mode.title)
-                                Spacer()
-                            }
-                        }
+                    SelectableOptionRow(selected: ticking == mode) {
+                        select(mode)
+                    } label: {
+                        Text(mode.title)
                     }
                 }
             }
         }
         .font(.gustavBody)
-        .toolbar { toolbar }
-    }
-
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .title) {
-            HStack {
-                Text("SET_TICKING")
-                    .font(.settingsNavbarTitle)
-            }
-            .padding(.vertical)
-        }
+        .settingsTitle("SET_TICKING")
     }
 
     /// Výběr režimu. Ukázkový tik, ať je slyšet, co se vybírá – stejně

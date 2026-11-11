@@ -26,6 +26,7 @@ struct FavouritesView: View {
             preloadedTimers
         }
         .navigationBarTitleDisplayMode(.automatic)
+        .settingsTitle("FAVOURITES")
         .toolbar { toolbar }
         .environment(\.editMode, $editMode)
         .saveTimerAlert(isPresented: $showSaveAlert, timerName: $newTimerName, onSave: saveTimer)
@@ -47,14 +48,7 @@ struct FavouritesView: View {
                             select(timer)
                         }
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            if TimerShareSheet.url(for: timer.settings) != nil {
-                                Button {
-                                    TimerShareSheet.present(settings: timer.settings, origin: .favourite)
-                                } label: {
-                                    Label("SHARE", systemImage: "square.and.arrow.up")
-                                }
-                                .tint(Color.gustavVolt)
-                            }
+                            shareButton(for: timer.settings, origin: .favourite)
                         }
                 }
                 .onDelete { indexSet in
@@ -84,14 +78,7 @@ struct FavouritesView: View {
                         FavouriteTimers.load(preset.settings, in: context)
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                        if TimerShareSheet.url(for: preset.settings) != nil {
-                            Button {
-                                TimerShareSheet.present(settings: preset.settings, origin: .preset)
-                            } label: {
-                                Label("SHARE", systemImage: "square.and.arrow.up")
-                            }
-                            .tint(Color.gustavVolt)
-                        }
+                        shareButton(for: preset.settings, origin: .preset)
                     }
             }
         } header: {
@@ -100,27 +87,22 @@ struct FavouritesView: View {
         .animation(.spring, value: editMode)
     }
     
+    /// Sdílení odkazu na timer ze swipu. Timer, který se do odkazu nevejde,
+    /// tlačítko nedostane.
+    @ViewBuilder
+    private func shareButton(for settings: TimerSettings, origin: TimerShareOrigin) -> some View {
+        if TimerShareSheet.url(for: settings) != nil {
+            Button {
+                TimerShareSheet.present(settings: settings, origin: origin)
+            } label: {
+                Label("SHARE", systemImage: "square.and.arrow.up")
+            }
+            .tint(Color.gustavVolt)
+        }
+    }
+
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        if #available(iOS 26, *){
-            ToolbarItem(placement: .title) {
-                HStack {
-                    Text("FAVOURITES")
-                        .font(.settingsNavbarTitle)
-                }
-                .padding(.vertical)
-            }
-        } else {
-            // Fallback to earlier versions
-            ToolbarItem(placement: .title) {
-                HStack {
-                    Text("FAVOURITES")
-                        .font(.settingsNavbarTitle)
-                }
-                .padding(.vertical)
-            }
-        }
-        
         ToolbarItem {
             // Vždy uloží aktivní timer jako nový oblíbený. Dialog startuje se
             // stávajícím názvem, ať ho uživatel nemusí psát znovu.

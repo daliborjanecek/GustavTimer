@@ -68,6 +68,7 @@
 		CFB1394F2AE59ED900EE8B2C /* BackgroundImageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB1394E2AE59ED900EE8B2C /* BackgroundImageModel.swift */; };
 		CFC3A7722AAF8B1B00BB8CC2 /* ProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC3A7712AAF8B1B00BB8CC2 /* ProgressBar.swift */; };
 		CFCD99D02CA068B00017BD0E /* ListButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFCD99CF2CA068B00017BD0E /* ListButton.swift */; };
+		CFEB516AB5232D0EA282153C /* SelectableOptionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8AEB516AB5232D0EA28215 /* SelectableOptionRow.swift */; };
 		CFCE3C762C431EC900D33AE3 /* View+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFCE3C752C431EC900D33AE3 /* View+Extension.swift */; };
 		CFDE17AE2F48A646006BEF5D /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = CFDE17AD2F48A646006BEF5D /* TelemetryDeck */; };
 		CFEF371F2FAD23570071E2A8 /* tick.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CFEF371E2FAD23570071E2A8 /* tick.mp3 */; };
@@ -156,6 +157,7 @@
 		CFB1394E2AE59ED900EE8B2C /* BackgroundImageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundImageModel.swift; sourceTree = "<group>"; };
 		CFC3A7712AAF8B1B00BB8CC2 /* ProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressBar.swift; sourceTree = "<group>"; };
 		CFCD99CF2CA068B00017BD0E /* ListButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListButton.swift; sourceTree = "<group>"; };
+		CF8AEB516AB5232D0EA28215 /* SelectableOptionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableOptionRow.swift; sourceTree = "<group>"; };
 		CFCE3C752C431EC900D33AE3 /* View+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extension.swift"; sourceTree = "<group>"; };
 		CFEF371E2FAD23570071E2A8 /* tick.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = tick.mp3; sourceTree = "<group>"; };
 		CFF207D52E6CA9B300D0C369 /* FavouritesEmptyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavouritesEmptyView.swift; sourceTree = "<group>"; };
@@ -331,6 +333,7 @@
 				CFC3A7712AAF8B1B00BB8CC2 /* ProgressBar.swift */,
 				CF9922B02C959AC1004186DF /* ControlButton.swift */,
 				CFCD99CF2CA068B00017BD0E /* ListButton.swift */,
+				CF8AEB516AB5232D0EA28215 /* SelectableOptionRow.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -570,6 +573,7 @@
 				CF9922AF2C920C51004186DF /* Image+Extension.swift in Sources */,
 				CF7BAE272EC2823C002A4746 /* FavouritesView.swift in Sources */,
 				CFCD99D02CA068B00017BD0E /* ListButton.swift in Sources */,
+				CFEB516AB5232D0EA282153C /* SelectableOptionRow.swift in Sources */,
 				CFFAF94A2F3DEE2C00A20D76 /* IntervalData.swift in Sources */,
 				CFFAF94B2F3DEE2C00A20D76 /* SoundModel.swift in Sources */,
 				CFFAF94C2F3DEE2C00A20D76 /* TimeDisplayFormat.swift in Sources */,

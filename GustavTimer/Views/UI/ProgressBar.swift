@@ -8,22 +8,34 @@
 import SwiftUI
 import GustavUICore
 
+/// Vodorovný ukazatel průběhu.
+///
+///     ProgressBar(progress: 0.4)
+///         .frame(height: 6)
 struct ProgressBar: View {
-    @Binding var progress: Double
-    
-    var cornerRadius: CGFloat = 0
-    
+    /// Průběh 0–1.
+    let progress: Double
+
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
                 Color.gustavNeutral
-                    .cornerRadius(cornerRadius)
                     .clipShape(Capsule())
                 Color.gustavVolt
                     .frame(width: proxy.size.width * progress)
-                    .cornerRadius(cornerRadius)
                     .clipShape(Capsule())
             }
         }
     }
+}
+
+#Preview {
+    VStack(spacing: 16) {
+        ProgressBar(progress: 0)
+        ProgressBar(progress: 0.4)
+        ProgressBar(progress: 1)
+    }
+    .frame(height: 50)
+    .padding()
+    .background(.black)
 }

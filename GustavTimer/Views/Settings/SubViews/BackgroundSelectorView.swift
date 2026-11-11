@@ -28,56 +28,31 @@ struct BackgroundSelectorView: View {
             LazyVGrid(columns: flexibleColumn, spacing: 15) {
                 // Stažená pozadí jsou před vestavěnými, v pořadí z API.
                 ForEach(remoteContent.backgrounds) { item in
-                    Color.clear
-                        .aspectRatio(1, contentMode: .fit)
-                        .overlay {
-                            Image(uiImage: item.image)
-                                .backgroundThumbnail()
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .contentShape(Rectangle())
-                        .onTapGesture { setRemoteBG(id: item.id) }
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(style: .init(lineWidth: (remoteBackgroundID == item.id) ? 4 : 0))
-                                .fill(Color.gustavVolt)
-                                .animation(.easeInOut, value: remoteBackgroundID)
-                        }
-                        .padding(1)
+                    BackgroundThumbnail(
+                        image: Image(uiImage: item.image),
+                        isSelected: remoteBackgroundID == item.id
+                    ) {
+                        setRemoteBG(id: item.id)
+                    }
                 }
                 ForEach(0..<AppConfig.backgroundImages.count, id: \.self) { index in
-                    AppConfig.backgroundImages[index].getImage()
-                        .backgroundThumbnail()
-                        .onTapGesture { setBG(index: index) }
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(style: .init(lineWidth: (bgIndex == index && remoteBackgroundID.isEmpty) ? 4 : 0))
-                                .fill(Color.gustavVolt)
-                                .animation(.easeInOut, value: bgIndex)
-                        }
-                        .padding(1)
+                    BackgroundThumbnail(
+                        image: AppConfig.backgroundImages[index].getImage(),
+                        isSelected: bgIndex == index && remoteBackgroundID.isEmpty
+                    ) {
+                        setBG(index: index)
+                    }
                 }
-                if !customImage.isEmpty {
-                    ForEach(customImage, id: \.id) { imageData in
-                        if let uiImage = UIImage(data: imageData.image) {
-                            GeometryReader { geometry in
-                                            Image(uiImage: uiImage)
-                                    .backgroundThumbnail()
-                                                .aspectRatio(contentMode: .fill) // Vyplní celý čtverec
-                                                .frame(width: geometry.size.width, height: geometry.size.width) // Zajistí čtvercovou velikost
-                                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                                .onTapGesture { setBG(index: -1) }
-                                                .overlay {
-                                                    RoundedRectangle(cornerRadius: 10)
-                                                        .stroke(style: .init(lineWidth: (bgIndex == -1 && remoteBackgroundID.isEmpty) ? 4 : 0))
-                                                        .fill(Color.gustavVolt)
-                                                        .animation(.easeInOut, value: bgIndex)
-                                                }
-                                        }
-                                        .aspectRatio(1, contentMode: .fit) // Zachová poměr 1:1, takže bude čtverec
+                // Vlastní fotka má index -1.
+                ForEach(customImage, id: \.id) { imageData in
+                    if let uiImage = UIImage(data: imageData.image) {
+                        BackgroundThumbnail(
+                            image: Image(uiImage: uiImage),
+                            isSelected: bgIndex == -1 && remoteBackgroundID.isEmpty
+                        ) {
+                            setBG(index: -1)
                         }
                     }
-                    
                 }
                 PhotosPicker(selection: $selectedPhoto) {
                     RoundedRectangle(cornerRadius: 10)
@@ -103,29 +78,7 @@ struct BackgroundSelectorView: View {
                 }
             }
         }
-        .toolbar {toolbar}
-    }
-    
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        if #available(iOS 26, *){
-            ToolbarItem(placement: .title) {
-                HStack {
-                    Text("BACKGROUND_TAB")
-                        .font(.settingsNavbarTitle)
-                }
-                .padding(.vertical)
-            }
-        } else {
-            // Fallback to earlier versions
-            ToolbarItem(placement: .title) {
-                HStack {
-                    Text("BACKGROUND_TAB")
-                        .font(.settingsNavbarTitle)
-                }
-                .padding(.vertical)
-            }
-        }
+        .settingsTitle("BACKGROUND_TAB")
     }
     
     func setBG(index: Int) {
@@ -140,5 +93,33 @@ struct BackgroundSelectorView: View {
         self.bgIndex = AppConfig.defaultBackgroundIndex
         self.remoteBackgroundID = id
         Analytics.settingChanged("background", value: "remote")
+    }
+}
+
+/// Čtvercový náhled pozadí. Vybraný má rámeček.
+private struct BackgroundThumbnail: View {
+    let image: Image
+    let isSelected: Bool
+    let action: () -> Void
+
+    private let shape = RoundedRectangle(cornerRadius: 10)
+
+    var body: some View {
+        // Čtverec určuje podklad, obrázek ho jen vyplní – fotka s jiným
+        // poměrem stran by jinak buňku mřížky roztáhla.
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                image.backgroundThumbnail()
+            }
+            .clipShape(shape)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: action)
+            .overlay {
+                shape
+                    .stroke(Color.gustavVolt, lineWidth: isSelected ? 4 : 0)
+                    .animation(.easeInOut, value: isSelected)
+            }
+            .padding(1)
     }
 }

@@ -237,15 +237,6 @@ class TimerViewModel: ObservableObject {
         engine.skipCurrentInterval()
     }
 
-    // MARK: - Progress bar
-
-    func getProgressBarWidth(geometry: GeometryProxy, timerIndex: Int) -> Double {
-        guard timerIndex < timers.count else { return 0.0 }
-        let totalWidth = geometry.size.width - (CGFloat(timers.count - 1) * 5)
-        let ratio = engine.timeRatio(for: timerIndex)
-        return totalWidth * ratio
-    }
-
     // MARK: - Formátování času
 
     func formattedCurrentTime(timeDisplayFormat: TimeDisplayFormat) -> String {

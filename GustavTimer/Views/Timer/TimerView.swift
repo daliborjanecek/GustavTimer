@@ -118,7 +118,11 @@ private extension TimerView {
     
     var portraitTimerView: some View {
         VStack {
-            ProgressArrayView(viewModel: viewModel)
+            ProgressArrayView(
+                intervals: viewModel.timers,
+                activeIndex: viewModel.activeTimerIndex,
+                progress: viewModel.progress
+            )
                 .padding(.top)
             
             headerSection
@@ -251,25 +255,19 @@ private extension TimerView {
         } else {
             let isBeforeFirstStart = !viewModel.isTimerRunning && viewModel.finishedRounds == 0
             ControlButton(
-                action: { viewModel.startStopTimer(input: .button) },
                 label: isBeforeFirstStart && viewModel.hasCountdown ? "COUNTDOWN" : (viewModel.isTimerRunning ? "STOP" : "START"),
                 description: orientation.isLandscape ? nil : startButtonDescription.map { LocalizedStringKey($0) },
                 color: viewModel.isTimerRunning ? .gustavPink : .gustavVolt,
-                buttonType: .constant(.text)
+                action: { viewModel.startStopTimer(input: .button) }
             )
         }
     }
     
     var secondaryButton: some View {
         ControlButton(
-            action: viewModel.isTimerRunning ? viewModel.skipLap : viewModel.resetTimer,
-            riveAnimation: "",
+            icon: viewModel.isTimerRunning ? .skip : .reset,
             color: .gustavNeutral,
-            buttonType: .init(get: {
-                viewModel.isTimerRunning ? .skip : .reset
-            }, set: { _ in
-                //
-            })
+            action: viewModel.isTimerRunning ? viewModel.skipLap : viewModel.resetTimer
         )
     }
     

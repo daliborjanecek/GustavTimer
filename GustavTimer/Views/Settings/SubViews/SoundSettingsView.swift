@@ -38,45 +38,18 @@ struct SoundSettingsView: View {
             if selectedSound != nil {
                 SettingsSection(label: "SELECT_SOUND") {
                     ForEach(AppConfig.soundThemes, id: \.id) { soundTheme in
-                        GustavSelectableListRow(selected: selectedSound == soundTheme) {
-                            Button {
-                                setSelectedSound(soundTheme)
-                                SoundManager.instance.playSound(soundModel: soundTheme)
-                            } label: {
-                                HStack {
-                                    Text(soundTheme.title)
-                                    Spacer()
-                                }
-                            }
+                        SelectableOptionRow(selected: selectedSound == soundTheme) {
+                            setSelectedSound(soundTheme)
+                            SoundManager.instance.playSound(soundModel: soundTheme)
+                        } label: {
+                            Text(soundTheme.title)
                         }
                     }
                 }
             }
         }
         .font(.gustavBody)
-        .toolbar{toolbar}
-    }
-    
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        if #available(iOS 26, *){
-            ToolbarItem(placement: .title) {
-                HStack {
-                    Text("SOUND")
-                        .font(.settingsNavbarTitle)
-                }
-                .padding(.vertical)
-            }
-        } else {
-            // Fallback to earlier versions
-            ToolbarItem(placement: .title) {
-                HStack {
-                    Text("SOUND")
-                        .font(.settingsNavbarTitle)
-                }
-                .padding(.vertical)
-            }
-        }
+        .settingsTitle("SOUND")
     }
     
     func setSelectedSound(_ sound: SoundModel) {
