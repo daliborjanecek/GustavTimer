@@ -50,24 +50,16 @@ struct TimerView: View {
             viewModel.settingsEdited(newSettings)
         }
         .onAppear {
-            // Nastavíme počáteční orientaci
             orientation = UIDevice.current.orientation
-            // Zaregistrujeme se pro notifikace o změně orientace
-            NotificationCenter.default.addObserver(
-                forName: UIDevice.orientationDidChangeNotification,
-                object: nil,
-                queue: .main) { _ in
-                    if UIDevice.current.orientation.isValidInterfaceOrientation {
-                        orientation = UIDevice.current.orientation
-                    }
-                }
         }
-        .onDisappear {
-            // Odregistrujeme notifikace
-            NotificationCenter.default.removeObserver(
-                self,
-                name: UIDevice.orientationDidChangeNotification,
-                object: nil)
+        // `onReceive` se odhlásí samo. Dřívější blokový observer se
+        // `removeObserver(self)` odregistrovat nedal a zůstával viset.
+        .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+            // Poloha „displejem nahoru/dolů“ rozložení nemění.
+            let current = UIDevice.current.orientation
+            if current.isValidInterfaceOrientation {
+                orientation = current
+            }
         }
         .onChange(of: viewModel.showingSheet) { _, newValue in
             if newValue {

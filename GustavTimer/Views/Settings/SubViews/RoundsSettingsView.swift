@@ -10,15 +10,23 @@ import GustavUICore
 
 struct RoundsSettingsView: View {
     @Binding var rounds: Int
-    @State var lastRoundOption: Int = 1
+    /// Počet kol, na který se vrátí vypnutí smyčky.
+    @State private var lastRoundOption: Int = AppConfig.roundsOptions.first ?? 1
         
     var body: some View {
         List {
             Section {
                 Toggle(isOn: .init(get: {
                     rounds == -1
-                }, set: { value in
-                    rounds = value ? -1 : lastRoundOption
+                }, set: { isLooping in
+                    if isLooping {
+                        // Zapamatovat i počet nastavený dřív, než se obrazovka
+                        // otevřela – jinak by se vypnutí smyčky vracelo na 1.
+                        if rounds != -1 { lastRoundOption = rounds }
+                        rounds = -1
+                    } else {
+                        rounds = lastRoundOption
+                    }
                 })) {
                     Text("IS_LOOPING")
                         .font(.gustavBody)

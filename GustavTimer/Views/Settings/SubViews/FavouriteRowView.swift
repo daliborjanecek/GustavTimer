@@ -51,7 +51,7 @@ struct FavouriteRowView: View {
                             }
                         }
                         HStack {
-                            Text(intervalName)
+                            timerName
                                 .font(isMinimized ? .savedRowTimerNameMinimized : .savedRowTimerName)
                                 .opacity(isMainTimer ? 0.4 : 1)
                                 .lineLimit(1)
@@ -98,12 +98,11 @@ struct FavouriteRowView: View {
 //        .padding()
     }
     
-    var intervalName: LocalizedStringKey {
-        if isMainTimer {
-            return "CURRENT_TIMER"
-        } else {
-            return LocalizedStringKey(settings.name)
-        }
+    /// Název timeru napsal uživatel, takže se vypisuje doslova. Jako
+    /// lokalizační klíč by se timer pojmenovaný „START“ zobrazil přeložený
+    /// a hvězdičky v názvu by se vykreslily jako Markdown.
+    private var timerName: Text {
+        isMainTimer ? Text("CURRENT_TIMER") : Text(verbatim: settings.name)
     }
     
     var selectedCornerRadius: CGFloat {
