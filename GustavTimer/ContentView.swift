@@ -33,7 +33,7 @@ struct ContentView: View {
             .sheet(item: $activeSheet) { sheet in
                 switch sheet {
                 case .settings:
-                    SettingsView()
+                    SettingsView(context: context)
                 case .onboarding, .whatsNew:
                     OnboardingView()
                 }

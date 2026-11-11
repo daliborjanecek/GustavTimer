@@ -5,7 +5,7 @@
 //  Created by Dalibor Janeček on 10.11.2026.
 //
 //  Jediné místo pro práci s oblíbenými timery – načtení, uložení, uložení
-//  změn, vrácení a odebrání.
+//  změn, vrácení, odebrání a pořadí.
 //
 //  Model: hlavní timer (`order == 0`) je pracovní kopie. Když vznikne
 //  z oblíbeného, pamatuje si ho v `sourceID`. Podle toho se pozná, jestli
@@ -162,6 +162,17 @@ enum FavouriteTimers {
             main.sourceID = nil
         }
         context.delete(favourite)
+        save(context)
+    }
+
+    /// Uloží nové pořadí oblíbených, jak jdou v seznamu odshora.
+    ///
+    /// Seznam se řadí podle `order` sestupně a `0` patří hlavnímu timeru,
+    /// takže první dostane nejvyšší číslo a poslední `1`.
+    static func reorder(_ favourites: [TimerData], in context: ModelContext) {
+        for (index, favourite) in favourites.enumerated() {
+            favourite.order = favourites.count - index
+        }
         save(context)
     }
 

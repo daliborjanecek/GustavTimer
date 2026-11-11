@@ -134,7 +134,7 @@ Díky tomu je stejný engine použitelný i na **Apple Watch** (kód je na to p�
 
 - **`TimerView`** zobrazuje stav a deleguje akce na **`TimerViewModel`**.
 - **`TimerViewModel`** je iOS-specifická obálka nad `TimerEngine` – přidává SwiftData persistenci, odkazy a analytiku. Vibrace a zvuky pouští přes `TimerFeedbackPlayer`. O vzhledu view neví nic: animace ikon ani sheety neřídí, jen dává vědět počítadly `intervalPulse` / `roundPulse` a callbackem `onPresentSheet`. Přeposílá `engine.objectWillChange` do vlastního `objectWillChange`, takže SwiftUI se překresluje na změny enginu.
-- **`SettingsView`** edituje data přímo v SwiftData (`TimerData` s `order == 0`). Po zavření Settings `TimerView` znovu načte data a resetuje timer.
+- **`SettingsView`** a **`FavouritesView`** jen kreslí. Úpravy aktivního timeru (`TimerData` s `order == 0`), ukládání do oblíbených a analytiku dělá sdílený **`SettingsViewModel`**; limity úprav (počet intervalů, délky názvů) hlídá model v `TimerData+Editing.swift`. Seznam oblíbených si views drží přes `@Query` a ViewModelu ho předávají. Po zavření Settings `TimerView` znovu načte data a resetuje timer.
 
 ---
 
@@ -622,7 +622,7 @@ Share sheet (`TimerShareSheet`) zapíše zvolený kanál do odesílaného odkazu
 
 | Signál | Kdy | Parametry |
 |---|---|---|
-| `settings.changed` | Změna volby | `setting` (`haptics`, `countdown`, `ticking`, `rounds`, `sound_enabled`, `background` – index / `custom` / `remote`, `interval_added`, `interval_removed`, `favourite` – `renamed` / `removed` z menu hvězdičky), `value` |
+| `settings.changed` | Změna volby | `setting` (`haptics`, `countdown`, `ticking`, `rounds`, `sound_enabled`, `background` – index / `custom` / `remote`, `interval_added`, `interval_removed`, `favourite` – `renamed` / `removed`, odebrání z menu hvězdičky i swipem v seznamu oblíbených), `value` |
 | `timer.sound_selected` | Výběr zvuku | `sound` |
 | `settings.display_format_changed` | Swipe formátu odpočtu | `orientation`, `format` |
 | `link.opened` | Odkaz z nastavení | `target` (`rate`, `weights`, `instagram`, `youtube`, `banner`, `remote_link`); u banneru `banner_source` (`builtin` / `remote`), `banner_id`, `banner_type`; u odkazu z API `link_id` |
@@ -741,6 +741,9 @@ GustavTimer/
 │
 ├── Models/
 │   ├── TimerData.swift           # @Model – časovač (SwiftData)
+│   ├── TimerData+Editing.swift   # Úpravy názvu a intervalů s limity
+│   ├── FavouriteTimers.swift     # Načtení, uložení a pořadí oblíbených
+│   ├── PreviewData.swift         # Ukázková data pro Xcode Preview (v paměti)
 │   ├── CustomImageModel.swift    # @Model – vlastní pozadí
 │   ├── PredefinedTimer.swift     # Enum presetů (TimerSettings) + tipy
 │   ├── BackgroundImageModel.swift
@@ -769,6 +772,7 @@ GustavTimer/
 │   │       └── BackgroundImageView.swift
 │   ├── Settings/
 │   │   ├── SettingsView.swift
+│   │   ├── SettingsViewModel.swift  # Logika nastavení a oblíbených
 │   │   ├── FavouritesView.swift
 │   │   └── SubViews/
 │   │       ├── IntervalRowView.swift
