@@ -123,3 +123,10 @@ private struct BackgroundThumbnail: View {
             .padding(1)
     }
 }
+
+#Preview {
+    NavigationStack {
+        BackgroundSelectorView()
+    }
+    .modelContainer(PreviewData.container)
+}

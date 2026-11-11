@@ -82,9 +82,7 @@ struct ContentView: View {
     }
 }
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
-            .modelContainer(for: [CustomImageModel.self, TimerData.self])
-    }
+#Preview {
+    ContentView()
+        .modelContainer(PreviewData.container)
 }

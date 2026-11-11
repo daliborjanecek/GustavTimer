@@ -57,7 +57,8 @@ extension TickingMode {
 }
 
 #Preview {
+    @Previewable @State var ticking = TickingMode.finalSeconds
     NavigationStack {
-        TickingSettingsView(ticking: .constant(.finalSeconds))
+        TickingSettingsView(ticking: $ticking)
     }
 }

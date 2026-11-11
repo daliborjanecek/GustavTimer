@@ -56,5 +56,8 @@ struct RoundsSettingsView: View {
 }
 
 #Preview {
-    RoundsSettingsView(rounds: .constant(3))
+    @Previewable @State var rounds = 3
+    NavigationStack {
+        RoundsSettingsView(rounds: $rounds)
+    }
 }

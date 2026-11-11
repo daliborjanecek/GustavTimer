@@ -36,3 +36,21 @@ struct SettingsSection<Content: View>: View {
         }
     }
 }
+
+#Preview {
+    List {
+        SettingsSection(label: "FEEDBACK", footer: "FEEDBACK_DESCRIPTION") {
+            Text(verbatim: "Nadpis i patička")
+        }
+        SettingsSection(label: "APPEARANCE") {
+            Text(verbatim: "Jen nadpis")
+        }
+        SettingsSection(footer: "FEEDBACK_DESCRIPTION") {
+            Text(verbatim: "Jen patička")
+        }
+        SettingsSection {
+            Text(verbatim: "Bez nadpisu a patičky")
+        }
+    }
+    .font(.gustavBody)
+}

@@ -135,7 +135,8 @@ struct FavouriteRowView: View {
             FavouriteRowView(settings: whistleTimer, selected: true, tip: "Box breathing, soustřeď se výhradně na dech (4-4-4-4: nádech, zadržení, výdech, zadržení). Kdykoli myšlenky odjedou jinam, jednoduše je vrátíš zpět k dechu.")
         }
         Section {
-            FavouriteRowView(settings: beepTimer, selected: true, isMinimized: true)
+            FavouriteRowView(settings: beepTimer, selected: true, isModified: true)
+            FavouriteRowView(settings: beepTimer, selected: true, isModified: true, isMinimized: true)
             FavouriteRowView(settings: whistleTimer, selected: false, isMinimized: true)
         }
         FavouriteRowView(settings: AppConfig.defaultTimer, selected: false, isMainTimer: true)

@@ -61,5 +61,8 @@ struct SoundSettingsView: View {
 }
 
 #Preview {
-    SoundSettingsView(selectedSound: .constant(AppConfig.soundThemes.first!))
+    @Previewable @State var sound: SoundModel? = .beep
+    NavigationStack {
+        SoundSettingsView(selectedSound: $sound)
+    }
 }

@@ -453,7 +453,13 @@ private struct CountdownStartButton: View {
     }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: [CustomImageModel.self, TimerData.self])
+#Preview("Timer") {
+    TimerView(activeSheet: .constant(nil))
+        .modelContainer(PreviewData.container)
+}
+
+#Preview("Tlačítko odpočtu") {
+    CountdownStartButton(countdownValue: 2, countdownDuration: 3, action: {})
+        .padding()
+        .background(.black)
 }
