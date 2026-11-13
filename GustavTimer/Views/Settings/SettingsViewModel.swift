@@ -131,6 +131,12 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    /// Je oblíbený načtený a upravený? Výběr by pak úpravy tiše zahodil,
+    /// takže se view nejdřív zeptá, jestli je uložit, nebo vrátit uložené.
+    func needsDecision(on favourite: TimerData, among favourites: [TimerData]) -> Bool {
+        isSelected(favourite) && saveState(among: favourites).isModified
+    }
+
     func select(_ favourite: TimerData, screen: TimerSelectionScreen) {
         FavouriteTimers.load(favourite, in: context)
         Analytics.favouriteSelected(favourite, screen: screen)
@@ -150,9 +156,9 @@ final class SettingsViewModel: ObservableObject {
     }
 
     /// Zapíše úpravy do oblíbeného, ze kterého aktivní timer vznikl.
-    func saveChanges() {
+    func saveChanges(screen: TimerSelectionScreen = .settings) {
         FavouriteTimers.saveChanges(in: context)
-        Analytics.timerSaved(timer.settings, screen: .settings, mode: .update)
+        Analytics.timerSaved(timer.settings, screen: screen, mode: .update)
     }
 
     /// Zahodí úpravy a vrátí uložené nastavení.

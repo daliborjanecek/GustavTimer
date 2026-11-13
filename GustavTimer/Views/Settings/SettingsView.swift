@@ -25,6 +25,8 @@ struct SettingsView: View {
     @State private var showSaveAlert = false
     @State private var renamedTimerName = ""
     @State private var showRenameAlert = false
+    /// Upravený oblíbený, na který uživatel ťukl – čeká na rozhodnutí.
+    @State private var modifiedFavourite: TimerData?
     @ObservedObject private var remoteContent = RemoteContentManager.shared
     @ObservedObject private var navigator = AppNavigator.shared
     /// Obrazovky otevřené odkazem (`AppNavigator`) nebo z menu nastavení.
@@ -76,6 +78,11 @@ struct SettingsView: View {
                 guard let favourite = saveState.source else { return }
                 viewModel.rename(favourite, to: renamedTimerName)
             }
+            .modifiedFavouriteDialog(
+                favourite: $modifiedFavourite,
+                onSave: { _ in viewModel.saveChanges() },
+                onRevert: { withAnimation { viewModel.revertChanges() } }
+            )
             .toolbar { toolbar }
             .font(.gustavBody)
             .onAppear {
@@ -188,6 +195,10 @@ private extension SettingsView {
                     isMinimized: true
                 )
                 .onTapGesture {
+                    if viewModel.needsDecision(on: favourite, among: favouriteTimers) {
+                        modifiedFavourite = favourite
+                        return
+                    }
                     DispatchQueue.main.async {
                         withAnimation {
                             viewModel.select(favourite, screen: .settings)

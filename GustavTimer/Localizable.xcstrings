@@ -2128,6 +2128,42 @@
           }
         }
       }
+    },
+    "MODIFIED_FAVOURITE_TITLE" : {
+      "comment" : "Title of the dialog shown when tapping the favourite that is loaded and has unsaved edits.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timer je upravený"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timer Modified"
+          }
+        }
+      }
+    },
+    "MODIFIED_FAVOURITE_MESSAGE %@" : {
+      "comment" : "Message of that dialog; %@ is the favourite's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uložit aktuální nastavení do „%@“, nebo se vrátit k uloženému?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save the current settings to “%@”, or revert to the saved ones?"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

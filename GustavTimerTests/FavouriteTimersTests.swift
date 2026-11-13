@@ -10,6 +10,7 @@
 
 import Testing
 import Foundation
+import SwiftData
 @testable import GustavTimer
 
 private func timer(
@@ -130,5 +131,56 @@ struct PreviewDataTests {
         if case .unsaved = FavouriteTimers.state(in: context) {} else {
             Issue.record("Aktivní timer bez oblíbených má být neuložený")
         }
+    }
+}
+
+/// Ťuknutí na načtený a upravený oblíbený se nejdřív zeptá, ať se úpravy
+/// netiše nezahodí. Na jiný oblíbený se ptát netřeba.
+///
+/// Každý test má vlastní kontejner v paměti – sdílený `PreviewData.container`
+/// by si testy navzájem měnily (Swift Testing je pouští souběžně).
+@MainActor
+struct ModifiedFavouriteDecisionTests {
+
+    /// Dva oblíbené, aktivní timer načtený z prvního a upravený.
+    ///
+    /// Kontejner se vrací taky – kontext ho nedrží naživu, bez něj test spadne.
+    private func makeFixture() throws -> (
+        container: ModelContainer, context: ModelContext, viewModel: SettingsViewModel,
+        loaded: TimerData, other: TimerData
+    ) {
+        let container = try ModelContainer(
+            for: TimerData.self, CustomImageModel.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+        let loaded = TimerData(order: 2, settings: PredefinedTimer.tabata.settings)
+        let other = TimerData(order: 1, settings: PredefinedTimer.hiit.settings)
+        context.insert(loaded)
+        context.insert(other)
+        FavouriteTimers.load(loaded, in: context)
+        TimerData.mainTimer(in: context).rounds = 6
+        return (container, context, SettingsViewModel(context: context), loaded, other)
+    }
+
+    @Test func asksOnlyForLoadedModifiedFavourite() throws {
+        let f = try makeFixture()
+        let favourites = FavouriteTimers.favourites(in: f.context)
+
+        #expect(f.viewModel.needsDecision(on: f.loaded, among: favourites))
+        #expect(!f.viewModel.needsDecision(on: f.other, among: favourites))
+    }
+
+    @Test func doesNotAskAfterRevertOrSave() throws {
+        let f = try makeFixture()
+        let favourites = FavouriteTimers.favourites(in: f.context)
+
+        FavouriteTimers.revert(in: f.context)
+        #expect(!f.viewModel.needsDecision(on: f.loaded, among: favourites))
+
+        f.viewModel.timer.rounds = 7
+        #expect(f.viewModel.needsDecision(on: f.loaded, among: favourites))
+        FavouriteTimers.saveChanges(in: f.context)
+        #expect(!f.viewModel.needsDecision(on: f.loaded, among: favourites))
     }
 }

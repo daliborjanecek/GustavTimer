@@ -73,3 +73,32 @@ extension View {
         }
     }
 }
+
+// MARK: - Dialog pro upravený oblíbený
+
+extension View {
+    /// Ťuknutí na oblíbený, který je načtený a upravený, by úpravy tiše zahodilo.
+    /// Dialog se zeptá, jestli aktuální nastavení do oblíbeného uložit, nebo se
+    /// vrátit k uloženému. Zrušení nechá všechno, jak je.
+    func modifiedFavouriteDialog(
+        favourite: Binding<TimerData?>,
+        onSave: @escaping (TimerData) -> Void,
+        onRevert: @escaping () -> Void
+    ) -> some View {
+        confirmationDialog(
+            "MODIFIED_FAVOURITE_TITLE",
+            isPresented: Binding(
+                get: { favourite.wrappedValue != nil },
+                set: { if !$0 { favourite.wrappedValue = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: favourite.wrappedValue
+        ) { saved in
+            Button("SAVE_CHANGES_TO \(saved.name)") { onSave(saved) }
+            Button("REVERT_TO_SAVED", role: .destructive, action: onRevert)
+            Button("CANCEL", role: .cancel) { }
+        } message: { saved in
+            Text("MODIFIED_FAVOURITE_MESSAGE \(saved.name)")
+        }
+    }
+}

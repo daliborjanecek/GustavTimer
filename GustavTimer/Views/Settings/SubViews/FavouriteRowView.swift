@@ -57,13 +57,7 @@ struct FavouriteRowView: View {
                                 .lineLimit(1)
                                 .padding(.trailing, 4)
 
-                            if isModified {
-                                Text("MODIFIED_BADGE")
-                                    .font(.sectionFooter)
-                                    .foregroundStyle(Color.gustavPink)
-                                    .lineLimit(1)
-                                    .fixedSize()
-                            }
+                            
                             
                             if !isMinimized {
                                 if settings.rounds == -1 {
@@ -78,12 +72,21 @@ struct FavouriteRowView: View {
                                     GustavIcon(.vibration, size: 22, color: Color.gustavLight)
                                 }
                             }
-                            
                             Spacer()
+                            if isModified && isMinimized {
+                                HStack {
+                                    Spacer()
+                                    Text("MODIFIED_BADGE")
+                                        .font(.sectionFooter)
+                                        .foregroundStyle(Color.gustavPink)
+                                        .lineLimit(1)
+                                        .fixedSize()
+                                }
+                            }
                         }
                     }
-
-                }
+                
+            }
             if let tip, !isMinimized {
                 Text(tip)
                     .multilineTextAlignment(.leading)

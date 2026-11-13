@@ -397,6 +397,7 @@ Hlavní timer (`order == 0`) je **pracovní kopie**. Načtením oblíbeného si 
 | `.modified(fav)` | nastavení se od zdroje liší, i jen zvukem, haptikou, tikáním, odpočtem nebo názvem |
 
 - *Uložit změny* zapíše nastavení do zdroje, *Vrátit uložené* ho vezme zpět, *Uložit jako nový* založí oblíbený a přepne `sourceID` na něj.
+- **Ťuknutí na načtený a upravený oblíbený** (v nastavení i v seznamu oblíbených) úpravy tiše nezahodí: `modifiedFavouriteDialog` se zeptá, jestli aktuální nastavení do oblíbeného uložit (`Uložit změny do „X“`), nebo vrátit uložené; *Zrušit* nechá všechno, jak je. Rozhoduje `SettingsViewModel.needsDecision(on:among:)`. Ťuknutí na jiný oblíbený se neptá.
 - Preset a odkaz `sourceID` vynulují. Úprava v nastavení ho nechává, takže se ukáže jako úprava.
 - Instalace z doby před `sourceID`: při startu se hlavní timer propojí s oblíbeným, který se s ním shoduje úplně (`linkLegacySource`).
 

@@ -22,6 +22,8 @@ struct FavouritesView: View {
 
     @State private var showSaveAlert = false
     @State private var newTimerName = ""
+    /// Upravený oblíbený, na který uživatel ťukl – čeká na rozhodnutí.
+    @State private var modifiedFavourite: TimerData?
     @State private var editMode: EditMode = .inactive
     /// Který ze tří tipů u presetů se ukáže – vybraný jednou za zobrazení.
     @State private var selectedTip = Int.random(in: 0...2)
@@ -43,6 +45,11 @@ struct FavouritesView: View {
         .saveTimerAlert(isPresented: $showSaveAlert, timerName: $newTimerName) {
             viewModel.saveAsNew(name: newTimerName, screen: .favourites)
         }
+        .modifiedFavouriteDialog(
+            favourite: $modifiedFavourite,
+            onSave: { _ in viewModel.saveChanges(screen: .favourites) },
+            onRevert: { withAnimation { viewModel.revertChanges() } }
+        )
     }
 
     private var savedTimers: some View {
@@ -60,7 +67,11 @@ struct FavouritesView: View {
                         isModified: selected && isModified
                     )
                     .onTapGesture {
-                        viewModel.select(favourite, screen: .favourites)
+                        if viewModel.needsDecision(on: favourite, among: favourites) {
+                            modifiedFavourite = favourite
+                        } else {
+                            viewModel.select(favourite, screen: .favourites)
+                        }
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
                         shareButton(for: favourite.settings, origin: .favourite)
