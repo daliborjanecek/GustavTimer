@@ -47,6 +47,9 @@ enum AnalyticsSignal: String {
     case externalLinkOpened = "link.opened"
     case whatsNewShown = "whatsnew.shown"
     case reviewRequested = "review.requested"
+
+    // Vzdálený obsah (API)
+    case remoteContentSync = "remotecontent.sync"
 }
 
 /// Odkud pochází nastavení, se kterým se trénink spustil.
@@ -300,6 +303,35 @@ enum Analytics {
         if let link {
             parameters["interval_pattern"] = intervalPattern(link.intervals)
             parameters["has_settings"] = boolValue(link.sound != nil)
+        }
+        return parameters
+    }
+
+    // MARK: - Vzdálený obsah (API)
+
+    /// Jeden pokus o synchronizaci s API – počet signálů = počet dotazů.
+    static func remoteContentSynced(error: Error?) {
+        send(.remoteContentSync, parameters: remoteContentSyncParameters(error: error))
+    }
+
+    /// Parametry `remotecontent.sync`: `result` (`success` / `failed`), u chyby
+    /// `error` (`http`, `schema`, `invalid_config`, `invalid_content`, `network`)
+    /// a u `http` ještě `status`.
+    static func remoteContentSyncParameters(error: Error?) -> [String: String] {
+        guard let error else { return ["result": "success"] }
+        var parameters = ["result": "failed"]
+        switch error as? RemoteContentError {
+        case .http(let status, _):
+            parameters["error"] = "http"
+            parameters["status"] = String(status)
+        case .unsupportedSchema:
+            parameters["error"] = "schema"
+        case .invalidJSON, .invalidItem:
+            parameters["error"] = "invalid_config"
+        case .invalidImage, .tooLarge:
+            parameters["error"] = "invalid_content"
+        case nil:
+            parameters["error"] = "network"
         }
         return parameters
     }

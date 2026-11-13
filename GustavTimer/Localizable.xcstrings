@@ -1395,13 +1395,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Odebrat z oblíbených"
+            "value" : "Odebrat oblíbený"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remove from Favourites"
+            "value" : "Remove Favourite"
           }
         }
       }

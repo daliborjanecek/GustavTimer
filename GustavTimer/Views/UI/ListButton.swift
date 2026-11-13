@@ -19,7 +19,6 @@ struct ListButton: View {
             if let value {
                 Text(value)
                     .foregroundColor(Color.gustavNeutral)
-                    .font(.bodyNumber)
             }
         }
         .font(.gustavBody)

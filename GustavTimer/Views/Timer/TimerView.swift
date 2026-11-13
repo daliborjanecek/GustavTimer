@@ -197,8 +197,9 @@ private extension TimerView {
     /// času a swipe mezi nimi listuje s animací jako mezi taby. Vybraná stránka
     /// se pamatuje pro každou orientaci zvlášť; první v `formats` je výchozí.
     ///
-    /// Tap spustí/zastaví timer, dvojtap přeskočí interval. Stránka zabírá celé
-    /// volné místo, takže na tapy reaguje i okolí čísla.
+    /// Tap spustí/zastaví timer, dvojtap přeskočí interval. Na tap reaguje jen
+    /// samotné číslo; swipe mezi formáty funguje v celé volné ploše. Na šířku
+    /// tapy navíc zachytává celý view (`landscapeTimerView`).
     ///
     /// Na šířku zasahuje bezpečná zóna (výřez, zaoblené rohy) do stran, takže
     /// stránkovaný view by končil před okrajem displeje a při swipu by byly
@@ -213,11 +214,13 @@ private extension TimerView {
                         .font(.timerCounter)
                         .minimumScaleFactor(0.01)
                         .foregroundColor(Color.gustavVolt)
+                        // Tap jen na samotném čísle – ne na celé volné ploše,
+                        // která by na výšku sahala k progressbaru i k tlačítkům.
+                        .contentShape(Rectangle())
+                        .playbackTaps(onTap: { startStopByTap() }, onDoubleTap: skipIfRunning)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(.leading, insets.leading)
                         .padding(.trailing, insets.trailing)
-                        .contentShape(Rectangle())
-                        .playbackTaps(onTap: { startStopByTap() }, onDoubleTap: skipIfRunning)
                         // Stránka si případně bezpečnou zónu nedopočítá znovu
                         // – odsazení výše by se jinak zdvojilo.
                         .ignoresSafeArea(edges: .horizontal)
@@ -240,6 +243,8 @@ private extension TimerView {
         .animation(.easeInOut, value: viewModel.isTimerRunning)
         .frame(maxWidth: .infinity)
         .padding()
+        .padding(.bottom, 5)
+        .padding(.horizontal, 5)
     }
     
     @ViewBuilder

@@ -97,6 +97,8 @@ private final class TestEnvironment {
     var now = date("2026-11-09T12:00:00Z")
     var language = "cs"
     var appVersion = "2.4.0"
+    /// Výsledky hlášené do analytiky, v pořadí pokusů.
+    var syncReports: [String] = []
 
     init(_ name: String) {
         directory = FileManager.default.temporaryDirectory
@@ -113,6 +115,7 @@ private final class TestEnvironment {
             fetcher: fetcher,
             now: { [unowned self] in self.now },
             language: { [unowned self] in self.language },
+            reportSync: { [unowned self] in self.syncReports.append($0 == nil ? "success" : "failed") },
             appVersion: appVersion
         )
     }
@@ -632,4 +635,20 @@ func itemsOutsideAppVersionAreHidden() async {
     let new = env.makeManager()
     #expect(new.banners.map(\.id) == ["new"])
     #expect(new.links.map(\.id) == ["all", "new"])
+}
+
+@MainActor
+@Test
+func everySyncAttemptIsReportedOnce() async {
+    let env = TestEnvironment("reports")
+    let manager = env.makeManager()
+
+    // Síť nic nevrací, pokus selže.
+    #expect(!(await manager.sync()))
+    env.serve(json())
+    #expect(await manager.sync())
+    env.serve(Data("{ broken".utf8))
+    #expect(!(await manager.sync()))
+
+    #expect(env.syncReports == ["failed", "success", "failed"])
 }

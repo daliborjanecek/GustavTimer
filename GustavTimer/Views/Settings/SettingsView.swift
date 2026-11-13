@@ -172,7 +172,7 @@ private extension SettingsView {
             NavigationLink {
                 RoundsSettingsView(rounds: setting(\.rounds, tracking: "rounds"))
             } label: {
-                ListButton(name: "ROUNDS", value: "\(timer.rounds == -1 ? "LOOP" : String(timer.rounds))")
+                ListButton(name: "ROUNDS", value: "\(timer.rounds == -1 ? "LOOP".localized : String(timer.rounds))")
             }
         }
     }

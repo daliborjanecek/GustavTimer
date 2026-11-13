@@ -178,3 +178,21 @@ func acquisitionClosedForExistingUser() throws {
 
     #expect(!AnalyticsAcquisition.isEligible(defaults: defaults, now: now))
 }
+
+// MARK: - Vzdálený obsah (API)
+
+@Test
+func remoteContentSyncParametersDescribeOutcome() {
+    #expect(Analytics.remoteContentSyncParameters(error: nil) == ["result": "success"])
+
+    #expect(Analytics.remoteContentSyncParameters(error: RemoteContentError.http(status: 503, url: "x"))
+        == ["result": "failed", "error": "http", "status": "503"])
+    #expect(Analytics.remoteContentSyncParameters(error: RemoteContentError.unsupportedSchema(2))
+        == ["result": "failed", "error": "schema"])
+    #expect(Analytics.remoteContentSyncParameters(error: RemoteContentError.invalidJSON("x"))["error"] == "invalid_config")
+    #expect(Analytics.remoteContentSyncParameters(error: RemoteContentError.invalidItem("x"))["error"] == "invalid_config")
+    #expect(Analytics.remoteContentSyncParameters(error: RemoteContentError.tooLarge("x"))["error"] == "invalid_content")
+    #expect(Analytics.remoteContentSyncParameters(error: RemoteContentError.invalidImage("x"))["error"] == "invalid_content")
+    #expect(Analytics.remoteContentSyncParameters(error: URLError(.notConnectedToInternet))
+        == ["result": "failed", "error": "network"])
+}

@@ -73,6 +73,8 @@ final class RemoteContentManager: ObservableObject {
     private let fetcher: RemoteContentFetching
     private let now: () -> Date
     private let language: () -> String
+    /// Hlášení výsledku synchronizace do analytiky. Za chybu se předává `Error`, za úspěch `nil`.
+    private let reportSync: (Error?) -> Void
     /// Verze aplikace pro `minAppVersion` / `maxAppVersion`.
     let appVersion: String
     private let imageCache = NSCache<NSString, UIImage>()
@@ -85,6 +87,7 @@ final class RemoteContentManager: ObservableObject {
         fetcher: RemoteContentFetching = URLSessionRemoteContentFetcher(),
         now: @escaping () -> Date = { Date() },
         language: @escaping () -> String = { RemoteContentLanguage.current },
+        reportSync: @escaping (Error?) -> Void = { Analytics.remoteContentSynced(error: $0) },
         appVersion: String = RemoteContentVersion.current
     ) {
         self.endpoint = endpoint
@@ -93,6 +96,7 @@ final class RemoteContentManager: ObservableObject {
         self.fetcher = fetcher
         self.now = now
         self.language = language
+        self.reportSync = reportSync
         self.appVersion = appVersion
         self.referenceDate = now()
         self.config = loadStoredConfig()
@@ -222,10 +226,12 @@ final class RemoteContentManager: ObservableObject {
 
             defaults.set(now().timeIntervalSince1970, forKey: AppPreferences.Key.remoteContentLastSuccess)
             recordAttempt(error: nil)
+            reportSync(nil)
             refresh()
             return true
         } catch {
             recordAttempt(error: error)
+            reportSync(error)
             return false
         }
     }
