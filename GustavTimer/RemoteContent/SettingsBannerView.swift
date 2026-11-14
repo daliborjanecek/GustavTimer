@@ -58,6 +58,7 @@ enum SettingsBannerItem: Identifiable {
         }
     }
 
+    @MainActor
     func open() {
         switch self {
         case .remote(let item):
