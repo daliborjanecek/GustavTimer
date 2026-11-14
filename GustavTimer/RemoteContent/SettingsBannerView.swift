@@ -174,9 +174,11 @@ struct SettingsBannerRow: View {
             Section {
                 Color.clear
                     .frame(height: height)
-                    .overlay(alignment: .bottomLeading) {
+                    // Vpravo dole, odsazená od kraje karty stejně jako
+                    // nadpisy sekcí („Název timeru“).
+                    .overlay(alignment: .bottomTrailing) {
                         BannerTypeIcon(type: item.type)
-                            .padding(.leading, 4)
+                            .padding(.trailing, 20)
                             .padding(.bottom, 8)
                     }
                     .contentShape(Rectangle())
