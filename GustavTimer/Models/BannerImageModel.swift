@@ -11,6 +11,9 @@ struct BannerImageModel: Identifiable {
     let id = UUID()
     let imageResource: ImageResource
     let urlString: String
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey
+    let buttonLabel: LocalizedStringKey
     
     func getImage() -> Image {
         return Image(imageResource)
