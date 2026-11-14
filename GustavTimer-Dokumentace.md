@@ -345,7 +345,7 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 
 | Sekce | Obsah |
 |---|---|
-| **Banner** | `SettingsBannerView`: obrázek přes celou šířku až k hornímu okraji (pod lištou), spodkem rozpuštěný do pozadí seznamu; posouvá se s obsahem a při přetažení dolů se natáhne. Kreslí ho `SettingsBannerBackground` za seznamem, místo, ťuknutí a swipe drží průhledný první řádek `SettingsBannerRow`. Platné bannery z API (víc = automatické přepínání po 5 s a swipe), jinak náhodný vestavěný obrázek z výzvy (CHALLENGE) → YouTube video. Viz [[#21 · Vzdálený obsah (API)]] |
+| **Banner** | `SettingsBannerView`: obrázek přes celou šířku až k hornímu okraji (pod lištou), spodkem rozpuštěný do pozadí seznamu; posouvá se s obsahem a při přetažení dolů se natáhne. Kreslí ho `SettingsBannerBackground` za seznamem, místo, ťuknutí a swipe drží průhledný první řádek `SettingsBannerRow`. Platné bannery z API (víc = automatické přepínání po 10 s a swipe), jinak náhodný vestavěný obrázek z výzvy (CHALLENGE) → YouTube video. Viz [[#21 · Vzdálený obsah (API)]] |
 | **Intervaly** | Editovatelný seznam intervalů (`IntervalRowView`): název + hodnota, drag-to-reorder, swipe-to-delete, „+ Add interval". Footer ukazuje souhrn (délka kola, příp. celkový čas) |
 | **Rounds** | `NavigationLink` → `RoundsSettingsView` (smyčka / 1–31 kol) |
 | **Favourites** | Náhled posledních 3 oblíbených + odkaz na všechny |

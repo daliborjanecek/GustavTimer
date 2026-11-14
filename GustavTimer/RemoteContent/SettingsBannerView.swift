@@ -87,20 +87,28 @@ enum SettingsBannerItem: Identifiable {
 // MARK: - Rozměry
 
 enum SettingsBannerLayout {
-    /// Výška obrázku vůči šířce obrazovky (včetně části pod lištou).
-    static let heightRatio: CGFloat = 3 / 4
-    /// O kolik první sekce seznamu zajede do rozpuštěného spodku obrázku.
-    static let overlap: CGFloat = 48
+    /// Kde začíná obsah seznamu (pod průhledným řádkem), vůči šířce
+    /// obrazovky a měřeno od horního okraje.
+    static let listStartRatio: CGFloat = 3 / 4
+    static let listStartAdjustment: CGFloat = -48
+    /// Jak daleko pod začátek seznamu obrázek sahá – přes mezeru mezi
+    /// sekcemi až k nadpisu „Název timeru“.
+    static let reachBelowListStart: CGFloat = 110
     /// Jak dlouho zůstane banner na očích, než přijde další.
-    static let autoAdvanceInterval: Duration = .seconds(5)
+    static let autoAdvanceInterval: Duration = .seconds(10)
 
-    static func height(forWidth width: CGFloat) -> CGFloat {
-        (width * heightRatio).rounded()
+    static func listStart(forWidth width: CGFloat) -> CGFloat {
+        (width * listStartRatio + listStartAdjustment).rounded()
     }
 
-    /// Výška průhledného řádku – obrázek bez části pod lištou a bez překryvu.
+    /// Výška obrázku v klidu včetně části pod lištou.
+    static func height(forWidth width: CGFloat) -> CGFloat {
+        listStart(forWidth: width) + reachBelowListStart
+    }
+
+    /// Výška průhledného řádku – od spodku lišty po začátek seznamu.
     static func rowHeight(forWidth width: CGFloat, topInset: CGFloat) -> CGFloat {
-        max(height(forWidth: width) - topInset - overlap, 0)
+        max(listStart(forWidth: width) - topInset, 0)
     }
 }
 
@@ -136,7 +144,9 @@ struct SettingsBannerBackground: View {
                     stops: [
                         .init(color: .black.opacity(0.35), location: 0),
                         .init(color: .black.opacity(0), location: 0.3),
-                        .init(color: Color(.systemGroupedBackground).opacity(0), location: 0.55),
+                        // Pozvolné rozpuštění přes celou spodní polovinu.
+                        .init(color: Color(.systemGroupedBackground).opacity(0), location: 0.35),
+                        .init(color: Color(.systemGroupedBackground).opacity(0.55), location: 0.7),
                         .init(color: Color(.systemGroupedBackground), location: 1)
                     ],
                     startPoint: .top,
