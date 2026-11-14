@@ -61,14 +61,9 @@ struct AppConfig {
     
     static let bannerName: LocalizedStringKey = "CHALLENGE"
     static let bannerImages: [BannerImageModel] = [
-        // v 2.4.1
-        BannerImageModel(
-            imageResource: .gustavChallenge,
-            urlString: "https://www.youtube.com/playlist?list=PLi2Zd-0ICmgIoaWudLzSF8Jt5VKAWSvdR",
-            title: "BANNER_CHALLENGE_TITLE",
-            subtitle: "BANNER_CHALLENGE_SUBTITLE",
-            buttonLabel: "BANNER_CHALLENGE_BUTTON"
-        )
+        // v 2.4.0
+        BannerImageModel(imageResource: .gustavChallenge, urlString: "https://www.youtube.com/playlist?list=PLi2Zd-0ICmgIoaWudLzSF8Jt5VKAWSvdR")
+        
     ]
     
     /// `order` hlavního (aktivního) timeru. Ostatní hodnoty: > 0 uložené

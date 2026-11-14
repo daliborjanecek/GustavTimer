@@ -35,6 +35,15 @@ struct SettingsView: View {
     @State private var showDebugMenu = false
     #endif
 
+    // Banner nahoře – viz `SettingsBannerView.swift`.
+    /// Vestavěný banner vybraný jednou za otevření, ať se při překreslení nemění.
+    @State private var builtInBanner = AppConfig.bannerImages.randomElement()
+    @State private var bannerSelection = 0
+    @State private var screenWidth: CGFloat = 0
+    /// Horní okraj obsahu seznamu (stavový řádek + lišta).
+    @State private var topInset: CGFloat = 0
+    @State private var scrollOffset: CGFloat = 0
+
     init(context: ModelContext) {
         _viewModel = StateObject(wrappedValue: SettingsViewModel(context: context))
     }
@@ -52,10 +61,18 @@ struct SettingsView: View {
         viewModel.saveState(among: favouriteTimers)
     }
 
+    private var banners: [SettingsBannerItem] {
+        SettingsBannerItem.current(remote: remoteContent.banners, builtIn: builtInBanner)
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             List {
-                SettingsBannerView()
+                SettingsBannerRow(
+                    banners: banners,
+                    selection: $bannerSelection,
+                    height: SettingsBannerLayout.rowHeight(forWidth: screenWidth, topInset: topInset)
+                )
                 timerNameView
                 intervalsView
                 roundsView
@@ -68,6 +85,24 @@ struct SettingsView: View {
                 #endif
             }
             .listSectionSpacing(24)
+            .scrollContentBackground(.hidden)
+            .onScrollGeometryChange(for: ScrollMetrics.self) { geometry in
+                ScrollMetrics(offset: geometry.contentOffset.y + geometry.contentInsets.top,
+                              topInset: geometry.contentInsets.top)
+            } action: { _, metrics in
+                scrollOffset = metrics.offset
+                topInset = metrics.topInset
+            }
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { screenWidth = $0 }
+            .background(alignment: .top) {
+                SettingsBannerBackground(
+                    banners: banners,
+                    selection: bannerSelection,
+                    height: SettingsBannerLayout.height(forWidth: screenWidth),
+                    scrollOffset: scrollOffset
+                )
+            }
+            .background(Color(.systemGroupedBackground))
             .scrollDismissesKeyboard(.immediately)
             .background(DismissKeyboardOnTap())
             .environment(\.editMode, $editMode)
@@ -443,6 +478,12 @@ private extension SettingsView {
         guard let screen = navigator.consume() else { return }
         path = [screen]
     }
+}
+
+/// Posun a horní okraj seznamu pro obrázek banneru.
+private struct ScrollMetrics: Equatable {
+    var offset: CGFloat
+    var topInset: CGFloat
 }
 
 private struct DismissKeyboardOnTap: UIViewRepresentable {

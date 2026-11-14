@@ -345,7 +345,7 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 
 | Sekce | Obsah |
 |---|---|
-| **Banner** | `SettingsBannerView`: platné bannery z API (víc = `TabView` s automatickým přepínáním), jinak náhodný vestavěný banner výzvy (CHALLENGE) → YouTube video. Banner s nadpisem je velká karta `HeroBannerCard` (fotka přechází do tmavé plochy, nadpis, popis a fialovo-modré pilulkové tlačítko), banner bez textu jen obrázek 16:9. Viz [[#21 · Vzdálený obsah (API)]] |
+| **Banner** | `SettingsBannerView`: obrázek přes celou šířku až k hornímu okraji (pod lištou), spodkem rozpuštěný do pozadí seznamu; posouvá se s obsahem a při přetažení dolů se natáhne. Kreslí ho `SettingsBannerBackground` za seznamem, místo, ťuknutí a swipe drží průhledný první řádek `SettingsBannerRow`. Platné bannery z API (víc = automatické přepínání po 5 s a swipe), jinak náhodný vestavěný obrázek z výzvy (CHALLENGE) → YouTube video. Viz [[#21 · Vzdálený obsah (API)]] |
 | **Intervaly** | Editovatelný seznam intervalů (`IntervalRowView`): název + hodnota, drag-to-reorder, swipe-to-delete, „+ Add interval". Footer ukazuje souhrn (délka kola, příp. celkový čas) |
 | **Rounds** | `NavigationLink` → `RoundsSettingsView` (smyčka / 1–31 kol) |
 | **Favourites** | Náhled posledních 3 oblíbených + odkaz na všechny |
@@ -847,7 +847,7 @@ Bannery, odkazy v nastavení a stažená pozadí se spravují na webu. Aplikace 
 
 ```json
 { "schemaVersion": 1, "generatedAt": "2026-11-09T17:30:00Z",
-  "banners":     [{ "id", "imageUrl", "url", "type", "title", "subtitle", "buttonLabel", "language", "startAt", "endAt" }],
+  "banners":     [{ "id", "imageUrl", "url", "type", "language", "startAt", "endAt" }],
   "links":       [{ "id", "label", "url", "language", "startAt", "endAt" }],
   "backgrounds": [{ "id", "imageUrl", "language", "startAt", "endAt" }] }
 ```

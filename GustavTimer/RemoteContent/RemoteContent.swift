@@ -16,7 +16,6 @@
 //        "generatedAt": "2026-11-09T17:30:00Z",
 //        "banners": [{ "id": "banner_101", "imageUrl": "https://…", "url": "https://…",
 //                      "type": "timer", "language": "cs",
-//                      "title": "…", "subtitle": "…", "buttonLabel": "…",
 //                      "startAt": "2026-11-01T00:00:00Z", "endAt": null }],
 //        "links": [{ "id": "link_201", "label": "Gustav Training", "url": "https://…",
 //                    "language": null, "startAt": null, "endAt": null }],
@@ -94,11 +93,6 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
     let url: URL
     /// `nil` u typu, který tahle verze aplikace nezná – banner se zobrazí bez ikony.
     let type: RemoteBannerType?
-    /// Volitelný text banneru. S nadpisem se banner kreslí jako velká karta
-    /// s textem a tlačítkem (`SettingsBannerView`), bez něj jen jako obrázek.
-    let title: String?
-    let subtitle: String?
-    let buttonLabel: String?
     let language: String?
     let startAt: Date?
     let endAt: Date?
@@ -106,20 +100,15 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
     let maxAppVersion: String?
 
     private enum CodingKeys: String, CodingKey {
-        case id, imageUrl, url, type, title, subtitle, buttonLabel, language, startAt, endAt, minAppVersion, maxAppVersion
+        case id, imageUrl, url, type, language, startAt, endAt, minAppVersion, maxAppVersion
     }
 
-    init(id: String, imageUrl: URL, url: URL, type: RemoteBannerType?,
-         title: String? = nil, subtitle: String? = nil, buttonLabel: String? = nil,
-         language: String? = nil, startAt: Date? = nil, endAt: Date? = nil,
+    init(id: String, imageUrl: URL, url: URL, type: RemoteBannerType?, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil,
          minAppVersion: String? = nil, maxAppVersion: String? = nil) {
         self.id = id
         self.imageUrl = imageUrl
         self.url = url
         self.type = type
-        self.title = RemoteBanner.normalizeText(title)
-        self.subtitle = RemoteBanner.normalizeText(subtitle)
-        self.buttonLabel = RemoteBanner.normalizeText(buttonLabel)
         self.language = RemoteContentLanguage.normalize(language)
         self.startAt = startAt
         self.endAt = endAt
@@ -134,10 +123,6 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
         url = try container.decode(URL.self, forKey: .url)
         type = (try container.decodeIfPresent(String.self, forKey: .type))
             .flatMap { RemoteBannerType(rawValue: $0.lowercased()) }
-        // Text je jen ozdoba – nečitelná hodnota banner neshodí, jen se nezobrazí.
-        title = Self.normalizeText((try? container.decodeIfPresent(String.self, forKey: .title)) ?? nil)
-        subtitle = Self.normalizeText((try? container.decodeIfPresent(String.self, forKey: .subtitle)) ?? nil)
-        buttonLabel = Self.normalizeText((try? container.decodeIfPresent(String.self, forKey: .buttonLabel)) ?? nil)
         language = RemoteContentLanguage.normalize(try container.decodeIfPresent(String.self, forKey: .language))
         startAt = try container.decodeIfPresent(Date.self, forKey: .startAt)
         endAt = try container.decodeIfPresent(Date.self, forKey: .endAt)
@@ -152,12 +137,6 @@ extension RemoteBanner {
     /// Smí a umí aplikace banner otevřít? Viz `RemoteContentPolicy.isOpenable`.
     /// Jinak se banner nezobrazí.
     var isSupported: Bool { RemoteContentPolicy.isOpenable(url) }
-
-    /// Prázdný text (i jen z mezer) se bere jako chybějící.
-    static func normalizeText(_ text: String?) -> String? {
-        guard let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
-        return trimmed
-    }
 }
 
 struct RemoteLink: RemoteContentItem, Decodable, Equatable, Identifiable {
