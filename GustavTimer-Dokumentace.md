@@ -2,9 +2,9 @@
 title: GustavTimer – Dokumentace aplikace
 tags: [ios, swiftui, dokumentace, gustav, timer]
 platforma: iOS
-verze_aplikace: 2.3.0
+verze_aplikace: 2.4.0
 build_version: "201"
-aktualizovano: 2026-05-30
+aktualizovano: 2026-11-16
 ---
 
 # GustavTimer 🏋️
@@ -632,6 +632,8 @@ Share sheet (`TimerShareSheet`) zapíše zvolený kanál do odesílaného odkazu
 | `TelemetryDeck.Activation.onboardingCompleted` | Zavření onboardingu (tlačítkem i swipem) | – |
 | `TelemetryDeck.Error.occurred` | `link.invalid` (odkaz bez platného intervalu), `timer.persist_failed` (selhalo uložení SwiftData) | `TelemetryDeck.Error.id`, kategorie |
 
+> Export compliance: `Info.plist` deklaruje `ITSAppUsesNonExemptEncryption = NO`, takže App Store Connect se u buildů na šifrování neptá. Aplikace používá jen HTTPS přes `URLSession` a `SHA256` z CryptoKit na název souboru (hash), žádnou vlastní šifru. Při přidání jiného šifrování se hodnota musí přehodnotit.
+>
 > Privacy manifest (`PrivacyInfo.xcprivacy`) deklaruje pouze přístup k `UserDefaults` (důvod `CA92.1`). Sběr dat (Product Interaction, Device ID, nepropojené s identitou, bez trackingu) deklaruje vlastní manifest SDK TelemetryDeck, Xcode ho do privacy reportu aplikace připojí sám.
 
 ---
@@ -737,7 +739,7 @@ GustavTimer/
 ├── AppConfig.swift               # Konstanty, presety, URL, pozadí
 ├── AppPreferences.swift          # Nastavení zařízení (@AppStorage) + klíče UserDefaults
 ├── SettingsMigration.swift       # Jednorázový přesun nastavení do SwiftData
-├── Info.plist                    # URL scheme
+├── Info.plist                    # URL scheme, ITSAppUsesNonExemptEncryption = NO
 ├── PrivacyInfo.xcprivacy         # Privacy manifest
 ├── Localizable.xcstrings         # Lokalizace (en, cs)
 │
@@ -780,6 +782,7 @@ GustavTimer/
 │   │   └── SubViews/
 │   │       ├── IntervalRowView.swift
 │   │       ├── RoundsSettingsView.swift
+│   │       ├── TickingSettingsView.swift  # přepínač + výběr režimu tikání
 │   │       ├── SoundSettingsView.swift
 │   │       ├── BackgroundSelectorView.swift
 │   │       ├── FavouriteRowView.swift
@@ -808,6 +811,15 @@ Shared/                            # ⭐ Čistá logika sdílitelná s watchOS
 ├── SoundModel.swift               # Enum zvuků
 ├── TimeDisplayFormat.swift        # Formát zobrazení času
 └── SharedTimerLink.swift          # Parsování a generování sdílených odkazů
+
+GustavTimerTests/                  # Swift Testing (@Suite / @Test)
+├── AnalyticsTests.swift           # Parametry signálů
+├── FavouriteTimersTests.swift     # Stav uložení, výběr, PreviewData
+├── RemoteContentTests.swift       # Vzdálený obsah (API)
+├── SharedTimerLinkTests.swift     # Parsování a generování odkazů
+├── TimerEditingTests.swift        # Úpravy názvu a intervalů s limity
+├── TimerFeedbackPlayerTests.swift # Události enginu → vibrace a zvuky
+└── WorkoutSessionTrackerTests.swift # Analytika tréninku a odkazů
 ```
 
 ---
