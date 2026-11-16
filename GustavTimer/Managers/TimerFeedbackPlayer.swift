@@ -57,7 +57,7 @@ struct TimerFeedbackPlayer {
 
     /// Zvuk přechodu. Poslední sekunda intervalu nedostane `.secondTick` –
     /// engine místo ní pošle přechod – takže při ztlumeném zvuku se tik
-    /// doplňuje tady. Přechod je „nultá“ sekunda, tiká v obou režimech tikání.
+    /// doplňuje tady. Přechod je „nultá“ sekunda, tiká ve všech režimech tikání.
     private static func transitionSound(_ settings: TimerSettings) -> [Effect] {
         if let sound = settings.sound {
             return [.sound(sound)]
@@ -67,8 +67,9 @@ struct TimerFeedbackPlayer {
 
     /// Tik, pokud ho režim tikání pro danou sekundu chce.
     ///
-    ///     .everySecond  → tiká vždy
-    ///     .finalSeconds → tiká jen při 3, 2, 1 (a na přechodu při ztlumeném zvuku)
+    ///     .everySecond      → tiká vždy
+    ///     .every10 / 30 / 60 → tiká, když zbývá násobek 10 / 30 / 60 s (a na přechodu)
+    ///     .finalSeconds     → tiká jen při 3, 2, 1 (a na přechodu při ztlumeném zvuku)
     private static func tick(_ settings: TimerSettings, remainingSeconds: Int) -> [Effect] {
         settings.ticking.shouldTick(remainingSeconds: remainingSeconds) ? [.tick] : []
     }

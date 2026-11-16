@@ -196,3 +196,59 @@ func remoteContentSyncParametersDescribeOutcome() {
     #expect(Analytics.remoteContentSyncParameters(error: URLError(.notConnectedToInternet))
         == ["result": "failed", "error": "network"])
 }
+
+// MARK: - Odkazy z nastavení
+
+@Test
+func builtinBannerParametersHaveNameButNoID() {
+    #expect(Analytics.bannerOpenedParameters(source: "builtin", name: "Gustav Challenge")
+        == ["target": "banner", "banner_source": "builtin", "banner_name": "Gustav Challenge"])
+}
+
+@Test
+func remoteBannerParametersCarryIDNameAndType() {
+    #expect(Analytics.bannerOpenedParameters(source: "remote", id: "banner_101", name: "Jarní výzva", type: "timer")
+        == ["target": "banner", "banner_source": "remote", "banner_id": "banner_101",
+            "banner_name": "Jarní výzva", "banner_type": "timer"])
+}
+
+@Test
+func bannerWithoutNameOmitsBannerName() {
+    let parameters = Analytics.bannerOpenedParameters(source: "remote", id: "banner_101", name: nil)
+    #expect(parameters["banner_name"] == nil)
+    #expect(parameters["banner_id"] == "banner_101")
+    #expect(Analytics.bannerOpenedParameters(source: "remote", id: "b", name: "   ")["banner_name"] == nil)
+}
+
+@Test
+func remoteLinkParametersCarryIDAndName() {
+    #expect(Analytics.remoteLinkOpenedParameters(id: "link_201", name: "Gustav Training")
+        == ["target": "remote_link", "link_id": "link_201", "link_name": "Gustav Training"])
+    #expect(Analytics.remoteLinkOpenedParameters(id: "link_201", name: nil)
+        == ["target": "remote_link", "link_id": "link_201"])
+}
+
+@Test
+func nameIsTrimmedAndCapped() {
+    let long = String(repeating: "x", count: 200)
+    let name = Analytics.remoteLinkOpenedParameters(id: "l", name: "  \(long) ")["link_name"]
+    #expect(name?.count == RemoteContentName.maxLength)
+}
+
+@Test
+func bannerNameComesFromAPIOrIsMissing() throws {
+    func decode(_ extra: String) throws -> RemoteBanner {
+        let json = """
+        {"id": "b1", "imageUrl": "https://www.gustavtraining.com/b.jpg", "url": "https://gustavtraining.com"\(extra)}
+        """
+        return try JSONDecoder().decode(RemoteBanner.self, from: Data(json.utf8))
+    }
+    #expect(try decode(", \"name\": \" Jarní výzva \"").name == "Jarní výzva")
+    #expect(try decode("").name == nil)
+    #expect(try decode(", \"name\": 5").name == nil)
+}
+
+@Test
+func builtinBannersHaveNames() {
+    #expect(AppConfig.bannerImages.allSatisfy { !$0.name.isEmpty })
+}

@@ -1970,6 +1970,108 @@
         }
       }
     },
+    "TICKING_EVERY_10_SECONDS" : {
+      "comment" : "Ticking option in Settings: tick when 10, 20, 30 … seconds remain in the interval.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Každých 10 sekund"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every 10 seconds"
+          }
+        }
+      }
+    },
+    "TICKING_EVERY_10_SECONDS_EXPLANATION" : {
+      "comment" : "Explanation below the ticking options for ‘every 10 seconds’.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tik zazní každých 10 sekund: když do konce intervalu zbývá 10, 20, 30 … sekund."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A tick sounds every 10 seconds: when 10, 20, 30 … seconds remain in the interval."
+          }
+        }
+      }
+    },
+    "TICKING_EVERY_30_SECONDS" : {
+      "comment" : "Ticking option in Settings: tick when 30, 60, 90 … seconds remain in the interval.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Každých 30 sekund"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every 30 seconds"
+          }
+        }
+      }
+    },
+    "TICKING_EVERY_30_SECONDS_EXPLANATION" : {
+      "comment" : "Explanation below the ticking options for ‘every 30 seconds’.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tik zazní každých 30 sekund: když do konce intervalu zbývá 30, 60, 90 … sekund."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A tick sounds every 30 seconds: when 30, 60, 90 … seconds remain in the interval."
+          }
+        }
+      }
+    },
+    "TICKING_EVERY_60_SECONDS" : {
+      "comment" : "Ticking option in Settings: tick when 60, 120, 180 … seconds remain in the interval.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Každých 60 sekund"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every 60 seconds"
+          }
+        }
+      }
+    },
+    "TICKING_EVERY_60_SECONDS_EXPLANATION" : {
+      "comment" : "Explanation below the ticking options for ‘every 60 seconds’.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tik zazní každou minutu: když do konce intervalu zbývá 60, 120, 180 … sekund."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A tick sounds every minute: when 60, 120, 180 … seconds remain in the interval."
+          }
+        }
+      }
+    },
     "TICKING_EVERY_SECOND" : {
       "comment" : "Ticking option in Settings: tick on every second of the interval.",
       "localizations" : {
@@ -1987,6 +2089,23 @@
         }
       }
     },
+    "TICKING_EVERY_SECOND_EXPLANATION" : {
+      "comment" : "Explanation below the ticking options for ‘every second’.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tik zazní každou sekundu po celou dobu intervalu."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A tick sounds every second throughout the interval."
+          }
+        }
+      }
+    },
     "TICKING_FINAL_SECONDS" : {
       "comment" : "Ticking option in Settings: tick only during the last 3 seconds of the interval.",
       "localizations" : {
@@ -2000,6 +2119,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Before interval ends"
+          }
+        }
+      }
+    },
+    "TICKING_FINAL_SECONDS_EXPLANATION" : {
+      "comment" : "Explanation below the ticking options for ‘before interval ends’.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tik zazní jen v posledních třech sekundách intervalu: při 3, 2 a 1."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A tick sounds only during the last three seconds of the interval: at 3, 2 and 1."
           }
         }
       }

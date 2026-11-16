@@ -15,7 +15,7 @@
 //        "schemaVersion": 1,
 //        "generatedAt": "2026-11-09T17:30:00Z",
 //        "banners": [{ "id": "banner_101", "imageUrl": "https://…", "url": "https://…",
-//                      "type": "timer", "language": "cs",
+//                      "type": "timer", "name": "Jarní výzva", "language": "cs",
 //                      "startAt": "2026-11-01T00:00:00Z", "endAt": null }],
 //        "links": [{ "id": "link_201", "label": "Gustav Training", "url": "https://…",
 //                    "language": null, "startAt": null, "endAt": null }],
@@ -93,6 +93,9 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
     let url: URL
     /// `nil` u typu, který tahle verze aplikace nezná – banner se zobrazí bez ikony.
     let type: RemoteBannerType?
+    /// Čitelný název z administrace (jen pro analytiku, v aplikaci se nezobrazuje).
+    /// `nil`, pokud ho web neposílá.
+    let name: String?
     let language: String?
     let startAt: Date?
     let endAt: Date?
@@ -100,15 +103,16 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
     let maxAppVersion: String?
 
     private enum CodingKeys: String, CodingKey {
-        case id, imageUrl, url, type, language, startAt, endAt, minAppVersion, maxAppVersion
+        case id, imageUrl, url, type, name, language, startAt, endAt, minAppVersion, maxAppVersion
     }
 
-    init(id: String, imageUrl: URL, url: URL, type: RemoteBannerType?, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil,
+    init(id: String, imageUrl: URL, url: URL, type: RemoteBannerType?, name: String? = nil, language: String? = nil, startAt: Date? = nil, endAt: Date? = nil,
          minAppVersion: String? = nil, maxAppVersion: String? = nil) {
         self.id = id
         self.imageUrl = imageUrl
         self.url = url
         self.type = type
+        self.name = RemoteContentName.normalize(name)
         self.language = RemoteContentLanguage.normalize(language)
         self.startAt = startAt
         self.endAt = endAt
@@ -123,6 +127,8 @@ struct RemoteBanner: RemoteContentItem, Decodable, Equatable, Identifiable {
         url = try container.decode(URL.self, forKey: .url)
         type = (try container.decodeIfPresent(String.self, forKey: .type))
             .flatMap { RemoteBannerType(rawValue: $0.lowercased()) }
+        // Název je jen doplněk pro analytiku – nečitelný nebo chybějící banner neshodí.
+        name = RemoteContentName.normalize(try? container.decodeIfPresent(String.self, forKey: .name))
         language = RemoteContentLanguage.normalize(try container.decodeIfPresent(String.self, forKey: .language))
         startAt = try container.decodeIfPresent(Date.self, forKey: .startAt)
         endAt = try container.decodeIfPresent(Date.self, forKey: .endAt)
@@ -400,6 +406,17 @@ enum RemoteContentDate {
 }
 
 // MARK: - Jazyk a platnost
+
+enum RemoteContentName {
+    /// Nejdelší název, který se pošle do analytiky.
+    static let maxLength = 64
+
+    /// Ořízne mezery a délku, prázdná hodnota je `nil`.
+    static func normalize(_ name: String?) -> String? {
+        let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : String(trimmed.prefix(maxLength))
+    }
+}
 
 enum RemoteContentLanguage {
     /// `"CS"`, `"cs-CZ"`, `"cs_CZ"` → `"cs"`. Prázdná hodnota je `nil` (všechny jazyky).

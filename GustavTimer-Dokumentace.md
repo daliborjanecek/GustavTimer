@@ -2,9 +2,9 @@
 title: GustavTimer – Dokumentace aplikace
 tags: [ios, swiftui, dokumentace, gustav, timer]
 platforma: iOS
-verze_aplikace: 2.3.0
+verze_aplikace: 2.4.0
 build_version: "201"
-aktualizovano: 2026-05-30
+aktualizovano: 2026-11-16
 ---
 
 # GustavTimer 🏋️
@@ -279,7 +279,7 @@ Je `Codable` → serializuje se pro SwiftData, sdílení odkazem i případný p
 
 Kompletní nastavení timeru jako hodnotový typ (`Shared/TimerSettings.swift`) – jediná definice toho, „co je timer": `name`, `intervals`, `rounds`, `sound`, `isVibrating`, `ticking`, `hasCountdown`.
 
-`ticking: TickingMode` – `.off` (bez tikání), `.everySecond` (každou sekundu), `.finalSeconds` (jen poslední 3 sekundy intervalu). Jestli tik zazní, rozhoduje `TickingMode.shouldTick(remainingSeconds:)`.
+`ticking: TickingMode` – `.off` (bez tikání), `.everySecond` (každou sekundu), `.every10Seconds` / `.every30Seconds` / `.every60Seconds` (každých 10 / 30 / 60 sekund počítáno od konce intervalu) a `.finalSeconds` (jen poslední 3 sekundy intervalu). Režim je součástí `TimerSettings`, takže se ukládá do oblíbených i do odkazu stejně jako ostatní nastavení. Jestli tik zazní, rozhoduje `TickingMode.shouldTick(remainingSeconds:)`.
 
 `TimerData` je nad ním tenká obálka: `timerData.settings` čte i zapisuje **celé** nastavení naráz, takže nikde v aplikaci není místo, které by kopírovalo nastavení po polích (a mohlo tedy na některé zapomenout).
 
@@ -349,7 +349,7 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 | **Intervaly** | Editovatelný seznam intervalů (`IntervalRowView`): název + hodnota, drag-to-reorder, swipe-to-delete, „+ Add interval". Footer ukazuje souhrn (délka kola, příp. celkový čas) |
 | **Rounds** | `NavigationLink` → `RoundsSettingsView` (smyčka / 1–31 kol) |
 | **Favourites** | Náhled posledních 3 oblíbených + odkaz na všechny |
-| **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, podstránka Tikání (přepínač, a když je zapnutý, výběr: každou sekundu / před koncem intervalu – poslední 3 s), výběr Zvuku |
+| **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, podstránka Tikání (přepínač, a když je zapnutý, výběr: každou sekundu / každých 10 / 30 / 60 s / před koncem intervalu – poslední 3 s; pod seznamem je vysvětlení vybrané možnosti), výběr Zvuku |
 | **Appearance** | `NavigationLink` → `BackgroundSelectorView` |
 | **More** | Odkazy z API, pak Hodnotit a Navrhni funkci. Vestavěné Gustav Weights, Instagram a YouTube jen když z API žádný platný odkaz není |
 | *(jen DEBUG)* | Číslo verze – 5× klepnout = vývojářské menu vzdáleného obsahu |
@@ -466,7 +466,7 @@ flowchart LR
     F -- ne --> H[ticho]
 ```
 
-`shouldTick`: `.off` nikdy, `.everySecond` vždy, `.finalSeconds` jen při N ≤ 3 (tedy 3, 2, 1 a při ztlumeném zvuku i na přechodu).
+`shouldTick`: `.off` nikdy, `.everySecond` vždy, `.every10Seconds` / `.every30Seconds` / `.every60Seconds` když zbývající sekundy dělí odstup beze zbytku (`TickingMode.periodSeconds`, tedy při 10, 20, 30 … s, resp. 30, 60, 90 … s, resp. 60, 120, 180 … s), `.finalSeconds` jen při N ≤ 3 (tedy 3, 2, 1). Přechod intervalu je „nultá“ sekunda, takže při ztlumeném zvuku tiká ve všech režimech. Odstup se počítá od konce intervalu – kratší interval, než je odstup, tikne jen na přechodu.
 
 ### Haptika
 Podmíněno `isVibrating`:
@@ -517,10 +517,10 @@ Aplikace reaguje na URL scheme **`gustavtimerapp://`** (registrováno v `Info.pl
 | `_title` | text, max 64 znaků | Název timeru |
 | `_sound` | `beep`, `gong`, … nebo `off` | Zvuk přechodu, `off` = ticho |
 | `_vibe` | `1` / `0` | Vibrace |
-| `_tick` | `0` / `1` / `3` | Tikání: `0` vypnuto, `1` každou sekundu, `3` poslední 3 sekundy |
+| `_tick` | `0` / `1` / `10` / `30` / `60` / `3` | Tikání: `0` vypnuto, `1` každou sekundu, `10` / `30` / `60` každých N sekund (od konce intervalu), `3` poslední 3 sekundy |
 | `_cd` | `1` / `0` | Úvodní odpočet 3-2-1 |
 
-Booleany (včetně `_tick`) berou i `true/false`, `yes/no`, `on/off` (odkazy se píšou i ručně); generátor zapisuje `1`/`0` (u `_tick` i `3`). Starší verze aplikace `_tick=3` nerozumí a nechají si vlastní tikání. U každého klíče vyhrává **první výskyt**, nesrozumitelná hodnota se ignoruje.
+Booleany (včetně `_tick`) berou i `true/false`, `yes/no`, `on/off` (odkazy se píšou i ručně); generátor zapisuje `1`/`0` (u `_tick` i `3`, `10`, `30`, `60`). Starší verze aplikace hodnotám `_tick=3`, `10`, `30` a `60` nerozumí a nechají si vlastní tikání. U každého klíče vyhrává **první výskyt**, nesrozumitelná hodnota se ignoruje.
 
 > [!important] Chybějící parametr = zachovej současné
 > Na tomhle pravidle stojí celá zpětná kompatibilita. Odkaz z verze 2.2/2.3 neobsahuje `_sound` ani `_vibe`, takže **nesáhne na nastavení příjemce** – chová se přesně jako dřív. Nové odkazy nesou všechno explicitně.
@@ -626,12 +626,14 @@ Share sheet (`TimerShareSheet`) zapíše zvolený kanál do odesílaného odkazu
 | `settings.changed` | Změna volby | `setting` (`haptics`, `countdown`, `ticking`, `rounds`, `sound_enabled`, `background` – index / `custom` / `remote`, `interval_added`, `interval_removed`, `favourite` – `renamed` / `removed`, odebrání z menu hvězdičky i swipem v seznamu oblíbených), `value` |
 | `timer.sound_selected` | Výběr zvuku | `sound` |
 | `settings.display_format_changed` | Swipe formátu odpočtu | `orientation`, `format` |
-| `link.opened` | Odkaz z nastavení | `target` (`rate`, `weights`, `instagram`, `youtube`, `banner`, `remote_link`); u banneru `banner_source` (`builtin` / `remote`), `banner_id`, `banner_type`; u odkazu z API `link_id` |
+| `link.opened` | Odkaz z nastavení | `target` (`rate`, `weights`, `instagram`, `youtube`, `banner`, `remote_link`); u banneru `banner_source` (`builtin` / `remote`), `banner_id` (jen z API), `banner_name`, `banner_type` (jen z API); u odkazu z API `link_id`, `link_name` (= `label`). Názvy jsou jen z vestavěného obsahu nebo z API (u banneru volitelné pole `name`, bez něj se `banner_name` neposílá), nikdy text od uživatele; ořezané na 64 znaků |
 | `whatsnew.shown` | Zobrazení „Co je nového“ | `version` |
 | `remotecontent.sync` | Každý pokus o synchronizaci s API (jedno volání `sync()`, tedy i z debug menu) – počet signálů = počet dotazů. Nepočítá se stahování jednotlivých obrázků zvlášť | `result` (`success` / `failed`), u chyby `error` (`http` + `status`, `schema`, `invalid_config`, `invalid_content`, `network`) |
 | `TelemetryDeck.Activation.onboardingCompleted` | Zavření onboardingu (tlačítkem i swipem) | – |
 | `TelemetryDeck.Error.occurred` | `link.invalid` (odkaz bez platného intervalu), `timer.persist_failed` (selhalo uložení SwiftData) | `TelemetryDeck.Error.id`, kategorie |
 
+> Export compliance: `Info.plist` deklaruje `ITSAppUsesNonExemptEncryption = NO`, takže App Store Connect se u buildů na šifrování neptá. Aplikace používá jen HTTPS přes `URLSession` a `SHA256` z CryptoKit na název souboru (hash), žádnou vlastní šifru. Při přidání jiného šifrování se hodnota musí přehodnotit.
+>
 > Privacy manifest (`PrivacyInfo.xcprivacy`) deklaruje pouze přístup k `UserDefaults` (důvod `CA92.1`). Sběr dat (Product Interaction, Device ID, nepropojené s identitou, bez trackingu) deklaruje vlastní manifest SDK TelemetryDeck, Xcode ho do privacy reportu aplikace připojí sám.
 
 ---
@@ -737,7 +739,7 @@ GustavTimer/
 ├── AppConfig.swift               # Konstanty, presety, URL, pozadí
 ├── AppPreferences.swift          # Nastavení zařízení (@AppStorage) + klíče UserDefaults
 ├── SettingsMigration.swift       # Jednorázový přesun nastavení do SwiftData
-├── Info.plist                    # URL scheme
+├── Info.plist                    # URL scheme, ITSAppUsesNonExemptEncryption = NO
 ├── PrivacyInfo.xcprivacy         # Privacy manifest
 ├── Localizable.xcstrings         # Lokalizace (en, cs)
 │
@@ -780,6 +782,7 @@ GustavTimer/
 │   │   └── SubViews/
 │   │       ├── IntervalRowView.swift
 │   │       ├── RoundsSettingsView.swift
+│   │       ├── TickingSettingsView.swift  # přepínač + výběr režimu tikání
 │   │       ├── SoundSettingsView.swift
 │   │       ├── BackgroundSelectorView.swift
 │   │       ├── FavouriteRowView.swift
@@ -808,6 +811,15 @@ Shared/                            # ⭐ Čistá logika sdílitelná s watchOS
 ├── SoundModel.swift               # Enum zvuků
 ├── TimeDisplayFormat.swift        # Formát zobrazení času
 └── SharedTimerLink.swift          # Parsování a generování sdílených odkazů
+
+GustavTimerTests/                  # Swift Testing (@Suite / @Test)
+├── AnalyticsTests.swift           # Parametry signálů
+├── FavouriteTimersTests.swift     # Stav uložení, výběr, PreviewData
+├── RemoteContentTests.swift       # Vzdálený obsah (API)
+├── SharedTimerLinkTests.swift     # Parsování a generování odkazů
+├── TimerEditingTests.swift        # Úpravy názvu a intervalů s limity
+├── TimerFeedbackPlayerTests.swift # Události enginu → vibrace a zvuky
+└── WorkoutSessionTrackerTests.swift # Analytika tréninku a odkazů
 ```
 
 ---
@@ -847,7 +859,7 @@ Bannery, odkazy v nastavení a stažená pozadí se spravují na webu. Aplikace 
 
 ```json
 { "schemaVersion": 1, "generatedAt": "2026-11-09T17:30:00Z",
-  "banners":     [{ "id", "imageUrl", "url", "type", "language", "startAt", "endAt" }],
+  "banners":     [{ "id", "imageUrl", "url", "type", "name", "language", "startAt", "endAt" }],
   "links":       [{ "id", "label", "url", "language", "startAt", "endAt" }],
   "backgrounds": [{ "id", "imageUrl", "language", "startAt", "endAt" }] }
 ```
@@ -868,7 +880,7 @@ Bannery, odkazy v nastavení a stažená pozadí se spravují na webu. Aplikace 
 - Spouští ji `ContentView` při spuštění a při každém návratu do popředí (`handleBecameActive`). Po úspěchu se nejdřív za **24 h**, po neúspěchu znovu při dalším otevření.
 - Postup: stáhnout JSON → ověřit → stáhnout chybějící obrázky (všech položek, kterým ještě neskončila platnost, bez ohledu na jazyk) → **teprve pak** atomicky zapsat `config.json`, přepnout konfiguraci, smazat nepotřebné obrázky a zapsat čas úspěchu.
 - Jakákoli chyba (síť, HTTP, neplatný JSON, jiná `schemaVersion`, obrázek, který není obrázek nebo je z cizí domény, příliš velký soubor) celou aktualizaci zahodí a zůstane dosavadní konfigurace. Obrázky stažené během neúspěšného pokusu zůstanou a příště se už nestahují.
-- Neznámá pole se ignorují, neznámý `type` banneru = banner bez ikony.
+- Neznámá pole se ignorují, neznámý `type` banneru = banner bez ikony. `name` banneru je volitelný čitelný název jen pro analytiku (`banner_name`), v aplikaci se nezobrazuje.
 - Soubory: `Application Support/RemoteContent/config.json` (původní JSON) a `images/<SHA-256 URL>.<přípona>`. Název souboru je z celé URL včetně `?v=…`, takže nová verze obrázku = nový soubor. Složka je vyřazená ze zálohy.
 
 ### Jazyk, platnost a verze aplikace

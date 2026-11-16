@@ -62,7 +62,7 @@ struct AppConfig {
     static let bannerName: LocalizedStringKey = "CHALLENGE"
     static let bannerImages: [BannerImageModel] = [
         // v 2.4.0
-        BannerImageModel(imageResource: .gustavChallenge, urlString: "https://www.youtube.com/playlist?list=PLi2Zd-0ICmgIoaWudLzSF8Jt5VKAWSvdR")
+        BannerImageModel(name: "Gustav Challenge", imageResource: .gustavChallenge, urlString: "https://www.youtube.com/playlist?list=PLi2Zd-0ICmgIoaWudLzSF8Jt5VKAWSvdR")
         
     ]
     
