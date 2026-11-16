@@ -645,14 +645,18 @@ extension TickingMode {
     /// zapnuto/vypnuto, takže odkaz bez tikání nebo s tikáním každou sekundu
     /// vypadá stejně jako z verze, která režimy neznala.
     ///
-    ///     .off          → "0"
-    ///     .everySecond  → "1"
-    ///     .finalSeconds → "3"   (počet tikajících sekund)
+    ///     .off            → "0"
+    ///     .everySecond    → "1"
+    ///     .every10Seconds → "10"   (odstup tiků v sekundách)
+    ///     .every30Seconds → "30"
+    ///     .every60Seconds → "60"
+    ///     .finalSeconds   → "3"    (počet tikajících sekund)
     var linkValue: String {
         switch self {
         case .off:          return "0"
-        case .everySecond:  return "1"
         case .finalSeconds: return String(Self.finalSecondsCount)
+        case .everySecond, .every10Seconds, .every30Seconds, .every60Seconds:
+            return String(periodSeconds ?? 1)
         }
     }
 

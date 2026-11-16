@@ -145,35 +145,57 @@ extension TimerSettings {
 
 /// Režim tikání (`tick.mp3`) během intervalu.
 ///
-///     .off           – ticho
-///     .everySecond   – tik při každé uplynulé sekundě
-///     .finalSeconds  – tik jen v posledních třech sekundách intervalu (3, 2, 1)
+///     .off             – ticho
+///     .everySecond     – tik při každé uplynulé sekundě
+///     .every10Seconds  – tik, když do konce intervalu zbývá 10, 20, 30 … s
+///     .every30Seconds  – tik, když do konce intervalu zbývá 30, 60, 90 … s
+///     .every60Seconds  – tik, když do konce intervalu zbývá 60, 120, 180 … s
+///     .finalSeconds    – tik jen v posledních třech sekundách intervalu (3, 2, 1)
 ///
 /// O tom, jestli tik zazní, rozhoduje `shouldTick(remainingSeconds:)` – engine
 /// jen hlásí změnu zobrazené sekundy, platformní vrstva se ptá tady.
 enum TickingMode: String, Codable, CaseIterable, Sendable {
     case off
     case everySecond
+    case every10Seconds
+    case every30Seconds
+    case every60Seconds
     case finalSeconds
 
     /// Kolik posledních sekund intervalu tiká režim `.finalSeconds`.
     static let finalSecondsCount = 3
 
+    /// Odstup tiků v sekundách u režimů „každých N sekund“, jinak `nil`.
+    /// Počítá se od konce intervalu (podle zbývajících sekund), takže tik
+    /// vždycky zazní na celé desítce, půlminutě, minutě před koncem.
+    var periodSeconds: Int? {
+        switch self {
+        case .everySecond:   return 1
+        case .every10Seconds: return 10
+        case .every30Seconds: return 30
+        case .every60Seconds: return 60
+        case .off, .finalSeconds: return nil
+        }
+    }
+
     /// Má zaznít tik, když odpočet intervalu právě ukázal `remainingSeconds`?
     ///
-    ///     TickingMode.finalSeconds.shouldTick(remainingSeconds: 4)  // false
-    ///     TickingMode.finalSeconds.shouldTick(remainingSeconds: 3)  // true
-    ///     TickingMode.everySecond.shouldTick(remainingSeconds: 42)  // true
+    ///     TickingMode.finalSeconds.shouldTick(remainingSeconds: 4)    // false
+    ///     TickingMode.finalSeconds.shouldTick(remainingSeconds: 3)    // true
+    ///     TickingMode.everySecond.shouldTick(remainingSeconds: 42)    // true
+    ///     TickingMode.every10Seconds.shouldTick(remainingSeconds: 40) // true
+    ///     TickingMode.every10Seconds.shouldTick(remainingSeconds: 42) // false
     ///
     /// Přechod intervalu odpovídá `remainingSeconds == 0`.
     func shouldTick(remainingSeconds: Int) -> Bool {
         switch self {
         case .off:
             return false
-        case .everySecond:
-            return true
         case .finalSeconds:
             return remainingSeconds <= Self.finalSecondsCount
+        case .everySecond, .every10Seconds, .every30Seconds, .every60Seconds:
+            guard let period = periodSeconds else { return false }
+            return remainingSeconds % period == 0
         }
     }
 

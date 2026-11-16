@@ -48,7 +48,7 @@ struct TickingSettingsView: View {
             }
 
             if ticking != .off {
-                SettingsSection(label: "SELECT_TICKING") {
+                SettingsSection(label: "SELECT_TICKING", footer: ticking.explanation) {
                     ForEach(TickingMode.allCases.filter { $0 != .off }, id: \.self) { mode in
                         SelectableOptionRow(selected: ticking == mode) {
                             select(mode)
@@ -77,9 +77,25 @@ extension TickingMode {
     /// Název režimu v nastavení.
     var title: LocalizedStringKey {
         switch self {
-        case .off:          return "TICKING_OFF"
-        case .everySecond:  return "TICKING_EVERY_SECOND"
-        case .finalSeconds: return "TICKING_FINAL_SECONDS"
+        case .off:            return "TICKING_OFF"
+        case .everySecond:    return "TICKING_EVERY_SECOND"
+        case .every10Seconds: return "TICKING_EVERY_10_SECONDS"
+        case .every30Seconds: return "TICKING_EVERY_30_SECONDS"
+        case .every60Seconds: return "TICKING_EVERY_60_SECONDS"
+        case .finalSeconds:   return "TICKING_FINAL_SECONDS"
+        }
+    }
+
+    /// Vysvětlení vybraného režimu pod seznamem možností.
+    /// U vypnutého tikání se seznam neukazuje, takže `nil`.
+    var explanation: LocalizedStringKey? {
+        switch self {
+        case .off:            return nil
+        case .everySecond:    return "TICKING_EVERY_SECOND_EXPLANATION"
+        case .every10Seconds: return "TICKING_EVERY_10_SECONDS_EXPLANATION"
+        case .every30Seconds: return "TICKING_EVERY_30_SECONDS_EXPLANATION"
+        case .every60Seconds: return "TICKING_EVERY_60_SECONDS_EXPLANATION"
+        case .finalSeconds:   return "TICKING_FINAL_SECONDS_EXPLANATION"
         }
     }
 }

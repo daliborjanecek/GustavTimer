@@ -525,6 +525,9 @@ func firstOccurrenceWinsForSettings() throws {
 @Test("_tick nese režim tikání", arguments: [
     ("_tick=0", TickingMode.off),
     ("_tick=1", TickingMode.everySecond),
+    ("_tick=10", TickingMode.every10Seconds),
+    ("_tick=30", TickingMode.every30Seconds),
+    ("_tick=60", TickingMode.every60Seconds),
     ("_tick=3", TickingMode.finalSeconds)
 ])
 func tickingModeIsParsed(_ query: String, _ expected: TickingMode) throws {
@@ -543,7 +546,7 @@ func tickingAcceptsBooleanForms(_ query: String, _ expected: TickingMode) throws
 }
 
 @Test("Nesrozumitelný _tick se tváří, jako by v odkazu nebyl", arguments: [
-    "_tick=2", "_tick=4", "_tick=mozna", "_tick="
+    "_tick=2", "_tick=4", "_tick=20", "_tick=120", "_tick=mozna", "_tick="
 ])
 func nonsenseTickingIsIgnored(_ query: String) throws {
     let link = try #require(parse("https://gustavtraining.com/t?Work=40&\(query)"))
@@ -554,6 +557,9 @@ func nonsenseTickingIsIgnored(_ query: String) throws {
 @Test("Generátor zapíše režim tikání do _tick", arguments: [
     (TickingMode.off, "0"),
     (TickingMode.everySecond, "1"),
+    (TickingMode.every10Seconds, "10"),
+    (TickingMode.every30Seconds, "30"),
+    (TickingMode.every60Seconds, "60"),
     (TickingMode.finalSeconds, "3")
 ])
 func tickingModeIsGenerated(_ mode: TickingMode, _ value: String) throws {
@@ -575,6 +581,25 @@ func everySecondAndOffTicking(_ remainingSeconds: Int) {
 ])
 func finalSecondsTicking(_ remainingSeconds: Int, _ expected: Bool) {
     #expect(TickingMode.finalSeconds.shouldTick(remainingSeconds: remainingSeconds) == expected)
+}
+
+@Test("Tikání každých N sekund tiká jen na násobku N zbývajících sekund", arguments: [
+    (TickingMode.every10Seconds, 120, true), (.every10Seconds, 40, true), (.every10Seconds, 10, true),
+    (.every10Seconds, 42, false), (.every10Seconds, 9, false), (.every10Seconds, 3, false), (.every10Seconds, 0, true),
+    (.every30Seconds, 90, true), (.every30Seconds, 30, true), (.every30Seconds, 20, false), (.every30Seconds, 10, false),
+    (.every60Seconds, 180, true), (.every60Seconds, 60, true), (.every60Seconds, 30, false), (.every60Seconds, 59, false)
+])
+func periodicTicking(_ mode: TickingMode, _ remainingSeconds: Int, _ expected: Bool) {
+    #expect(mode.shouldTick(remainingSeconds: remainingSeconds) == expected)
+}
+
+@Test("Každý režim má odlišnou hodnotu v odkazu a funguje obousměrně")
+func tickingLinkValuesAreUniqueAndRoundTrip() {
+    let values = TickingMode.allCases.map(\.linkValue)
+    #expect(Set(values).count == TickingMode.allCases.count)
+    for mode in TickingMode.allCases {
+        #expect(TickingMode(linkValue: mode.linkValue) == mode)
+    }
 }
 
 @Test("Dřívější zapnuté tikání odpovídá tikání každou sekundu")

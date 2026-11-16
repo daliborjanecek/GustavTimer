@@ -69,7 +69,7 @@ struct TimerFeedbackPlayerTests {
     }
 
     /// Při ztlumeném zvuku doplní přechod tik, který by jinak vynechal.
-    @Test(arguments: [TickingMode.everySecond, .finalSeconds])
+    @Test(arguments: TickingMode.allCases.filter { $0 != .off })
     func mutedTransitionTicksWhenTickingIsOn(_ ticking: TickingMode) {
         #expect(effects(.intervalTransition, settings(sound: nil, isVibrating: false, ticking: ticking)) == [.tick])
     }
@@ -83,5 +83,14 @@ struct TimerFeedbackPlayerTests {
         #expect(effects(.secondTick(remainingSeconds: 10), settings(ticking: .everySecond)) == [.tick])
         #expect(effects(.secondTick(remainingSeconds: 10), settings(ticking: .finalSeconds)).isEmpty)
         #expect(effects(.secondTick(remainingSeconds: 2), settings(ticking: .finalSeconds)) == [.tick])
+    }
+
+    @Test func secondTickFollowsPeriodicModes() {
+        #expect(effects(.secondTick(remainingSeconds: 20), settings(ticking: .every10Seconds)) == [.tick])
+        #expect(effects(.secondTick(remainingSeconds: 15), settings(ticking: .every10Seconds)).isEmpty)
+        #expect(effects(.secondTick(remainingSeconds: 30), settings(ticking: .every30Seconds)) == [.tick])
+        #expect(effects(.secondTick(remainingSeconds: 20), settings(ticking: .every30Seconds)).isEmpty)
+        #expect(effects(.secondTick(remainingSeconds: 60), settings(ticking: .every60Seconds)) == [.tick])
+        #expect(effects(.secondTick(remainingSeconds: 30), settings(ticking: .every60Seconds)).isEmpty)
     }
 }

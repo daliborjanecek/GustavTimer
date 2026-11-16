@@ -279,7 +279,7 @@ Je `Codable` → serializuje se pro SwiftData, sdílení odkazem i případný p
 
 Kompletní nastavení timeru jako hodnotový typ (`Shared/TimerSettings.swift`) – jediná definice toho, „co je timer": `name`, `intervals`, `rounds`, `sound`, `isVibrating`, `ticking`, `hasCountdown`.
 
-`ticking: TickingMode` – `.off` (bez tikání), `.everySecond` (každou sekundu), `.finalSeconds` (jen poslední 3 sekundy intervalu). Jestli tik zazní, rozhoduje `TickingMode.shouldTick(remainingSeconds:)`.
+`ticking: TickingMode` – `.off` (bez tikání), `.everySecond` (každou sekundu), `.every10Seconds` / `.every30Seconds` / `.every60Seconds` (každých 10 / 30 / 60 sekund počítáno od konce intervalu) a `.finalSeconds` (jen poslední 3 sekundy intervalu). Režim je součástí `TimerSettings`, takže se ukládá do oblíbených i do odkazu stejně jako ostatní nastavení. Jestli tik zazní, rozhoduje `TickingMode.shouldTick(remainingSeconds:)`.
 
 `TimerData` je nad ním tenká obálka: `timerData.settings` čte i zapisuje **celé** nastavení naráz, takže nikde v aplikaci není místo, které by kopírovalo nastavení po polích (a mohlo tedy na některé zapomenout).
 
@@ -349,7 +349,7 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 | **Intervaly** | Editovatelný seznam intervalů (`IntervalRowView`): název + hodnota, drag-to-reorder, swipe-to-delete, „+ Add interval". Footer ukazuje souhrn (délka kola, příp. celkový čas) |
 | **Rounds** | `NavigationLink` → `RoundsSettingsView` (smyčka / 1–31 kol) |
 | **Favourites** | Náhled posledních 3 oblíbených + odkaz na všechny |
-| **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, podstránka Tikání (přepínač, a když je zapnutý, výběr: každou sekundu / před koncem intervalu – poslední 3 s), výběr Zvuku |
+| **Feedback** | Toggle Haptika, Toggle Úvodní odpočet, podstránka Tikání (přepínač, a když je zapnutý, výběr: každou sekundu / každých 10 / 30 / 60 s / před koncem intervalu – poslední 3 s; pod seznamem je vysvětlení vybrané možnosti), výběr Zvuku |
 | **Appearance** | `NavigationLink` → `BackgroundSelectorView` |
 | **More** | Odkazy z API, pak Hodnotit a Navrhni funkci. Vestavěné Gustav Weights, Instagram a YouTube jen když z API žádný platný odkaz není |
 | *(jen DEBUG)* | Číslo verze – 5× klepnout = vývojářské menu vzdáleného obsahu |
@@ -466,7 +466,7 @@ flowchart LR
     F -- ne --> H[ticho]
 ```
 
-`shouldTick`: `.off` nikdy, `.everySecond` vždy, `.finalSeconds` jen při N ≤ 3 (tedy 3, 2, 1 a při ztlumeném zvuku i na přechodu).
+`shouldTick`: `.off` nikdy, `.everySecond` vždy, `.every10Seconds` / `.every30Seconds` / `.every60Seconds` když zbývající sekundy dělí odstup beze zbytku (`TickingMode.periodSeconds`, tedy při 10, 20, 30 … s, resp. 30, 60, 90 … s, resp. 60, 120, 180 … s), `.finalSeconds` jen při N ≤ 3 (tedy 3, 2, 1). Přechod intervalu je „nultá“ sekunda, takže při ztlumeném zvuku tiká ve všech režimech. Odstup se počítá od konce intervalu – kratší interval, než je odstup, tikne jen na přechodu.
 
 ### Haptika
 Podmíněno `isVibrating`:
@@ -517,10 +517,10 @@ Aplikace reaguje na URL scheme **`gustavtimerapp://`** (registrováno v `Info.pl
 | `_title` | text, max 64 znaků | Název timeru |
 | `_sound` | `beep`, `gong`, … nebo `off` | Zvuk přechodu, `off` = ticho |
 | `_vibe` | `1` / `0` | Vibrace |
-| `_tick` | `0` / `1` / `3` | Tikání: `0` vypnuto, `1` každou sekundu, `3` poslední 3 sekundy |
+| `_tick` | `0` / `1` / `10` / `30` / `60` / `3` | Tikání: `0` vypnuto, `1` každou sekundu, `10` / `30` / `60` každých N sekund (od konce intervalu), `3` poslední 3 sekundy |
 | `_cd` | `1` / `0` | Úvodní odpočet 3-2-1 |
 
-Booleany (včetně `_tick`) berou i `true/false`, `yes/no`, `on/off` (odkazy se píšou i ručně); generátor zapisuje `1`/`0` (u `_tick` i `3`). Starší verze aplikace `_tick=3` nerozumí a nechají si vlastní tikání. U každého klíče vyhrává **první výskyt**, nesrozumitelná hodnota se ignoruje.
+Booleany (včetně `_tick`) berou i `true/false`, `yes/no`, `on/off` (odkazy se píšou i ručně); generátor zapisuje `1`/`0` (u `_tick` i `3`, `10`, `30`, `60`). Starší verze aplikace hodnotám `_tick=3`, `10`, `30` a `60` nerozumí a nechají si vlastní tikání. U každého klíče vyhrává **první výskyt**, nesrozumitelná hodnota se ignoruje.
 
 > [!important] Chybějící parametr = zachovej současné
 > Na tomhle pravidle stojí celá zpětná kompatibilita. Odkaz z verze 2.2/2.3 neobsahuje `_sound` ani `_vibe`, takže **nesáhne na nastavení příjemce** – chová se přesně jako dřív. Nové odkazy nesou všechno explicitně.

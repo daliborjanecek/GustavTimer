@@ -184,3 +184,47 @@ struct ModifiedFavouriteDecisionTests {
         #expect(!f.viewModel.needsDecision(on: f.loaded, among: favourites))
     }
 }
+
+/// Nový režim tikání se ukládá do oblíbených a vrací zpátky stejně jako ostatní nastavení.
+@MainActor
+struct FavouriteTickingTests {
+
+    private func makeContext() throws -> (container: ModelContainer, context: ModelContext) {
+        let container = try ModelContainer(
+            for: TimerData.self, CustomImageModel.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        return (container, container.mainContext)
+    }
+
+    @Test(arguments: [TickingMode.every10Seconds, .every30Seconds, .every60Seconds])
+    func favouriteKeepsPeriodicTicking(_ mode: TickingMode) throws {
+        let fixture = try makeContext()
+        let context = fixture.context
+        TimerData.mainTimer(in: context).ticking = mode
+
+        let favourite = FavouriteTimers.saveAsNew(name: "Tikání", in: context)
+        #expect(favourite.ticking == mode)
+        #expect(favourite.settings.ticking == mode)
+
+        // Změna na hlavním timeru oblíbený nezmění, načtení ho vrátí.
+        TimerData.mainTimer(in: context).ticking = .off
+        #expect(favourite.ticking == mode)
+        FavouriteTimers.load(favourite, in: context)
+        #expect(TimerData.mainTimer(in: context).ticking == mode)
+    }
+
+    @Test func changingTickingIsAModificationThatCanBeSaved() throws {
+        let fixture = try makeContext()
+        let context = fixture.context
+        let favourite = FavouriteTimers.saveAsNew(name: "Tikání", in: context)
+        #expect(!FavouriteTimers.state(in: context).isModified)
+
+        TimerData.mainTimer(in: context).ticking = .every30Seconds
+        #expect(FavouriteTimers.state(in: context).isModified)
+
+        FavouriteTimers.saveChanges(in: context)
+        #expect(favourite.ticking == .every30Seconds)
+        #expect(!FavouriteTimers.state(in: context).isModified)
+    }
+}
