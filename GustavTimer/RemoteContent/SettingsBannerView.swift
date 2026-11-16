@@ -49,7 +49,7 @@ private struct BuiltInBanner: View {
                     }
                     .onTapGesture {
                         if let url = banner.getURL() {
-                            Analytics.send(.externalLinkOpened, parameters: ["target": "banner", "banner_source": "builtin"])
+                            Analytics.send(.externalLinkOpened, parameters: Analytics.bannerOpenedParameters(source: "builtin", name: banner.name))
                             UIApplication.shared.open(url)
                         }
                     }
@@ -143,11 +143,8 @@ private struct RemoteBannerCard: View {
     }
 
     private func open() {
-        var parameters = ["target": "banner", "banner_source": "remote", "banner_id": item.banner.id]
-        if let type = item.banner.type {
-            parameters["banner_type"] = type.rawValue
-        }
-        Analytics.send(.externalLinkOpened, parameters: parameters)
+        Analytics.send(.externalLinkOpened, parameters: Analytics.bannerOpenedParameters(
+            source: "remote", id: item.banner.id, name: item.banner.name, type: item.banner.type?.rawValue))
         AppLinkRouter.open(item.banner.url)
     }
 }

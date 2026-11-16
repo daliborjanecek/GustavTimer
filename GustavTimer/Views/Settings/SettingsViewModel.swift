@@ -189,7 +189,7 @@ final class SettingsViewModel: ObservableObject {
     /// Otevře odkaz ze sekce „Více“, který přišel z API.
     @MainActor
     func open(_ link: RemoteLink) {
-        Analytics.send(.externalLinkOpened, parameters: ["target": "remote_link", "link_id": link.id])
+        Analytics.send(.externalLinkOpened, parameters: Analytics.remoteLinkOpenedParameters(id: link.id, name: link.label))
         AppLinkRouter.open(link.url)
     }
 }

@@ -336,6 +336,25 @@ enum Analytics {
         return parameters
     }
 
+    // MARK: - Odkazy z nastavení
+
+    /// Parametry `link.opened` u banneru. Vestavěný banner nemá `id`.
+    /// `name` je jen název z vestavěného obsahu nebo z API (nikdy text od uživatele).
+    static func bannerOpenedParameters(source: String, id: String? = nil, name: String? = nil, type: String? = nil) -> [String: String] {
+        var parameters = ["target": "banner", "banner_source": source]
+        if let id { parameters["banner_id"] = id }
+        if let name = RemoteContentName.normalize(name) { parameters["banner_name"] = name }
+        if let type { parameters["banner_type"] = type }
+        return parameters
+    }
+
+    /// Parametry `link.opened` u odkazu z API (`label` je název z administrace).
+    static func remoteLinkOpenedParameters(id: String, name: String?) -> [String: String] {
+        var parameters = ["target": "remote_link", "link_id": id]
+        if let name = RemoteContentName.normalize(name) { parameters["link_name"] = name }
+        return parameters
+    }
+
     // MARK: - Nastavení
 
     /// `settings.changed` – změna jedné volby timeru nebo aplikace.

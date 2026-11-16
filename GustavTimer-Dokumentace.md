@@ -626,7 +626,7 @@ Share sheet (`TimerShareSheet`) zapíše zvolený kanál do odesílaného odkazu
 | `settings.changed` | Změna volby | `setting` (`haptics`, `countdown`, `ticking`, `rounds`, `sound_enabled`, `background` – index / `custom` / `remote`, `interval_added`, `interval_removed`, `favourite` – `renamed` / `removed`, odebrání z menu hvězdičky i swipem v seznamu oblíbených), `value` |
 | `timer.sound_selected` | Výběr zvuku | `sound` |
 | `settings.display_format_changed` | Swipe formátu odpočtu | `orientation`, `format` |
-| `link.opened` | Odkaz z nastavení | `target` (`rate`, `weights`, `instagram`, `youtube`, `banner`, `remote_link`); u banneru `banner_source` (`builtin` / `remote`), `banner_id`, `banner_type`; u odkazu z API `link_id` |
+| `link.opened` | Odkaz z nastavení | `target` (`rate`, `weights`, `instagram`, `youtube`, `banner`, `remote_link`); u banneru `banner_source` (`builtin` / `remote`), `banner_id` (jen z API), `banner_name`, `banner_type` (jen z API); u odkazu z API `link_id`, `link_name` (= `label`). Názvy jsou jen z vestavěného obsahu nebo z API (u banneru volitelné pole `name`, bez něj se `banner_name` neposílá), nikdy text od uživatele; ořezané na 64 znaků |
 | `whatsnew.shown` | Zobrazení „Co je nového“ | `version` |
 | `remotecontent.sync` | Každý pokus o synchronizaci s API (jedno volání `sync()`, tedy i z debug menu) – počet signálů = počet dotazů. Nepočítá se stahování jednotlivých obrázků zvlášť | `result` (`success` / `failed`), u chyby `error` (`http` + `status`, `schema`, `invalid_config`, `invalid_content`, `network`) |
 | `TelemetryDeck.Activation.onboardingCompleted` | Zavření onboardingu (tlačítkem i swipem) | – |
@@ -859,7 +859,7 @@ Bannery, odkazy v nastavení a stažená pozadí se spravují na webu. Aplikace 
 
 ```json
 { "schemaVersion": 1, "generatedAt": "2026-11-09T17:30:00Z",
-  "banners":     [{ "id", "imageUrl", "url", "type", "language", "startAt", "endAt" }],
+  "banners":     [{ "id", "imageUrl", "url", "type", "name", "language", "startAt", "endAt" }],
   "links":       [{ "id", "label", "url", "language", "startAt", "endAt" }],
   "backgrounds": [{ "id", "imageUrl", "language", "startAt", "endAt" }] }
 ```
@@ -880,7 +880,7 @@ Bannery, odkazy v nastavení a stažená pozadí se spravují na webu. Aplikace 
 - Spouští ji `ContentView` při spuštění a při každém návratu do popředí (`handleBecameActive`). Po úspěchu se nejdřív za **24 h**, po neúspěchu znovu při dalším otevření.
 - Postup: stáhnout JSON → ověřit → stáhnout chybějící obrázky (všech položek, kterým ještě neskončila platnost, bez ohledu na jazyk) → **teprve pak** atomicky zapsat `config.json`, přepnout konfiguraci, smazat nepotřebné obrázky a zapsat čas úspěchu.
 - Jakákoli chyba (síť, HTTP, neplatný JSON, jiná `schemaVersion`, obrázek, který není obrázek nebo je z cizí domény, příliš velký soubor) celou aktualizaci zahodí a zůstane dosavadní konfigurace. Obrázky stažené během neúspěšného pokusu zůstanou a příště se už nestahují.
-- Neznámá pole se ignorují, neznámý `type` banneru = banner bez ikony.
+- Neznámá pole se ignorují, neznámý `type` banneru = banner bez ikony. `name` banneru je volitelný čitelný název jen pro analytiku (`banner_name`), v aplikaci se nezobrazuje.
 - Soubory: `Application Support/RemoteContent/config.json` (původní JSON) a `images/<SHA-256 URL>.<přípona>`. Název souboru je z celé URL včetně `?v=…`, takže nová verze obrázku = nový soubor. Složka je vyřazená ze zálohy.
 
 ### Jazyk, platnost a verze aplikace
