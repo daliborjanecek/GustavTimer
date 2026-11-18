@@ -79,8 +79,8 @@ struct TimerSettings: Equatable, Codable, Sendable {
     static let `default` = TimerSettings(
         name: "Gustav Timer",
         intervals: [
-            IntervalData(value: 60, name: "Work"),
-            IntervalData(value: 30, name: "Rest")
+            IntervalData(value: 60, name: String(localized: "LAP_WORK")),
+            IntervalData(value: 30, name: String(localized: "LAP_REST"))
         ],
         rounds: -1,
         sound: .beep,
