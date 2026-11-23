@@ -24,11 +24,31 @@ private final class SignalRecorder {
     private(set) var signals: [Signal] = []
     var time = Date(timeIntervalSince1970: 1_000_000)
 
+    /// Vlastní úložiště – testy běží v hostitelské aplikaci a jejich trénink
+    /// by jinak ohlásilo její další spuštění.
+    private let suiteName = "WorkoutSessionTrackerTests.\(UUID().uuidString)"
+    private lazy var defaults = UserDefaults(suiteName: suiteName)!
+    var store: InterruptedWorkoutStore { InterruptedWorkoutStore(defaults: defaults) }
+
+    deinit {
+        UserDefaults.standard.removePersistentDomain(forName: suiteName)
+    }
+
     func makeTracker() -> WorkoutSessionTracker {
         WorkoutSessionTracker(
-            send: { [unowned self] in signals.append(Signal(signal: $0, parameters: $1, floatValue: $2)) },
-            now: { [unowned self] in time }
+            send: { [unowned self] in record($0, $1, $2) },
+            now: { [unowned self] in time },
+            store: store
         )
+    }
+
+    /// Aplikace se znovu spustila.
+    func relaunch() {
+        WorkoutSessionTracker.reportInterrupted(store: store) { [unowned self] in record($0, $1, $2) }
+    }
+
+    private func record(_ signal: AnalyticsSignal, _ parameters: [String: String], _ floatValue: Double?) {
+        signals.append(Signal(signal: signal, parameters: parameters, floatValue: floatValue))
     }
 }
 
@@ -157,6 +177,124 @@ struct WorkoutSessionTrackerTests {
         tracker.abandoned(reason: .reset, position: position(round: 3))
 
         #expect(recorder.signals[1].parameters["progress_pct"] == "loop")
+    }
+}
+
+struct InterruptedWorkoutTests {
+
+    /// Stejný průběh jako u resetu: 97 s z 200.
+    @Test func closedAppReportsLastPositionOnNextLaunch() {
+        let recorder = SignalRecorder()
+        let tracker = recorder.makeTracker()
+        tracker.started(customTimer(), input: .button, isResume: false, favourites: [])
+        tracker.savePosition(position(round: 2, activeIndex: 1, remaining: 3))
+
+        recorder.relaunch()
+
+        #expect(recorder.signals.map(\.signal) == [.timerStarted, .timerStopped])
+        let stopped = recorder.signals[1]
+        #expect(stopped.parameters["reason"] == "app_closed")
+        #expect(stopped.parameters["round"] == "2")
+        #expect(stopped.parameters["progress_pct"] == "40")
+        #expect(stopped.parameters["timer_origin"] == "custom")
+        #expect(stopped.parameters["interval_pattern"] == "37/13")
+        #expect(stopped.floatValue == 97)
+    }
+
+    @Test func closedAppReportsOnlyOnce() {
+        let recorder = SignalRecorder()
+        recorder.makeTracker().started(customTimer(), input: .button, isResume: false, favourites: [])
+
+        recorder.relaunch()
+        recorder.relaunch()
+
+        #expect(recorder.signals.map(\.signal) == [.timerStarted, .timerStopped])
+    }
+
+    /// Zavření dřív, než se stihla uložit poloha.
+    @Test func startAloneIsReportedWithZeroProgress() {
+        let recorder = SignalRecorder()
+        recorder.makeTracker().started(customTimer(), input: .button, isResume: false, favourites: [])
+
+        recorder.relaunch()
+
+        #expect(recorder.signals[1].parameters["progress_pct"] == "0")
+        #expect(recorder.signals[1].floatValue == 0)
+    }
+
+    /// Pokračování po pauze polohu nevrací na začátek.
+    @Test func resumeKeepsSavedPosition() {
+        let recorder = SignalRecorder()
+        let tracker = recorder.makeTracker()
+        tracker.started(customTimer(), input: .button, isResume: false, favourites: [])
+        tracker.savePosition(position(round: 2, activeIndex: 1, remaining: 3))
+        tracker.started(customTimer(), input: .button, isResume: true, favourites: [])
+
+        recorder.relaunch()
+
+        #expect(recorder.signals[2].floatValue == 97)
+    }
+
+    @Test func finishedWorkoutLeavesNothingToReport() {
+        let recorder = SignalRecorder()
+        let tracker = recorder.makeTracker()
+        tracker.started(customTimer(), input: .button, isResume: false, favourites: [])
+        tracker.completed(completedCount: 1)
+        // Engine se po dokončení resetuje a oznámí zastavení.
+        tracker.savePosition(position(round: 4))
+
+        recorder.relaunch()
+
+        #expect(recorder.signals.map(\.signal) == [.timerStarted, .timerCompleted])
+    }
+
+    @Test func abandonedWorkoutLeavesNothingToReport() {
+        let recorder = SignalRecorder()
+        let tracker = recorder.makeTracker()
+        tracker.started(customTimer(), input: .button, isResume: false, favourites: [])
+        tracker.abandoned(reason: .reset, position: position(round: 1))
+        tracker.savePosition(position(round: 1))
+
+        recorder.relaunch()
+
+        #expect(recorder.signals.map(\.signal) == [.timerStarted, .timerStopped])
+        #expect(recorder.signals[1].parameters["reason"] == "reset")
+    }
+
+    /// Dvě okna na iPadu sdílejí úložiště: dokončení jednoho nesmí smazat druhé.
+    @Test func completingOneWindowKeepsTheOther() {
+        let recorder = SignalRecorder()
+        let first = recorder.makeTracker()
+        let second = recorder.makeTracker()
+        first.started(customTimer(), input: .button, isResume: false, favourites: [])
+        second.started(customTimer(rounds: 9), input: .button, isResume: false, favourites: [])
+        first.completed(completedCount: 1)
+
+        recorder.relaunch()
+
+        #expect(recorder.signals.last?.parameters["rounds"] == "9")
+        #expect(recorder.signals.last?.parameters["reason"] == "app_closed")
+    }
+
+    @Test func loopIsReportedWithoutPercent() {
+        let recorder = SignalRecorder()
+        let tracker = recorder.makeTracker()
+        tracker.started(customTimer(rounds: -1), input: .button, isResume: false, favourites: [])
+        tracker.savePosition(position(round: 3, remaining: 37))
+
+        recorder.relaunch()
+
+        #expect(recorder.signals[1].parameters["progress_pct"] == "loop")
+        #expect(recorder.signals[1].floatValue == 100)
+    }
+
+    /// Nastavení se neukládá, takže ani názvy psané uživatelem.
+    @Test func storedWorkoutHasNoUserTexts() throws {
+        let recorder = SignalRecorder()
+        recorder.makeTracker().started(customTimer(), input: .button, isResume: false, favourites: [])
+
+        let stored = try #require(recorder.store.load())
+        #expect(!stored.parameters.values.contains { ["Vlastní", "Work", "Rest"].contains($0) })
     }
 }
 

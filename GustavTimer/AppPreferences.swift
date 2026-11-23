@@ -50,6 +50,8 @@ final class AppPreferences: ObservableObject {
         /// První spuštění s analytikou akvizice – viz `AnalyticsAcquisition`.
         static let installDate = "installDate"
         static let acquisitionReported = "acquisitionReported"
+        /// Rozběhnutý trénink pro případ, že se aplikace zavře – viz `InterruptedWorkoutStore`.
+        static let interruptedWorkout = "interruptedWorkout"
         /// ID vybraného vzdáleného pozadí. Prázdné = platí `backgroundIndex`.
         /// Vzdálená pozadí se vybírají podle ID, ne indexu – jejich počet
         /// a pořadí se s každou synchronizací může změnit.

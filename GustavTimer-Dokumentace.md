@@ -600,8 +600,12 @@ Trychtýř: `timer.started` (`is_resume=false`) → `timer.completed`, nebo `tim
 |---|---|---|
 | `timer.started` | Každé spuštění, i po pauze | *nastavení*, `input` (`button` / `tap` / `landscape_tap`), `is_resume`, `timer_origin` (`preset` / `favourite` / `link` / `custom`), u presetu `preset` |
 | `timer.completed` | Trénink doběhl | *nastavení*, `completed_count`, `timer_origin`, `preset`; `floatValue` = reálná doba od prvního startu včetně pauz (s). Navíc `TelemetryDeck.coreFeatureUsed("timer_completed")` |
-| `timer.stopped` | Rozběhnutý trénink skončil resetem | *nastavení*, `reason` (`reset` / `settings` / `link`), `round`, `elapsed` (skupina), `progress_pct` (po 10 %, `loop`), `timer_origin`, `preset`; `floatValue` = odcvičené sekundy |
+| `timer.stopped` | Rozběhnutý trénink skončil dřív, než doběhl | *nastavení*, `reason` (`reset` / `settings` / `link` / `app_closed`), `round`, `elapsed` (skupina), `progress_pct` (po 10 %, `loop`), `timer_origin`, `preset`; `floatValue` = odcvičené sekundy |
 | `review.requested` | Žádost o hodnocení (každý 5. dokončený trénink) | `completed_count` |
+
+**Zavření aplikace:** rozběhnutý trénink se při startu, pauze a odchodu z popředí uloží (`InterruptedWorkoutStore`, klíč `interruptedWorkout`). Když aplikaci zavře uživatel nebo systém, pošle se `timer.stopped` s `reason=app_closed` při dalším spuštění (`WorkoutSessionTracker.reportInterrupted()`). Čas a verze signálu jsou proto z toho dalšího spuštění a postup je poslední uložený, bez času na pozadí. Kdo už aplikaci neotevře, konec neohlásí. Ve smyčce není `timer.stopped` vzdaný trénink, ale běžný konec.
+
+**Míra dokončení:** počítat jen z `timer.started` s `is_resume=false` a `rounds` ≠ `loop`, verze 2.4.0 a novější. Starší verze `timer.completed` neposílají a smyčka nikdy nedoběhne.
 
 ### Výběr, ukládání a sdílení
 
@@ -716,6 +720,7 @@ Dále drží: `remoteContentURL` (endpoint API vzdáleného obsahu), `defaultBac
 | `landscapeTimeDisplayFormat` | enum | minutesSecondsHundredths | Formát odpočtu na šířku (`minutesSecondsHundredths` / `seconds`), přepíná se swipem |
 | `lastSelectedSound` | enum | beep | Poslední vybraný zvuk (pro přepínač ztlumení) |
 | `completedTimerCount` | Int | 0 | Počet dokončených tréninků (review prompt) |
+| `interruptedWorkout` | Data | – | Rozběhnutý trénink pro `timer.stopped` s `reason=app_closed`, po skončení tréninku se maže |
 | `stopCounter` | Int | 0 | Počítadlo zastavení |
 | `whatsNewVersion` | Int | 0 | Naposledy viděný What's New |
 | `lastOnboardingVersion` | Int | 0 | Naposledy viděný onboarding |

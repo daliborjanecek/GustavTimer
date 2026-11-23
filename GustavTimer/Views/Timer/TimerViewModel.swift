@@ -131,6 +131,8 @@ class TimerViewModel: ObservableObject {
             guard let self else { return }
             UIApplication.shared.isIdleTimerDisabled = false
             self.stopCounter += 1
+            // Pauza. Po dokončení a resetu už žádný trénink neběží a nic se neuloží.
+            self.workoutTracker.savePosition(self.workoutPosition)
         }
     }
 
@@ -332,6 +334,11 @@ extension TimerViewModel {
     /// z hodin). Po návratu engine dopočítá čas strávený mimo, takže timer
     /// naváže přesně tam, kde reálně je.
     func handleScenePhase(_ phase: ScenePhase) {
+        if phase != .active {
+            // Z přepínače aplikací se dá aplikace zavřít, aniž by došla na pozadí.
+            workoutTracker.savePosition(workoutPosition)
+        }
+
         switch phase {
         case .background:
             enterBackground()

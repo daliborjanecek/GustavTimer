@@ -234,6 +234,8 @@ Aplikace jede vždy z uložené konfigurace, síť jen na pozadí aktualizuje.
 - [ ] Sdílení timeru (share sheet).
 - [ ] Odkaz „Ohodnoť Gustav Timer“ (zobrazí se, když nejsou vzdálené odkazy).
 - [ ] Analytika (TelemetryDeck) neposílá nic, co nemá, a nespadne offline.
+- [ ] Spustit trénink, zavřít aplikaci z přepínače a znovu otevřít: odejde jeden
+      `timer.stopped` s `reason=app_closed`. Po dokončení nebo resetu nic.
 - [ ] Migrace nastavení ze starší verze (`SettingsMigration`): upgrade přes
       dřívější build s uloženými timery.
 - [ ] Apple Watch (sdílený kód `Shared/`), pokud je ve verzi.

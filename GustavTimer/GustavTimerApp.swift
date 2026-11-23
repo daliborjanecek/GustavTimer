@@ -35,6 +35,10 @@ struct GustavTimerApp: App {
             ]
         }
         TelemetryDeck.initialize(config: config)
+
+        // Trénink, který minule ukončilo zavření aplikace. Jednou za spuštění
+        // a dřív, než začne nový.
+        WorkoutSessionTracker.reportInterrupted()
     }
     
     var body: some Scene {

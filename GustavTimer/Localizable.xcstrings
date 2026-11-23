@@ -37,14 +37,14 @@
       "localizations" : {
         "cs" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "přidat interval"
+            "state" : "translated",
+            "value" : "Přidat interval"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "add interval"
+            "value" : "Add interval"
           }
         }
       }
@@ -54,13 +54,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Oblíbené"
+            "value" : "Všechny oblíbené"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "All Favourites"
+            "value" : "All favourites"
           }
         }
       }
@@ -159,13 +159,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kolo"
+            "value" : "Zvonek na kole"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bicycle"
+            "value" : "Bicycle bell"
           }
         }
       }
@@ -283,13 +283,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@\n\nTimer z odkazu nahradí ten současný."
+            "value" : "%@\n\nNačtením timeru z odkazu nahradíš svůj aktuální timer."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@\n\nThe timer from the link will replace your current one."
+            "value" : "%@\n\nIf you load this timer, it’ll replace your current one."
           }
         }
       }
@@ -404,13 +404,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ulož si svůj první timer pomocí tlačítka + v horní liště."
+            "value" : "Ulož si první timer klepnutím na + nahoře."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save your first timer by tapping the + button above."
+            "value" : "Tap + at the top to save your first timer."
           }
         }
       }
@@ -455,13 +455,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zvol si, jak vás aplikace upozorní na uplynutí intervalu a konec kola."
+            "value" : "Vyber si, jak tě timer upozorní na konec intervalu, kola nebo celého tréninku."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose how the app notifies you at the end of intervals and rounds."
+            "value" : "Choose how the timer alerts you when an interval, a round or the whole workout ends."
           }
         }
       }
@@ -562,7 +562,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "interval"
+            "value" : "Interval"
           }
         }
       }
@@ -589,14 +589,14 @@
       "localizations" : {
         "cs" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "délka (s)"
+            "state" : "translated",
+            "value" : "Délka (s)"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "duration (s)"
+            "value" : "Duration (s)"
           }
         }
       }
@@ -624,13 +624,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Opakování"
+            "value" : "Opakovat dokola"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Loop"
+            "value" : "Repeat indefinitely"
           }
         }
       }
@@ -779,7 +779,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Opakovat"
+            "value" : "Opakování"
           }
         },
         "en" : {
@@ -791,18 +791,18 @@
       }
     },
     "MAX_LIMIT_REACHED" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dosáhli jste limitu %d intervalů."
+            "value" : "V jednom timeru můžeš mít nejvýš %d intervalů."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Maximum limit of %d intervals reached."
+            "value" : "You can add up to %d intervals to a timer."
           }
         }
       }
@@ -849,13 +849,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "žádný"
+            "value" : "Vypnuto"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "mute"
+            "value" : "Off"
           }
         }
       }
@@ -866,6 +866,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Žádný timer"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No timer"
           }
         }
       }
@@ -893,13 +899,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ukládej si vlastní timery na později nebo vybírej z předpřipravených."
+            "value" : "Ulož si vlastní timery na později nebo si vyber z přednastavených."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save your own Timers for later, or choose from ready-made presets."
+            "value" : "Save your own timers or start with a preset."
           }
         }
       }
@@ -916,7 +922,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save Timers for Later"
+            "value" : "Save timers for later"
           }
         }
       }
@@ -939,18 +945,18 @@
       }
     },
     "OB_GUSTAV_DESCRIPTION" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "cs" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Gustav Frištenský byl slavný český zápasník a symbol síly i vytrvalosti. Jeho jméno tu bereme jako připomínku: síla je hlavně o disciplíně a pravidelnosti."
+            "state" : "translated",
+            "value" : "Gustav Frištenský byl slavný český zápasník a symbol síly i vytrvalosti. Jeho jméno připomíná, že sílu buduješ disciplínou a pravidelností."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gustav Frištenský was a famous Czech wrestler and a symbol of strength and endurance. We use his name as a reminder: real strength is built through discipline and consistency."
+            "value" : "Gustav Frištenský was a famous Czech wrestler and a symbol of strength and endurance. His name is a reminder that you build strength through discipline and consistency."
           }
         }
       }
@@ -978,13 +984,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Poskládej si vlastní intervaly, pauzy a opakování. Každý blok si můžeš pojmenovat, nastavit opakování a upozornění."
+            "value" : "Poskládej si vlastní intervaly a pauzy. Pojmenuj si každý interval, nastav počet kol, zvuk a vibrace."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Build your own intervals, breaks, and repetitions. Name each block and set its repeats and notifications."
+            "value" : "Set up your own intervals and breaks. Name each interval, set the number of rounds and choose your sound and vibration settings."
           }
         }
       }
@@ -1038,7 +1044,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Preloaded Timers"
+            "value" : "Timer presets"
           }
         }
       }
@@ -1050,13 +1056,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Meditace 5 minut"
+            "value" : "Meditace 5 min"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Meditation 5mins"
+            "value" : "5min Meditation"
           }
         }
       }
@@ -1065,14 +1071,14 @@
       "localizations" : {
         "cs" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Box breathing, soustřeď se výhradně na dech (4-4-4-4: nádech, zadržení, výdech, zadržení). Kdykoli myšlenky odjedou jinam, jednoduše je vrátíš zpět k dechu."
+            "state" : "translated",
+            "value" : "Zkus dýchání do čtverce. Nadechuj se, zadrž dech, vydechuj a znovu zadrž dech. Každá fáze trvá 4 sekundy. Když ti myšlenky utečou jinam, vrať pozornost k dechu."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Box breathing – focus exclusively on your breath (4-4-4-4: inhale, hold, exhale, hold). Whenever your thoughts wander, simply bring them back to your breath."
+            "value" : "Try box breathing. Inhale, hold, exhale and hold again. Give each step 4 seconds. If your mind wanders, bring your attention back to your breath."
           }
         }
       }
@@ -1081,14 +1087,14 @@
       "localizations" : {
         "cs" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Lehni si na záda, a pomalu procházej svojí pozorností celé tělo od chodidel po temeno hlavy. U každé části se zastav a vědomě ji uvolni."
+            "state" : "translated",
+            "value" : "Lehni si na záda a pomalu vnímej celé tělo od chodidel až po temeno hlavy. U každé části se na chvíli zastav a vědomě ji uvolni."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lie on your back and slowly scan your entire body with your attention from your feet to the top of your head. At each part, pause and consciously release it."
+            "value" : "Lie on your back and slowly scan your body from your feet to the top of your head. Pause as you focus on each part, then let it relax."
           }
         }
       }
@@ -1097,14 +1103,14 @@
       "localizations" : {
         "cs" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "V hlavě si přehraj celý nadcházející trénink. Pomáhá to mentálně se naladit a podle výzkumů i zlepšuje reálný výkon."
+            "state" : "translated",
+            "value" : "Představ si nadcházející trénink od začátku do konce. Pomůže ti to se na něj soustředit a můžeš si tím zlepšit i výkon."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Play through your entire upcoming workout in your head. It helps you mentally tune in and according to research it also improves real performance."
+            "value" : "Picture your upcoming workout from start to finish. It can help you focus and may improve your performance."
           }
         }
       }
@@ -1122,7 +1128,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "20mins AMRAP"
+            "value" : "20-minute AMRAP"
           }
         }
       }
@@ -1132,13 +1138,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "5 pull-ups, 10 kliků, 15 dřepů – klasický CrossFit benchmark \"Cindy\". Snaž se zvládnout co nejvíce kol za 20 minut."
+            "value" : "Udělej 5 shybů, 10 kliků a 15 dřepů. Takhle vypadá jedno kolo klasického crossfitového tréninku Cindy. Za 20 minut zvládni co nejvíc kol."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "5 pull-ups, 10 push-ups, 15 squats – the classic CrossFit benchmark \"Cindy\". Try to complete as many rounds as possible in 20 minutes."
+            "value" : "Do 5 pull-ups, 10 push-ups and 15 squats. That’s one round of Cindy, a classic CrossFit benchmark workout. Complete as many rounds as you can in 20 minutes."
           }
         }
       }
@@ -1148,13 +1154,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10 kettlebell swings, 10 sit-ups, 10 výpadů – vyvážené kolo zapojující celé tělo, vhodné pro všechny úrovně. Udělej jich co nejvíce. "
+            "value" : "V každém kole udělej 10 švihů s kettlebellem, 10 sedů-lehů a 10 výpadů. Zapojíš celé tělo. Zvládni co nejvíc kol za 20 minut."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In 20 minutes complete as maty rounds as possible: 10 kettlebell swings, 10 sit-ups, 10 lunges – a balanced round engaging the whole body, suitable for all levels."
+            "value" : "In each round, do 10 kettlebell swings, 10 sit-ups and 10 lunges. You’ll work your whole body. Complete as many rounds as you can in 20 minutes."
           }
         }
       }
@@ -1164,13 +1170,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ve 20 minutách udělej co nejvíce kol: 8 burpees, 12 box jumps, 16 mountain climbers – náročnější varianta s důrazem na výbušnost a kardio výdrž."
+            "value" : "V každém kole udělej 8 angličáků, 12 výskoků na bednu a 16 střídavých přítahů kolen v prkně. Zvládni co nejvíc kol za 20 minut. Tahle náročnější varianta prověří tvoji výbušnost i výdrž."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "8 burpees, 12 box jumps, 16 mountain climbers – a more demanding variation with emphasis on explosiveness and cardio endurance. Do as many rounds as you can. "
+            "value" : "In each round, do 8 burpees, 12 box jumps and 16 mountain climbers. Complete as many rounds as you can in 20 minutes. This tougher version tests your explosive power and endurance."
           }
         }
       }
@@ -1188,7 +1194,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "EMOM 10mins"
+            "value" : "10-minute EMOM"
           }
         }
       }
@@ -1197,14 +1203,14 @@
       "localizations" : {
         "cs" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Každou minutu udělej 10 kliků – čím rychleji je zvládneš, tím více odpočinku v minutě získáš. Pokud ti to přijde lehké, přidej klik s tlesknutím."
+            "state" : "translated",
+            "value" : "Každou minutu udělej 10 kliků. Čím rychleji je zvládneš, tím víc času ti zbude na odpočinek. Jestli je to pro tebe snadné, přidej klik s tlesknutím."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Do 10 push-ups every minute – the faster you complete them, the more rest you get within the minute. If it feels easy, add a clap push-up."
+            "value" : "Do 10 push-ups every minute. The faster you finish, the longer you have to rest. If it feels easy, add a clap push-up."
           }
         }
       }
@@ -1213,14 +1219,14 @@
       "localizations" : {
         "cs" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Každou minutu udělej 15 dřepů – celkem 150 dřepů za trénink. Jednoduché na první pohled, ale překvapivě náročné."
+            "state" : "translated",
+            "value" : "Každou minutu udělej 15 dřepů. Za celý trénink jich tak zvládneš 150. Zní to jednoduše, ale tolik opakování ti dá zabrat."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Do 15 squats every minute – a total of 150 squats per workout. Simple at first glance, but a surprisingly demanding volume."
+            "value" : "Do 15 squats every minute. That’s 150 squats in one workout. It sounds simple, but that many reps will challenge you."
           }
         }
       }
@@ -1229,14 +1235,14 @@
       "localizations" : {
         "cs" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Střídej pull-ups a dipy – v liché minutě přítahy na hrazdě, v sudé minutě dipy na bradlech. Komplexní trénink horní části těla."
+            "state" : "translated",
+            "value" : "V lichých minutách dělej shyby na hrazdě, v sudých kliky na bradlech. Procvičíš tak horní část těla."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alternate pull-ups and dips – odd minutes pull-ups on the bar, even minutes dips on parallel bars. A comprehensive upper body workout."
+            "value" : "Do pull-ups on the odd minutes and parallel bar dips on the even minutes. You’ll work your upper body."
           }
         }
       }
@@ -1263,14 +1269,14 @@
       "localizations" : {
         "cs" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "30 sekund dělej kettlebell swing co nejexplosivněji, pak 15 sekund odpočívej. Skvělý cvik pro celkovou kondici."
+            "state" : "translated",
+            "value" : "Dělej výbušné švihy s kettlebellem 30 sekund a pak 15 sekund odpočívej. Zopakuj to desetkrát. Zapojíš celé tělo, hlavně hýždě a zadní stranu stehen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kettlebell swings – an explosive exercise engaging the whole body with emphasis on the posterior chain. Do 10 rounds with 15 seconds of rest between them."
+            "value" : "Do explosive kettlebell swings for 30 seconds, then rest for 15 seconds. Repeat for 10 rounds. You’ll work your whole body, especially your glutes and hamstrings."
           }
         }
       }
@@ -1279,14 +1285,14 @@
       "localizations" : {
         "cs" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "30 sekund vyskakuj na bednu s maximálním úsilím, pak 15 sekund odpočívej. Tepová frekvence půjde rychle nahoru."
+            "state" : "translated",
+            "value" : "Vyskakuj na bednu 30 sekund naplno a pak 15 sekund odpočívej. Tep ti rychle stoupne."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jump onto a box and develop explosive power. Your heart rate will go up fast."
+            "value" : "Do box jumps at full effort for 30 seconds, then rest for 15 seconds. Your heart rate will rise quickly."
           }
         }
       }
@@ -1295,14 +1301,14 @@
       "localizations" : {
         "cs" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "30 sekund sprintuj na místě v maximální intenzitě, pak 15 sekund drž plank."
+            "state" : "translated",
+            "value" : "Běž 30 sekund na místě naplno a kolena zvedej vysoko. Pak 15 sekund vydrž v prkně."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alternate high knees and plank – 30 seconds of maximum cardio effort, 15 seconds of static hold in a plank."
+            "value" : "Do high knees in place at full effort for 30 seconds, then hold a plank for 15 seconds."
           }
         }
       }
@@ -1330,13 +1336,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Po dobu 20 sekund dělej co nejvíce burpees, pak 10 sekund odpočívej. "
+            "value" : "Za 20 sekund udělej co nejvíc angličáků a pak 10 sekund odpočívej. Ke konci by ti to mělo dát zabrat."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Do as many burpees as you can for 20 seconds, then rest for 10 seconds. It should be really hard by the end."
+            "value" : "Do as many burpees as you can in 20 seconds, then rest for 10 seconds. The last few rounds should feel tough."
           }
         }
       }
@@ -1346,13 +1352,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "20 sekund vyskakuj ze dřepu co nejvýše, pak 10 sekund odpočívej. Důraz dej na maximální výšku skoku, ne na rychlost."
+            "value" : "Vyskakuj ze dřepu 20 sekund a pak 10 sekund odpočívej. U každého skoku se soustřeď na co největší výšku."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Explode out of the squat and jump as high as you can for 20 seconds, then rest for 10 seconds. Focus on maximum height, not speed."
+            "value" : "Do squat jumps for 20 seconds, then rest for 10 seconds. Focus on jumping as high as you can on each rep."
           }
         }
       }
@@ -1362,13 +1368,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mountain climbers – 20 sekund běž ve vysokém prknu v maximálním tempu, pak 10 sekund odpočívej. Skvělá kombinace core tréninku a kardio zátěže."
+            "value" : "Ve vysokém prkně 20 sekund co nejrychleji střídej přítahy kolen k hrudníku. Pak 10 sekund odpočívej. Zapojíš střed těla a zvedneš si tep."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mountain climbers – run in a high plank at maximum pace for 20 seconds, then rest for 10 seconds. A great combination of core training and cardio."
+            "value" : "Do mountain climbers in a high plank for 20 seconds, then rest for 10 seconds. Move as quickly as you can to work your core and raise your heart rate."
           }
         }
       }
@@ -1395,13 +1401,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Odebrat oblíbený"
+            "value" : "Odebrat z oblíbených"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remove Favourite"
+            "value" : "Remove from favourites"
           }
         }
       }
@@ -1481,13 +1487,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vrátit uložené"
+            "value" : "Obnovit uloženou verzi"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Revert to Saved"
+            "value" : "Restore saved version"
           }
         }
       }
@@ -1497,13 +1503,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kolo"
+            "value" : "Interval"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Round"
+            "value" : "Interval"
           }
         }
       }
@@ -1515,7 +1521,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kola"
+            "value" : "Počet kol"
           }
         },
         "en" : {
@@ -1571,7 +1577,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save as New…"
+            "value" : "Save as new…"
           }
         }
       }
@@ -1588,7 +1594,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save Changes to “%@”"
+            "value" : "Save changes to “%@”"
           }
         }
       }
@@ -1606,7 +1612,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enter a name for your timer configuration."
+            "value" : "Enter a name for your timer."
           }
         }
       }
@@ -1624,7 +1630,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save Timer"
+            "value" : "Save timer"
           }
         }
       }
@@ -1661,7 +1667,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Saved Timers"
+            "value" : "Saved timers"
           }
         }
       }
@@ -1690,13 +1696,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zvol počet kol"
+            "value" : "Vyber počet kol"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Select number of rounds"
+            "value" : "Choose the number of rounds"
           }
         }
       }
@@ -1706,13 +1712,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vyberte zvuk"
+            "value" : "Vyber zvuk"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Select sound"
+            "value" : "Choose a sound"
           }
         }
       }
@@ -1723,13 +1729,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kdy tikat"
+            "value" : "Kdy má timer tikat?"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "When to tick"
+            "value" : "When should the timer tick?"
           }
         }
       }
@@ -1745,7 +1751,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Countdown before start"
+            "value" : "Countdown before starting"
           }
         }
       }
@@ -1874,13 +1880,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Upraveno – změny nejsou uložené v oblíbených. Ulož je hvězdičkou nahoře."
+            "value" : "Máš neuložené změny. Klepni nahoře na hvězdičku a vyber možnost uložení."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Edited – changes aren't saved to your favourite. Save them with the star above."
+            "value" : "You have unsaved changes. Tap the star at the top to save them."
           }
         }
       }
@@ -1937,35 +1943,35 @@
       }
     },
     "SUM_ROUND_AND_TIMER_DESCRIPTION" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jedno kolo trvá %@. Celkový čas timeru je %@."
+            "value" : "Jedno kolo trvá %@. Celý timer trvá %@."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "One round takes %@. The total timer duration is %@."
+            "value" : "One round lasts %@. The whole timer runs for %@."
           }
         }
       }
     },
     "SUM_ROUND_DESCRIPTION" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Celkový čas jednoho kola je %@."
+            "value" : "Jedno kolo trvá %@."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "One round duration is %@."
+            "value" : "One round lasts %@."
           }
         }
       }
@@ -1993,13 +1999,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tik zazní každých 10 sekund: když do konce intervalu zbývá 10, 20, 30 … sekund."
+            "value" : "Tik se řídí zbývajícím časem. Uslyšíš ho třeba 30, 20 a 10 sekund před koncem intervalu."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A tick sounds every 10 seconds: when 10, 20, 30 … seconds remain in the interval."
+            "value" : "You’ll hear a tick at each 10-second mark as the interval counts down."
           }
         }
       }
@@ -2027,13 +2033,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tik zazní každých 30 sekund: když do konce intervalu zbývá 30, 60, 90 … sekund."
+            "value" : "Tik se řídí zbývajícím časem. Uslyšíš ho třeba 90, 60 a 30 sekund před koncem intervalu."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A tick sounds every 30 seconds: when 30, 60, 90 … seconds remain in the interval."
+            "value" : "You’ll hear a tick at each 30-second mark as the interval counts down."
           }
         }
       }
@@ -2061,13 +2067,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tik zazní každou minutu: když do konce intervalu zbývá 60, 120, 180 … sekund."
+            "value" : "Tik zazní při každé celé minutě odpočtu. Uslyšíš ho třeba v časech 3:00, 2:00 a 1:00."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A tick sounds every minute: when 60, 120, 180 … seconds remain in the interval."
+            "value" : "You’ll hear a tick at each full minute remaining."
           }
         }
       }
@@ -2095,13 +2101,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tik zazní každou sekundu po celou dobu intervalu."
+            "value" : "Během intervalu uslyšíš tik každou sekundu."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A tick sounds every second throughout the interval."
+            "value" : "You’ll hear a tick every second during the interval."
           }
         }
       }
@@ -2112,13 +2118,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Před koncem intervalu"
+            "value" : "Poslední 3 sekundy"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Before interval ends"
+            "value" : "Last 3 seconds"
           }
         }
       }
@@ -2129,13 +2135,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tik zazní jen v posledních třech sekundách intervalu: při 3, 2 a 1."
+            "value" : "Při odpočtu posledních tří sekund intervalu uslyšíš tik. Pokud máš vypnutý zvuk, zazní i na konci."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A tick sounds only during the last three seconds of the interval: at 3, 2 and 1."
+            "value" : "You’ll hear one tick per second during the last three seconds of the interval. If sound is off, you’ll also hear a tick at the end."
           }
         }
       }
@@ -2272,13 +2278,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Timer je upravený"
+            "value" : "Neuložené změny"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Timer Modified"
+            "value" : "Unsaved changes"
           }
         }
       }
@@ -2290,13 +2296,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Uložit aktuální nastavení do „%@“, nebo se vrátit k uloženému?"
+            "value" : "Chceš uložit změny do „%@“, nebo obnovit uloženou verzi?"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save the current settings to “%@”, or revert to the saved ones?"
+            "value" : "Do you want to save your changes to “%@” or restore the saved version?"
           }
         }
       }
