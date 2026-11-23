@@ -159,13 +159,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kolo"
+            "value" : "Zvonek na kole"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bicycle"
+            "value" : "Bicycle bell"
           }
         }
       }
@@ -779,13 +779,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dokola"
+            "value" : "Opakování"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Repeating"
+            "value" : "Loop"
           }
         }
       }
@@ -1056,13 +1056,13 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Meditace na 5 minut"
+            "value" : "Meditace 5 min"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "5-minute meditation"
+            "value" : "5min Meditation"
           }
         }
       }
@@ -1521,7 +1521,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kola"
+            "value" : "Počet kol"
           }
         },
         "en" : {
