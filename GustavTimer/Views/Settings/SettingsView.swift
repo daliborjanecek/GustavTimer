@@ -35,13 +35,8 @@ struct SettingsView: View {
     @State private var showDebugMenu = false
     #endif
 
-    /// Zavření panelu na iPadu (`.inspector`). Bez něj se nastavení zavírá
-    /// přes `dismiss` jako sheet.
-    private let onClose: (() -> Void)?
-
-    init(context: ModelContext, onClose: (() -> Void)? = nil) {
+    init(context: ModelContext) {
         _viewModel = StateObject(wrappedValue: SettingsViewModel(context: context))
-        self.onClose = onClose
     }
 
     private var timer: TimerData {
@@ -303,13 +298,13 @@ private extension SettingsView {
         ToolbarItem(placement: .navigationBarLeading) {
             if #available(iOS 26.0, *) {
                 Button(role: .close) {
-                    close()
+                    dismiss()
                 } label: {
                     Image(systemName: "xmark")
                 }
             } else {
                 Button(role: .destructive) {
-                    close()
+                    dismiss()
                 } label: {
                     Image(systemName: "xmark")
                 }
@@ -428,14 +423,6 @@ private extension SettingsView {
             get: { timer[keyPath: keyPath] },
             set: { viewModel.update(keyPath, to: $0, tracking: name) }
         )
-    }
-
-    func close() {
-        if let onClose {
-            onClose()
-        } else {
-            dismiss()
-        }
     }
 
     func addInterval() {

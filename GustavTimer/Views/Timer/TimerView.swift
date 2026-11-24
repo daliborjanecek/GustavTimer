@@ -276,13 +276,7 @@ private extension TimerView {
     
     var settingsButton: some View {
         Button {
-            // Na iPadu zůstává tlačítko vidět i s otevřeným panelem
-            // nastavení – druhé klepnutí ho zavře.
-            if activeSheet == .settings {
-                activeSheet = nil
-            } else {
-                present(.settings)
-            }
+            present(.settings)
         } label: {
             HStack {
                 settingsIcons

@@ -30,20 +30,16 @@ struct ContentView: View {
 
     var body: some View {
         TimerView(activeSheet: $activeSheet)
-            .sheet(item: sheetBinding) { sheet in
+            .sheet(item: $activeSheet) { sheet in
                 switch sheet {
                 case .settings:
                     SettingsView(context: context)
+                        // Na iPadu okno uprostřed obrazovky ve velikosti
+                        // formuláře, na iPhonu se nic nemění.
+                        .presentationSizing(.form)
                 case .onboarding, .whatsNew:
                     OnboardingView()
                 }
-            }
-            // Na iPadu je nastavení postranní panel vedle timeru – ten zůstává
-            // vidět a úpravy se v něm projevují hned. V úzkém okně (Split View,
-            // Slide Over) se panel sám promění v sheet.
-            .inspector(isPresented: inspectorBinding) {
-                SettingsView(context: context, onClose: { activeSheet = nil })
-                    .inspectorColumnWidth(min: 340, ideal: 400, max: 520)
             }
             .onChange(of: activeSheet) { oldValue, newValue in
                 trackSheetChange(from: oldValue, to: newValue)
@@ -62,37 +58,6 @@ struct ContentView: View {
             }
     }
     
-    private var showsSettingsAsInspector: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
-    }
-
-    /// Sheet ukazuje všechno kromě nastavení na iPadu – to patří do panelu.
-    private var sheetBinding: Binding<AppSheet?> {
-        Binding(
-            get: {
-                showsSettingsAsInspector && activeSheet == .settings ? nil : activeSheet
-            },
-            set: { newValue in
-                // Zavření sheetu nesmí shodit otevřený panel.
-                if newValue == nil, showsSettingsAsInspector, activeSheet == .settings { return }
-                activeSheet = newValue
-            }
-        )
-    }
-
-    private var inspectorBinding: Binding<Bool> {
-        Binding(
-            get: { showsSettingsAsInspector && activeSheet == .settings },
-            set: { isPresented in
-                if isPresented {
-                    activeSheet = .settings
-                } else if activeSheet == .settings {
-                    activeSheet = nil
-                }
-            }
-        )
-    }
-
     private func initializeDataIfNeeded() {
         TimerData.mainTimer(in: context)
         FavouriteTimers.linkLegacySource(in: context)
