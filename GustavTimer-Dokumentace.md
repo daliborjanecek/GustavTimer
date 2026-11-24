@@ -339,7 +339,7 @@ Při startu engine zavolá `onStart` → `UIApplication.shared.isIdleTimerDisabl
 
 ## 6 · Nastavení (SettingsView)
 
-`Views/Settings/SettingsView.swift` – modální `sheet` s `NavigationStack` a `List`. Edituje hlavní časovač (`order == 0`) **přímo v SwiftData**.
+`Views/Settings/SettingsView.swift` – na iPhonu modální `sheet`, na iPadu postranní panel (`.inspector`, v úzkém okně Split View se sám mění v sheet) – vždy s `NavigationStack` a `List`. Panel zavírá `onClose` z `ContentView`, sheet `dismiss`. Edituje hlavní časovač (`order == 0`) **přímo v SwiftData**.
 
 ### Sekce
 
@@ -740,7 +740,7 @@ Dále drží: `remoteContentURL` (endpoint API vzdáleného obsahu), `defaultBac
 ```
 GustavTimer/
 ├── GustavTimerApp.swift          # @main – registrace fontů, TelemetryDeck, modelContainer
-├── ContentView.swift             # Root – TimerView + sheety (Settings/Onboarding/WhatsNew)
+├── ContentView.swift             # Root – TimerView + sheety (Settings/Onboarding/WhatsNew), na iPadu Settings jako inspector
 ├── AppConfig.swift               # Konstanty, presety, URL, pozadí
 ├── AppPreferences.swift          # Nastavení zařízení (@AppStorage) + klíče UserDefaults
 ├── SettingsMigration.swift       # Jednorázový přesun nastavení do SwiftData

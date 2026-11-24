@@ -32,7 +32,7 @@ struct TimerView: View {
     var body: some View {
         ZStack {
             BackgroundImageView()
-            if orientation.isLandscape {
+            if usesLandscapeLayout {
                 landscapeTimerView
             } else {
                 portraitTimerView
@@ -259,7 +259,7 @@ private extension TimerView {
             let isBeforeFirstStart = !viewModel.isTimerRunning && viewModel.finishedRounds == 0
             ControlButton(
                 label: isBeforeFirstStart && viewModel.hasCountdown ? "COUNTDOWN" : (viewModel.isTimerRunning ? "STOP" : "START"),
-                description: orientation.isLandscape ? nil : startButtonDescription.map { LocalizedStringKey($0) },
+                description: usesLandscapeLayout ? nil : startButtonDescription.map { LocalizedStringKey($0) },
                 color: viewModel.isTimerRunning ? .gustavPink : .gustavVolt,
                 action: { viewModel.startStopTimer(input: .button) }
             )
@@ -276,7 +276,13 @@ private extension TimerView {
     
     var settingsButton: some View {
         Button {
-            present(.settings)
+            // Na iPadu zůstává tlačítko vidět i s otevřeným panelem
+            // nastavení – druhé klepnutí ho zavře.
+            if activeSheet == .settings {
+                activeSheet = nil
+            } else {
+                present(.settings)
+            }
         } label: {
             HStack {
                 settingsIcons
@@ -310,6 +316,13 @@ private extension TimerView {
 
 // MARK: - Computed Properties
 private extension TimerView {
+
+    /// Rozložení jen s odpočtem a ovládáním tapy je pro telefon otočený na
+    /// šířku. iPad má místa dost, takže i na šířku drží plné rozložení
+    /// s tlačítky a vstupem do nastavení.
+    var usesLandscapeLayout: Bool {
+        orientation.isLandscape && UIDevice.current.userInterfaceIdiom != .pad
+    }
     
     /// Nastavení hlavního timeru tak, jak ho právě upravuje SettingsView.
     var mainTimerSettings: TimerSettings? {
@@ -350,7 +363,7 @@ private extension TimerView {
     /// Tap na odpočet. Odpočet je na výšku i na šířku stejný view, takže
     /// orientaci rozliší až tady.
     func startStopByTap() {
-        viewModel.startStopTimer(input: orientation.isLandscape ? .landscapeTap : .tap)
+        viewModel.startStopTimer(input: usesLandscapeLayout ? .landscapeTap : .tap)
     }
 
     func trackDisplayFormat(_ format: TimeDisplayFormat, orientation: String) {
