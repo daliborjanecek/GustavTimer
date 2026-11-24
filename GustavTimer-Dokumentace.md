@@ -553,7 +553,7 @@ gustavtimerapp://settings/background              (otevře nastavení → Výbě
 `gustavtimerapp://settings/<obrazovka>` otevře nastavení a v něm obrazovku z výčtu `AppScreen` (`Shared/SharedTimerLink.swift`). Teď jen `background` (Výběr pozadí). Funguje z banneru i zvenku (Safari, Poznámky, push).
 
 1. `SharedTimerLink.route` → `.screen(AppScreen)`, `TimerViewModel.handleDeepLink` → `AppNavigator.shared.open(screen)`.
-2. `TimerView` na požadavek otevře sheet nastavení (když už otevřený není). Otevření nastavení zastaví běžící timer, stejně jako ruční otevření.
+2. `TimerView` na požadavek otevře nastavení (když už otevřené není) – na iPhonu sheet, na iPadu postranní panel. Samotné otevření běžící timer nezastaví, stejně jako ruční otevření. Zastaví ho až úprava, která mění průběh (intervaly, kola – `TimerViewModel.settingsEdited`); zvuk, haptika, tikání a odpočet se převezmou bez zásahu do běžícího tréninku. Po zavření se timer resetuje jen tehdy, když se průběh změnil (`settingsClosed`).
 3. `SettingsView` si požadavek převezme (`AppNavigator.consume()`) při zobrazení nebo hned, když je otevřené, a nastaví `NavigationStack(path:)` na `[screen]`. Zpět vede do kořene nastavení.
 
 Nová obrazovka = nový `case` v `AppScreen`, větev v `navigationDestination(for: AppScreen.self)` v `SettingsView` a položka v `gtimer_app_screens()` v pluginu webu. Neznámá obrazovka (odkaz pro novější verzi) se bere jako cizí odkaz.
