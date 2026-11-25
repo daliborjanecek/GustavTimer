@@ -128,16 +128,31 @@ private struct RemoteBannerCard: View {
     private var icon: some View {
         switch item.banner.type {
         case .youtube:
-            Image(.youtubeLogo)
+            Image(.bannerIconYoutube)
                 .resizable()
                 .scaledToFit()
                 .frame(height: 18)
-        case .some(let type):
-            Image(systemName: type.symbolName)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(.white)
-                .shadow(color: .black.opacity(0.5), radius: 3)
-        case nil:
+        case .app:
+            Image(.bannerIconTmr)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 18)
+        case .appstore:
+            Image(.bannerIconAppstore)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 18)
+        case .timer:
+            Image(.bannerIconTmr)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 18)
+        case .web:
+            Image(.bannerIconWeb)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 18)
+        default:
             EmptyView()
         }
     }
@@ -150,7 +165,6 @@ private struct RemoteBannerCard: View {
 }
 
 private extension RemoteBannerType {
-    /// SF Symbol ikony. YouTube má vlastní logo z assetů.
     var symbolName: String {
         switch self {
         case .timer:    return "timer"
