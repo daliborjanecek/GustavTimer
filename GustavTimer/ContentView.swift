@@ -34,6 +34,9 @@ struct ContentView: View {
                 switch sheet {
                 case .settings:
                     SettingsView(context: context)
+                        // Na iPadu okno uprostřed obrazovky ve velikosti
+                        // formuláře, na iPhonu se nic nemění.
+                        .presentationSizing(.form)
                 case .onboarding, .whatsNew:
                     OnboardingView()
                 }
