@@ -550,8 +550,8 @@ extension SharedTimerLink {
         if intervals.count > shown.count {
             parts.append("+\(intervals.count - shown.count)")
         }
-        parts.append(rounds == -1 ? "∞" : "\(rounds)×")
-        return parts.joined(separator: " · ")
+        parts.append(rounds == -1 ? "\n∞" : "\n\(rounds)×")
+        return parts.joined(separator: " ")
     }
 
     /// `40` → `0:40`, `600` → `10:00`.
